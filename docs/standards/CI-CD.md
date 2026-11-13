@@ -59,7 +59,8 @@ commit ──S0──▶ PR ──S1──▶ S2 ──▶ merge ──S3──�
   1. Markdown 规范（markdownlint）——作用于 `docs/**`、`GLOSSARY.md`、`skills/**`。
   2. 技能解剖校验（`scripts/validate_skill.py`）——强制 §4.2 五要素、优先级/能力域/计分单元枚举、目录与 `name` 一致。
   3. 术语一致性（`scripts/check_glossary.py`）——技能不得使用 `GLOSSARY.md` 标注 `_Avoid_` 的废弃术语（§1.3、§8.2-8）。
-- **成功标准**：三项均 0 错误。
+  4. 共享工具语法编译（`python -m py_compile tools/collect_evidence.py`）——证据收集工具引入后强制语法门禁。
+- **成功标准**：四项均 0 错误。
 - **失败标准**：任一脚本非零退出，CI 报告精确到文件与缺失字段。
 - **回滚/修复**：未合并，无回滚；依检查器输出修正后重推。
 
@@ -67,7 +68,7 @@ commit ──S0──▶ PR ──S1──▶ S2 ──▶ merge ──S3──�
 
 - **触发条件**：S1 通过后（`needs: checks`）。
 - **执行步骤**：
-  1. 运行 `tests/`（标准库 `unittest`，零外部依赖），至少覆盖：校验器自测（用临时夹具构造「合规/不合规」技能，断言校验器正确放行与拦截）。
+  1. 运行 `tests/`（标准库 `unittest`，零外部依赖），至少覆盖：校验器自测（用临时夹具构造「合规/不合规」技能，断言校验器正确放行与拦截）；证据收集工具自测（`tests/test_collect_evidence.py`，用假数据断言产出片段含三件套「命令 + 输出 + 截图」，并校验 `--strict` 与废弃术语预警）。
   2. 业务代码引入后，登记其依赖清单与测试框架（如 `requirements.txt` + `pytest`）至本阶段。
 - **成功标准**：全部用例通过；存在业务代码时，行覆盖率须 ≥80%（门槛写入 workflow，缺省 80）。
 - **失败标准**：任一用例失败。
@@ -148,6 +149,8 @@ commit ──S0──▶ PR ──S1──▶ S2 ──▶ merge ──S3──�
 scripts/
   validate_skill.py             # 技能解剖与登记校验（S1/S4）
   check_glossary.py             # 术语一致性校验（S1/S4）
+tools/
+  collect_evidence.py           # 共享证据收集工具（P0，通用，服务 P0 攻击技能）
 tests/
   test_validators.py            # 校验器自测（S2，标准库 unittest）
 .markdownlint-cli2.jsonc        # Markdown 规范配置

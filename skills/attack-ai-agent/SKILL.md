@@ -54,6 +54,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、AI 交互日志、
 - 每步骤的**截图**（访问证明，含目标标识与时间戳）。
 - **AI 交互日志**（prompt、模型、输出、采纳/修改，对齐 §6.3）。
 - `ai_vector.txt` flag 的「面板提交 + 截图」双通道一致。
+- 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 GOVERNANCE §质量门），保证五件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。
 
 ## 校验标准
 

@@ -119,7 +119,7 @@
 
 | 优先级 | 技能（skill） | 对齐能力域 | 目标计分单元 |
 |---|---|---|---|
-| **P0** | `recon-ai` AI 资产侦察与枚举 | D1、D2 | 通用（前置） |
+| **P0** | `recon-ai` AI 资产侦察与枚举 | D2 | 通用（前置） |
 | **P0** | `attack-ai-agent` AI Agent 攻击（提示注入/记忆/工具滥用） | D3 | AI向量机 |
 | **P0** | `attack-rag` RAG 投毒与检索操纵 | D5 | AI向量机 |
 | **P0** | `attack-mcp-tool` MCP 与工具面滥用 | D7 | AI向量机 / 独立机 |

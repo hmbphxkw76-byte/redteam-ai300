@@ -3,7 +3,7 @@
 > 依据 GOVERNANCE.md §4.4 生成。下列为**尚未落地**的技能线提示词，按优先级 **P0 → P1 → P2** 排序，
 > 每份均为自包含规格，可直接作为 `/to-spec` 的输入（单开一条消息发送即可）。
 >
-> **已落地、不在下表**：`recon-ai`（#22）、`attack-ai-agent`、`attack-rag`（#16）、`attack-mcp-tool`（#28）、`foothold-traditional`（#35）、`loot-manage`（#42）。
+> **已落地、不在下表**：`recon-ai`（#22）、`attack-ai-agent`、`attack-rag`（#16）、`attack-mcp-tool`（#28）、`foothold-traditional`（#35）、`loot-manage`（#42）、`report-exam`（#47）。
 >
 > **共享工具已完成**：`tools/collect_evidence.py`（P0 / 计分单元：通用）已存在并满足 §质量门
 > 五件套（确切命令 / 关键输出 / 截图 / AI 交互日志 / flag 双通道一致），CI 门禁

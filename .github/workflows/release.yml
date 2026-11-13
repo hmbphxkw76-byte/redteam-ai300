@@ -11,10 +11,10 @@ permissions:
 jobs:
   release:
     name: 部署/发布 (S5)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: 发布前最终门禁
@@ -28,7 +28,7 @@ jobs:
           mkdir -p dist
           tar -czf dist/redteam-ai300-skills.tgz skills docs GLOSSARY.md
       - name: 创建 Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/redteam-ai300-skills.tgz
           generate_release_notes: true

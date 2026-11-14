@@ -60,3 +60,34 @@
 | G8-10 | B8 上游交付物未被破坏 | §2.3 | #83 v1/v2、GLOSSARY、ADR-0004 均保留并复核 | 符合 | 无 | 无 | 符合 | PASS |
 
 **结论**：`PASS`（初轮 2 项不符合已修正并复验）。阶段 8 可交付阶段 9。
+
+## 4. 阶段 9 `tdd` 红—绿—重构记录与 G0
+
+**交付物**：`tests/test_attack_ai_agent_runner.py`（12 用例）、`tests/test_attack_ai_agent_evidence_contract.py`（7 用例）、`tests/test_attack_ai_agent_adapters.py`（14 用例）、`scripts/measure_coverage.py`（标准库行覆盖率，可复现门禁命令）。
+
+### 红 → 绿 → 重构
+
+| 轮次 | 动作 | 实测输出 |
+|---|---|---|
+| 红 | 先写 33 个用例；其中 `test_batch_objectives_are_all_executed`（AC-13）针对未实现的批量 objective | `TypeError: run_attack() got an unexpected keyword argument 'objectives'`，`FAILED (errors=1)` |
+| 退回阶段 8 | 按 §3.9 修正 `runner.py`：新增 `objectives` 入参、`AttackReport.objectives`、批量响应聚合（决定性命中取全批交集，防夸大） | 阶段 8 门禁复跑：`py_compile OK` / `validate_skill PASS` / `check_glossary PASS` |
+| 绿 | 复跑该用例 | `ok`，`Ran 1 test ... OK` |
+| 重构 | 消除夹具中 5 处未关闭文件的 `ResourceWarning`；新增适配器测试覆盖真实证据落盘与延迟导入分支 | 全量 `Ran 62 tests ... OK`，无 ResourceWarning |
+
+### 覆盖率（标准库 `sys.settrace` + `code.co_lines()`）
+
+`python scripts/measure_coverage.py --min 80` → 34 用例、`runner.py 97.7%` / `backends.py 88.1%` / `paths.py 99.2%` / `steps.py 98.3%`，**总计 449/469 = 95.7%**，高于 CI-CD §3 S2 的 80% 门槛。测量脚本在追踪窗口内重载模块，消除「导入早于 settrace」的假阴性；`co_lines()` 取 `lineno` 而非字节码偏移，消除测量假象。
+
+| 编号 | 检查项 | 依据 | 实测结果 | 判定 | 不符合项描述 | 修正要求 | 复验结果 | 结论 |
+|---|---|---|---|---|---|---|---|---|
+| G9-01 | 每条验收条件有对应测试 | §3.9-① | 33 用例覆盖 AC-01..30 判据与 §2 矩阵 | 符合 | 无 | 无 | 符合 | PASS |
+| G9-02 | 红阶段有实际失败输出留痕 | §3.9-② | 上表红轮 `TypeError` + `FAILED (errors=1)` | 符合 | 无 | 无 | 符合 | PASS |
+| G9-03 | 全量 unittest 通过 | B3/§3.9-③ | `Ran 62 tests ... OK` | 符合 | 无 | 无 | 符合 | PASS |
+| G9-04 | 覆盖率 ≥80% | B6/§3.9-④ | `python scripts/measure_coverage.py --min 80` → 95.7%，退出码 0 | 符合 | 初轮 42.4%（真实证据路径与延迟导入适配器未覆盖） | 新增 14 个适配器/落盘用例 + 追踪内重载 | 95.7% | PASS |
+| G9-05 | 只测外部行为 | §3.9-⑤ | 行为用例只经 `run_attack`；适配器用例仅验命名空间与契约 | 符合 | 无 | 无 | 符合 | PASS |
+| G9-06 | 本地与 CI 判定一致 | B6/§3.9-⑥ | CI S1/S2 命令与本地一致；CI 不安装 pyrit | 符合 | 无 | 无 | 符合 | PASS |
+| G9-07 | 证据契约夹具断言每步契约 | B4 | 夹具断言 12 个标识各恰一次声明、三件套、AI 日志、flag 双通道 | 符合 | 无 | 无 | 符合 | PASS |
+| G9-08 | 上游复核 | §2.3 | `validate_skill` 16 技能 PASS；`check_glossary` 18 废弃术语 PASS；12 份证据片段三件套齐全 | 符合 | 无 | 无 | 符合 | PASS |
+| G9-09 | 门禁记录写入交付物并留 issue 摘要 | §2.2-5/B8 | 本节 + #83 评论摘要 | 符合 | 无 | 无 | 符合 | PASS |
+
+**结论**：`PASS`。阶段 9 可交付阶段 10。

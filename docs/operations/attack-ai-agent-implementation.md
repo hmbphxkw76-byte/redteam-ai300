@@ -91,3 +91,36 @@
 | G9-09 | 门禁记录写入交付物并留 issue 摘要 | §2.2-5/B8 | 本节 + #83 评论摘要 | 符合 | 无 | 无 | 符合 | PASS |
 
 **结论**：`PASS`。阶段 9 可交付阶段 10。
+
+## 5. 阶段 10 `code-review` 双轴审查记录与 G0
+
+**交付物**：本节记录 + #83 评论摘要。**审查范围**：`tools/attack_ai_agent/`（6 文件）、三个 S2 夹具、`scripts/measure_coverage.py`、CI 接线。
+
+### 语义轴（实现 ↔ 规格 v2 一致性）
+
+| 审查点 | 实测 |
+|---|---|
+| 单一公开 seam（方案 A） | `__init__.py` 仅导出 `run_attack` 等 API；对象图构造收敛于 `paths.py`（纯数据规格）/ `backends.py`（工厂），顶层零 pyrit 导入（AC-23 复验：未装 pyrit 环境导入成功） |
+| 三路径对象图 | A=ASI01（`PromptSendingAttack`+`XPIATestWorkflow` B7 受控例外）；B=ASI06（`RedTeamingAttack(max_turns=5)`+`SQLiteMemory`/`memory_db_type="SQLite"`+`PrettyAttackResultMemoryPrinter.write_async`）；C=ASI02（`HTTPTarget`+回调，与 D7 仅标注衔接不实现）——与 §2 AC 矩阵逐条对应 |
+| 证据契约 | `runner.emit_evidence` 每步 1:1 `--step aia-NN --strict`；flag 双通道含 `whoami/id` 访问证明（§6.2）；AI 交互日志四要素（§6.3） |
+| 效果分级忠实 | `grade()` 纯函数：决定性命中→完全生效、仅 LLM 线索→部分生效、均无→未生效、能力缺失→已跳过并附依据；批量目标决定性命中取全批交集（防夸大，AC-19） |
+| 失败与豁免 | `FakePyRITBackend` 无记忆/无工具分支返回「已跳过」+ skip_reason，不阻塞其余路径 |
+
+### 工程轴（B1–B8 复核）
+
+| 编号 | 检查项 | 依据 | 实测结果（命令 + 输出摘要） | 判定 | 不符合项描述 | 修正要求 | 复验结果 | 结论 |
+|---|---|---|---|---|---|---|---|---|
+| G10-01 | 实现与规格 v2 逐条对应 | §2 矩阵 | 语义轴表全部核对通过 | 符合 | 无 | 无 | 符合 | PASS |
+| G10-02 | B7 静态检索无 0.x / 已排除名 | B7 | `grep -rnE "pyrit\.orchestrator|…Orchestrator|AzureOpenAIChatTarget" tools/attack_ai_agent/ tests/… scripts/…` → 实现代码零命中；唯一命中位于夹具自身否定断言清单（`test_no_legacy_api_names_in_implementation`，断言实现**不含**这些名） | 符合 | 无 | 无 | 符合 | PASS |
+| G10-03 | B1/B2 技能解剖与术语 | B1/B2 | `validate_skill` → `PASS：共校验 16 个技能`；`check_glossary` → `PASS（检查 18 个废弃术语）` | 符合 | 无 | 无 | 符合 | PASS |
+| G10-04 | B3 全量测试 + demo 冒烟 | B3 | `unittest discover -s tests` → `Ran 62 tests ... OK`；`python tools/attack_ai_agent/demo.py --step aia-02` → 步骤数 1、证据片段落盘 | 符合 | 无 | 无 | 符合 | PASS |
+| G10-05 | B6 行覆盖率门禁 | B6 | `python scripts/measure_coverage.py --min 80` → 总计 95.7%（runner 97.7/backends 88.1/paths 99.2/steps 98.3），退出码 0 | 符合 | 无 | 无 | 符合 | PASS |
+| G10-06 | AC-24 CI 接线 | AC-24 | `ci.yml` L30：`py_compile tools/collect_evidence.py tools/attack_ai_agent/*.py` | 符合 | 无 | 无 | 符合 | PASS |
+| G10-07 | 证据片段不入库 | §3.8-⑤ | `git check-ignore evidence/attack-ai-agent/aia-02.md` 命中（按 `.gitignore` 忽略，运行时可复现） | 符合 | 无 | 无 | 符合 | PASS |
+| G10-08 | B8 上游交付物未破坏 | §2.3 | `git diff main --name-status` 不含 `skills/attack-ai-agent/`（SKILL.md 未被改写）；#83 v1/v2、GLOSSARY、ADR-0004 保留 | 符合 | 无 | 无 | 符合 | PASS |
+
+**建议级观察（不构成不符合项，不阻断）**：
+- `RealPyRITBackend.execute` 为受控桩（RuntimeError 提示真实执行链需 `AttackExecutor` 与人工注入端点）——属阶段 8 最小切片声明范围，真实端点模式已由 triage 判为 ready-for-human，符合规格「CI 密闭 + 人工注入凭据」边界。
+- `AttackRequest.step` 字段仅作公开 API 数据完整性保留，runner 内以局部 `step` 过滤——无行为偏差。
+
+**结论**：`PASS`。阶段 10 可交付阶段 11（pr-push-review）。

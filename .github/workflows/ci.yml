@@ -4,7 +4,8 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main]
+    # CI-CD.md S1 声明「向 feature 分支 push」亦触发；仅 main 会让门禁在开发分支静默。
+    branches: ['**']
 
 permissions:
   contents: read
@@ -21,13 +22,25 @@ jobs:
       - name: Markdown 规范检查
         uses: DavidAnson/markdownlint-cli2-action@v25
         with:
-          globs: "docs/**/*.md,GLOSSARY.md,skills/**/*.md"
+          globs: |
+            docs/**/*.md
+            GLOSSARY.md
+            skills/**/*.md
       - name: 技能解剖校验
         run: python scripts/validate_skill.py
       - name: 术语一致性校验
         run: python scripts/check_glossary.py
+      - name: Token 预算 / 规范契约 / 产物上限检查 (S1)
+        run: python scripts/check_token_budget.py --check
+      - name: PR 正文 C4 产物上限 (S1)
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s' "$PR_BODY" > /tmp/osai_pr_body.md
+          python scripts/check_token_budget.py --artifact pr-body /tmp/osai_pr_body.md
       - name: 共享工具与新模块语法编译 (S1)
-        run: python -m py_compile tools/collect_evidence.py tools/attack_ai_agent/*.py report_exam/*.py scripts/*.py
+        run: python -m py_compile tools/collect_evidence.py tools/verify_evidence.py tools/attack_ai_agent/*.py report_exam/*.py scripts/*.py
 
   tests:
     name: 自动化测试 (S2)
@@ -75,3 +88,5 @@ jobs:
         run: python scripts/validate_skill.py
       - name: 全量术语一致性
         run: python scripts/check_glossary.py
+      - name: Token 预算与规范契约复核 (S4)
+        run: python scripts/check_token_budget.py --check

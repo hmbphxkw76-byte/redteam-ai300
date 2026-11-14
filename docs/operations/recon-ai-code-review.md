@@ -52,7 +52,7 @@
 | AC-10 | 清单无 `phase` 字段，用例断言的是 `request_id` | `Asset.phase` 作为可选附加字段，取 recon-02 的 SSE `phase=3` | `test_ac10` |
 | AC-15 | 只查两个固定串，且 sha256 会被「32 位以上串」误命中 | 改为正则判明文凭据特征（Bearer/sk-/cookie），并断言指纹存在 | `test_ac15` |
 
-**越界核查**
+#### 越界核查
 
 1. SKILL.md 与边界冲突：原文 `nmap -sC -sV -p-`（全端口）与 `ffuf ... mcp-wordlist.txt`（字典扫描）与「不支持的操作」2、3 条矛盾 → **已修**：改为被动优先 + `--profile active` 定向端口（≤8）；recon-06 改为单次语义探测，`ffuf` 降级为授权后可选项。
 2. B7 禁止名（`pyrit.orchestrator` / `*Orchestrator` / `AzureOpenAIChatTarget` / `XpiaAttack`）：技能、实现、测试、产物 **0 命中**。

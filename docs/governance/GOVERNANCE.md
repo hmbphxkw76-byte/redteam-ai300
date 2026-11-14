@@ -125,7 +125,7 @@
 | **P0** | `attack-mcp-tool` MCP 与工具面滥用 | D7 | AI向量机 / 独立机 |
 | **P0** | `foothold-traditional` 传统入口/横向/提权 | D1 + 传统技术 | 传统向量机 / 链式入口 |
 | **P0** | `loot-manage` 战利品与凭证管理 | 跨域（D1/D10） | 通用（效率） |
-| **P0** | `report-exam` 考试报告生成 | 报告要求（S1） | 通用（及格前提） |
+| **P0** | `report-exam` 官方规范报告生成（实现见 `skills/report-exam/`，由原 `offsec-report` 合并而入） | 报告要求（S1） | 通用（及格前提） |
 | **P0** | `verify-evidence` 证据校验与 flag 提交 | 报告要求（S1/S3） | 通用（防失分） |
 | P1 | `attack-embeddings` Embedding 反演与信息提取 | D6 | AI向量机 |
 | P1 | `attack-multi-agent` 多智能体/A2A 操纵 | D4 | AI向量机 |

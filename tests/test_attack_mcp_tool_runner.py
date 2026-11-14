@@ -174,7 +174,8 @@ class DependencyAndCliTests(unittest.TestCase):
 
     ALLOWED = {"argparse", "dataclasses", "datetime", "http", "html", "json", "os",
                "re", "socket", "subprocess", "sys", "threading", "time", "typing",
-               "urllib", "collections", "pathlib", "tools", "math", "itertools"}
+               "urllib", "collections", "pathlib", "tools", "math", "itertools",
+               "shutil"}
 
     def test_ac17_only_stdlib_imports(self):
         for name in os.listdir(IMPL):
@@ -190,6 +191,24 @@ class DependencyAndCliTests(unittest.TestCase):
     def test_ac17_import_without_model_framework(self):
         import tools.attack_mcp_tool as pkg
         self.assertTrue(hasattr(pkg, "run_attack"))
+
+    def test_ac21_no_deprecated_api_or_avoid_terms_in_package(self):
+        """AC-21：整包源码扫禁用 API 名与 `_Avoid_` 废弃术语（不只看报告字段）。"""
+        sys.path.insert(0, ROOT)
+        from scripts.check_glossary import parse_glossary  # noqa: E402
+        _, avoid = parse_glossary(os.path.join(ROOT, "GLOSSARY.md"))
+        for name in sorted(os.listdir(IMPL)):
+            if not name.endswith(".py"):
+                continue
+            with open(os.path.join(IMPL, name), encoding="utf-8") as f:
+                text = f.read()
+            for bad in ("pyrit.orchestrator", "Orchestrator(", "AzureOpenAIChatTarget",
+                        "XpiaAttack", "ConsoleAttackResultPrinter"):
+                with self.subTest(file=name, term=bad):
+                    self.assertNotIn(bad, text)
+            for term in avoid:
+                with self.subTest(file=name, term=term):
+                    self.assertNotIn(term, text)
 
     def test_ac18_cli_runs_single_step_offline(self):
         runtime = offline({("POST", "http://t.example/api/labs/MCP_01/chat"):

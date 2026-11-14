@@ -9,7 +9,7 @@
 """
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 # 效果等级：四值互斥，语义见规格 v2 AC-08
 LEVELS: Tuple[str, ...] = ("完全生效", "部分生效", "未生效", "已跳过")
@@ -19,13 +19,14 @@ SECRET_PATTERN = re.compile(r"sk-[A-Za-z0-9]{16,}")
 
 # 工具面解析：agent 会话文本中的工具声明（容忍加粗/表格/中英文标签）
 _IDENT = re.compile(r"[A-Za-z0-9_.\-]{2,}")
-_TOOL_NAME_RE = re.compile(r"(?:tool\s*name|工具名(?:称)?|tool)\s*:\s*([A-Za-z0-9_.\-]+)",
+_TOOL_NAME_RE = re.compile(r"(?:tool\s*name|工具名(?:称)?|tool)\s*[:：]\s*([A-Za-z0-9_.\-]+)",
                            re.IGNORECASE)
-_SCOPE_RE = re.compile(r"(?:required\s*scope|所需权限范围|所需权限|scope)\s*:\s*([^\s,|]+)",
+_SCOPE_RE = re.compile(r"(?:required\s*scope|所需权限范围|所需权限|scope)\s*[:：]\s*([^\s,|]+)",
                        re.IGNORECASE)
-_SERVER_RE = re.compile(r"(?:server\s*id|服务器\s*id|服务器)\s*:\s*([A-Za-z0-9_.\-]+)",
+_SERVER_RE = re.compile(r"(?:server\s*id|服务器\s*id|服务器)\s*[:：]\s*([A-Za-z0-9_.\-]+)",
                         re.IGNORECASE)
 _TABLE_SKIP = {"tool", "name", "tool name", "toolname", "---"}
+_TRUST_RE = re.compile(r"\b(trusted|untrusted|shadow)\b", re.IGNORECASE)
 
 
 def _deemph(text):
@@ -39,6 +40,7 @@ def parse_tool_entries(text):
     只抽取显式声明的字段，缺失即留空（不臆造），由调用方判定效果等级。
     """
     entries = []
+    pending_server = ""
     for raw in _deemph(text).splitlines():
         line = raw.strip()
         if not line:
@@ -55,6 +57,10 @@ def parse_tool_entries(text):
         if name:
             entries.append({"name": name})
         if not entries:
+            # 服务器声明可能出现在工具清单之前（父子结构），先暂存供后续条目继承
+            mv0 = _SERVER_RE.search(line)
+            if mv0:
+                pending_server = mv0.group(1)
             continue
         cur = entries[-1]
         ms = _SCOPE_RE.search(line)
@@ -63,6 +69,11 @@ def parse_tool_entries(text):
         mv = _SERVER_RE.search(line)
         if mv and "server" not in cur:
             cur["server"] = mv.group(1)
+        elif "server" not in cur and pending_server:
+            cur["server"] = pending_server
+        mt = _TRUST_RE.search(line)
+        if mt and "trust" not in cur:
+            cur["trust"] = mt.group(1).lower()
     return entries
 
 
@@ -149,12 +160,14 @@ class Signals:
     judge: bool = False
     capability_missing: bool = False
     consent_required: bool = False
+    capped_partial: bool = False   # 仅本地自证、目标侧未生效 → 最高只能判「部分生效」
     detail: str = ""
 
     def as_dict(self):
         return {"step_id": self.step_id, "deterministic": self.deterministic,
                 "judge": self.judge, "capability_missing": self.capability_missing,
-                "consent_required": self.consent_required, "detail": self.detail}
+                "consent_required": self.consent_required,
+                "capped_partial": self.capped_partial, "detail": self.detail}
 
 
 @dataclass(frozen=True)
@@ -248,7 +261,8 @@ def parse_surface_from_text(text, server_id="", trust=""):
     """
     entries = parse_tool_entries(text)
     tools = [ToolDescriptor(name=e["name"], server_id=e.get("server", server_id),
-                            scope=e.get("scope", ""), trust=trust) for e in entries]
+                            scope=e.get("scope", ""),
+                            trust=e.get("trust", trust)) for e in entries]
     return ToolSurface(tools=tuple(tools), source="agent-text")
 
 

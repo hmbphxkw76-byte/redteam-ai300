@@ -21,10 +21,7 @@ from .transport import HttpClient
 def api_base(target):
     """从任意入口 URL 推导 API 根（`/explore` 等 SPA 路径一律剥离）。"""
     parts = urlsplit(target if "://" in target else "http://" + target)
-    host = "%s://%s" % (parts.scheme, parts.netloc)
-    if parts.path.startswith("/api"):
-        return host + "/api"
-    return host + "/api"
+    return "%s://%s/api" % (parts.scheme, parts.netloc)
 
 
 def site_base(target):

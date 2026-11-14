@@ -92,11 +92,13 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(resp.status, 0)
 
     def test_urllib_client_handles_http_error_status(self):
-        resp = UrllibHttpClient().request("POST", "http://192.168.40.189/api/labs",
-                                          json_body={"x": 1}, timeout=5)
-        if resp.error:  # 目标不可达时跳过（环境相关，不制造假阴性）
-            self.skipTest("演练目标不可达：%s" % resp.error)
-        self.assertIn(resp.status, (404, 405, 422))
+        """4xx 仍返回响应体而非异常（本地 server 现场返回 404，零外网依赖）。"""
+        with poison.PoisonedMcpServer() as server:
+            base = server.url.rsplit("/mcp", 1)[0]
+            resp = UrllibHttpClient().request("GET", base + "/nope", timeout=5)
+        self.assertEqual(resp.status, 404)
+        self.assertIn("Not Found", resp.body)
+        self.assertFalse(resp.error)
 
 
 class ModelTests(unittest.TestCase):
@@ -132,6 +134,18 @@ class ModelTests(unittest.TestCase):
         self.assertTrue(model.has_admin_scope({}, {"t": "admin"}, "t"))
         self.assertFalse(model.has_admin_scope({"permissions_used": ["read"]}))
 
+    def test_parse_tool_entries_supports_chinese_nested_format(self):
+        """回归：目标用中文+全角冒号+父子缩进回答时，工具名/权限/服务器仍可解析。"""
+        text = ("- 服务器 ID：`main_server`\n"
+                "  - 工具名称：`get_config`\n"
+                "    - 所需权限范围：`read`\n"
+                "  - 工具名称：`get_token`\n"
+                "    - 所需权限范围：`read:token`\n")
+        entries = model.parse_tool_entries(text)
+        self.assertEqual([e["name"] for e in entries], ["get_config", "get_token"])
+        self.assertEqual(entries[0]["scope"], "read")
+        self.assertEqual(entries[0]["server"], "main_server")
+
     def test_parse_tool_entries_ignores_table_header(self):
         text = "| Tool Name | Scope |\n|---|---|\n| `run_command` | `write` |"
         entries = model.parse_tool_entries(text)
@@ -154,8 +168,7 @@ class ServerBranchTests(unittest.TestCase):
 
     def test_unknown_method_and_unknown_tool(self):
         with poison.PoisonedMcpServer() as server:
-            client = __import__("tools.attack_mcp_tool.transport",
-                                fromlist=["UrllibHttpClient"]).UrllibHttpClient()
+            client = UrllibHttpClient()
             from tools.attack_mcp_tool.mcp import JsonRpcMcpClient
             rpc = JsonRpcMcpClient(client, server.url)
             self.assertIn("协议错误", rpc.call_tool("no_such_tool").error)

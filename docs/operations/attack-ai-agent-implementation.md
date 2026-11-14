@@ -124,3 +124,26 @@
 - `AttackRequest.step` 字段仅作公开 API 数据完整性保留，runner 内以局部 `step` 过滤——无行为偏差。
 
 **结论**：`PASS`。阶段 10 可交付阶段 11（pr-push-review）。
+
+## 6. 阶段 11 `pr-push-review` 记录与 G0
+
+**交付物**：本节记录 + PR #110 + #83 评论摘要。复合阶段 = `pr`（PR 正文模板）+ `pre-push-review`（双轴语义评审与门禁复跑）+ 双通道推送与 PR 创建。
+
+### pre-push-review（门禁复跑，单轮即绿）
+
+| 编号 | 检查项 | 依据 | 实测结果（命令 + 输出摘要） | 判定 | 不符合项描述 | 修正要求 | 复验结果 | 结论 |
+|---|---|---|---|---|---|---|---|---|
+| G11-01 | B1 技能解剖 | B1 | `validate_skill` → `PASS：共校验 16 个技能` | 符合 | 无 | 无 | 符合 | PASS |
+| G11-02 | B2 术语一致 | B2 | `check_glossary` → `PASS（检查 18 个废弃术语）` | 符合 | 无 | 无 | 符合 | PASS |
+| G11-03 | B3 全量测试 | B3 | `unittest discover -s tests` → `Ran 62 tests ... OK` | 符合 | 无 | 无 | 符合 | PASS |
+| G11-04 | B6 覆盖率 | B6 | `measure_coverage.py --min 80` → 95.7%，退出码 0 | 符合 | 无 | 无 | 符合 | PASS |
+| G11-05 | py_compile（含新模块与测量脚本） | AC-24 | 退出码 0 | 符合 | 无 | 无 | 符合 | PASS |
+| G11-06 | 语义复核 | §2 矩阵 | 单缝/对象图/证据契约/效果分级与阶段 10 语义轴一致，无新增偏差 | 符合 | 无 | 无 | 符合 | PASS |
+
+### 推送与 PR
+
+- 双通道推送：`git push origin feat/attack-ai-agent-stage9-11`（SSH）一轮成功，无需 origin-https 兜底。
+- PR #110：正文按 PULL_REQUEST_TEMPLATE（变更摘要 / 纳管信息 D3·P0·AI向量机 / 实现要点 / 门禁记录 / 治理合规自检），`Closes #83 #105 #106 #107 #108 #109`。
+- CI 复核以 PR 运行为准（S1 + S2 于 PR 触发；S3/S4 仅 main）。
+
+**结论**：`PASS`。主线 11 阶段全部完成。

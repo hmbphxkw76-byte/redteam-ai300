@@ -6,13 +6,37 @@
   - `url`        目标页面直截（GET 面可代表）；
   - `transcript` 请求/响应转录页渲染（POST/JSON-RPC/SSE 面无法用 GET 截图代表），
                  页内含目标标识与时间戳，满足「访问证明」要求。
-浏览器路径发现复用 `tools/recon_ai/shot.py::find_browser`（C1：同一事实只存一份）。
+浏览器发现自带最小实现（AC-17：包内仅标准库）；清单与 `tools/recon_ai/shot.py` 同源。
 """
 import html
 import os
+import shutil
 import subprocess
 
-from tools.recon_ai.shot import find_browser
+# 浏览器路径清单：与 `tools/recon_ai/shot.py` 同源。此处刻意内联而非跨包导入，
+# 以满足 AC-17「包内仅标准库依赖」；两处清单如需扩充须同步（跨技能改进项）。
+CANDIDATES = (
+    r"C://Program Files (x86)//Microsoft//Edge//Application//msedge.exe",
+    r"C://Program Files//Microsoft//Edge//Application//msedge.exe",
+    r"C://Program Files//Google//Chrome//Application//chrome.exe",
+    "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser",
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+)
+
+
+def find_browser():
+    """定位无头浏览器；环境变量 `ATTACK_MCP_BROWSER` 优先。"""
+    env = os.environ.get("ATTACK_MCP_BROWSER")
+    if env and os.path.isfile(env):
+        return env
+    for path in CANDIDATES:
+        if os.path.isfile(path):
+            return path
+    for name in ("msedge", "chrome", "chromium", "google-chrome"):
+        found = shutil.which(name)
+        if found:
+            return found
+    return ""
 
 
 def render_transcript(command, response_text, url="", timestamp="", title=""):

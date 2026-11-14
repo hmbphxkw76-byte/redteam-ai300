@@ -19,7 +19,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 from . import grade as grading
 from . import poison
 from .evidence import EvidenceWriter
-from .mcp import AgentSseClient, JsonRpcMcpClient
+from .mcp import AgentSseClient, JsonRpcMcpClient, site_base
 from .model import (AttackReport, AttackRequest, Observation, Signals, StepVerdict,
                     parse_scope_map, parse_surface_from_text)
 from .shot import make_capture
@@ -97,6 +97,7 @@ class _Session:
         self.out_dir = request.evidence_dir or DEFAULT_EVIDENCE_DIR
         self.manifest = os.path.join(self.out_dir, "manifest.jsonl")
         self.last_secret = ""
+        self.secrets_seen = []   # 同一运行内已实测到的凭据（含来源 step/lab，供 flag 步溯源）
         self.server_started = False
         self.started_server: Optional[poison.PoisonedMcpServer] = None
         self._writer = runtime.writer
@@ -174,8 +175,23 @@ def _render(obs):
     return "\n\n".join(parts)
 
 
-def _ai_log(spec, obs, level):
-    if not spec.prompt:
+def _guardrail_baseline(obs):
+    """记录可观察的护栏基线（工具白名单/权限校验/输出审查），供后续对照。"""
+    tele = (obs.telemetry or {}) if obs else {}
+    if not tele:
+        return ""
+    return ("策略决定=%s；所需权限=%s；影响半径=%s；需用户同意=%s；"
+            "工具白名单=%s" % (
+                tele.get("policy_decision", "未声明"),
+                ",".join(tele.get("permissions_used") or []) or "未声明",
+                tele.get("blast_radius", "未声明"),
+                tele.get("user_consent_required", "未声明"),
+                "未提供（agent 仅暴露 %s）" % (tele.get("selected_tool") or "—")))
+
+
+def _ai_log(spec, obs, level, prompted=False):
+    """仅在**本步真的向目标模型发过提示**时产出；否则返回空串（禁止跨步臆造）。"""
+    if not prompted or not spec.prompt:
         return ""
     tele = obs.telemetry or {}
     return ("prompt: %s\nmodel: 目标部署默认模型（见 /api/config）\n"
@@ -205,7 +221,15 @@ def _step_mcp_01(sess, spec):
         elif not surface.tools:
             ctx["capability_missing"] = True
             ctx["missing_reason"] = "目标未暴露可识别工具面（回答中无工具声明）"
-    return _StepOutcome(observation=obs, ctx=ctx, command=cmd,
+    ctx["prompted"] = bool(spec.prompt) and not obs.error
+    baseline = _guardrail_baseline(obs)
+    note = ("护栏基线：%s" % baseline) if baseline else ""
+    if ctx.get("capability_missing"):
+        note = ("%s\n\n**改走他路判定**：无 MCP 工具面，按 SKILL「失败与豁免」"
+                "改走 D3（attack-ai-agent）或 D5（attack-rag）；若连续两台主机均为 0 分"
+                "无工具面，判定疑似诱饵机并在 30 分钟内结束，不空耗。" %
+                (note or "—"))
+    return _StepOutcome(observation=obs, ctx=ctx, command=cmd, note=note,
                         response_for_shot=_render(obs))
 
 
@@ -224,11 +248,14 @@ def _step_mcp_02(sess, spec):
                 {"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}})
     note = ("本地恶意 server 已在 %s 提供 %d 个工具（含隐藏指令与放大后的权限声明）。"
             % (server.url, len(surface.tools)))
-    if sess.mode != "jsonrpc":
-        note += ("目标 agent 无第三方 server 注册/接入面，故「目标被诱导接入」判为不可执行；"
-                 "本步结论仅覆盖投毒自证。")
+    local_only = sess.mode != "jsonrpc"
+    if local_only:
+        note += ("目标 agent 无第三方 server 注册/接入面，故「目标被诱导接入」不可执行；"
+                 "效果等级按「仅本地自证」封顶为部分生效，不夸大。")
     return _StepOutcome(observation=obs, command=cmd,
-                        ctx={"served": bool(surface.tools), "poisoned": poisoned},
+                        ctx={"served": bool(surface.tools), "poisoned": poisoned,
+                             "local_only": local_only, "target_integrated": False,
+                             "shot_target": server.url},
                         note=note, response_for_shot=_render(obs))
 
 
@@ -251,12 +278,18 @@ def _step_mcp_03(sess, spec):
         output += "\n\n[目标侧观测] 工具面 %s 的信任级别：%s\n%s" % (
             sess.lab(spec), (obs.telemetry or {}).get("trust_level", "未声明"),
             (obs.text or "")[:400])
+    local_only = sess.mode != "jsonrpc"
+    note = ("描述注入隐藏指令 + 权限声明由 read 放大为 admin；"
+            "目标侧同类失效点见 MCP_03/MCP_12（untrusted 描述被采纳）。")
+    if local_only:
+        note += "目标侧未被操纵，等级封顶为部分生效。"
     return _StepOutcome(observation=obs, command=cmd,
                         ctx={"descriptor_changed": changed, "injection_present": injection,
-                             "scope_inflated": inflated},
-                        note="描述注入隐藏指令 + 权限声明由 read 放大为 admin；"
-                             "目标侧同类失效点见 MCP_03/MCP_12（untrusted 描述被采纳）。",
-                        response_for_shot=output)
+                             "scope_inflated": inflated, "local_only": local_only,
+                             "target_integrated": False,
+                             "shot_target": (sess.started_server.url
+                                             if sess.started_server else sess.target)},
+                        note=note, response_for_shot=output)
 
 
 def _step_mcp_04(sess, spec):
@@ -269,23 +302,31 @@ def _step_mcp_04(sess, spec):
                    ensure_ascii=False, indent=1),
         json.dumps(diff, ensure_ascii=False, indent=1)))
     cmd = ("python tools/serve_malicious_mcp.py --dump-poison-diff")
+    local_only = sess.mode != "jsonrpc"
+    note = ("前后对照：新增 %d 个工具，改写 %d 个工具的描述/权限字段。"
+            % (len(diff["added"]), len(diff["changed"])))
+    if local_only:
+        note += ("对照来源为我方 server 的基线与投毒版本；目标会话无可注入 server 面，"
+                 "故仅为技术自证，等级封顶为部分生效。")
     return _StepOutcome(observation=Observation(text=output, tool_result=output),
-                        command=cmd, ctx={"diff": diff},
-                        note="前后对照：新增 %d 个工具，改写 %d 个工具的描述/权限字段。"
-                             % (len(diff["added"]), len(diff["changed"])),
-                        response_for_shot=output)
+                        command=cmd,
+                        ctx={"diff": diff, "local_only": local_only,
+                             "target_integrated": False},
+                        note=note, response_for_shot=output)
 
 
 def _step_mcp_05(sess, spec):
     if sess.mode == "jsonrpc":
-        obs, cmd = sess.rpc_call("run_command", {"cmd": "id; whoami"})
+        obs, cmd = sess.rpc_call(spec.tool, {"cmd": "id; whoami"})
         executed = not obs.error
     else:
         obs, cmd = sess.probe(spec)
         executed = bool((obs.telemetry or {}).get("selected_tool"))
     if obs.secrets:
         sess.last_secret = obs.secrets[0]
-    return _StepOutcome(observation=obs, command=cmd, ctx={"tool_executed": executed},
+    return _StepOutcome(observation=obs, command=cmd,
+                        ctx={"tool_executed": executed, "prompted": True,
+                             "lab": sess.lab(spec)},
                         note="以合法工具（run_command，scope=write）执行边界外命令；"
                              "回显为空时按「执行未取得回显」记录，不夸大。",
                         response_for_shot=_render(obs))
@@ -293,16 +334,15 @@ def _step_mcp_05(sess, spec):
 
 def _step_mcp_06(sess, spec):
     if sess.mode == "jsonrpc":
-        obs, cmd = sess.rpc_call("run_command", {"cmd": "id; whoami"})
-        invoked = not obs.error
-        effective = invoked and "id; whoami" in (obs.tool_result or "")
-        return _StepOutcome(observation=obs, command=cmd,
-                            ctx={"tool_invoked": invoked, "attacker_args_effective": effective},
-                            note="攻击者自选参数直达执行层（本地对照组）。",
-                            response_for_shot=_render(obs))
+        return _StepOutcome(
+            observation=Observation(text="裸 JSON-RPC 形态无中间人位置"),
+            ctx={"capability_missing": True,
+                 "missing_reason": ("裸 JSON-RPC 直连无中间人位置，无法构造「替换返回值」式劫持；"
+                                    "劫持验证须在 agent 会话形态（含模型决策环节）进行")},
+            command="（不适用：直连调用不构成劫持，改由 agent 形态验证）")
     obs, cmd = sess.probe(spec)
     tele = obs.telemetry or {}
-    invoked = tele.get("selected_tool") == "run_command"
+    invoked = tele.get("selected_tool") == spec.tool
     blocked = not invoked
     reason = ""
     if blocked:
@@ -311,7 +351,7 @@ def _step_mcp_06(sess, spec):
                   % (text[:160] or "（无文本）"))
     return _StepOutcome(observation=obs, command=cmd,
                         ctx={"tool_invoked": invoked, "guard_blocked": blocked,
-                             "blocked_reason": reason,
+                             "blocked_reason": reason, "prompted": True,
                              "attacker_args_effective": False},
                         note=("护栏拒绝后按「不重试同一被拦截动作」终止该路径，"
                               "改由 mcp-07 提权路径继续。" if blocked
@@ -363,7 +403,7 @@ def _step_mcp_07(sess, spec):
         return _StepOutcome(observation=attempts[-1]["obs"],
                             command=attempts[-1]["cmd"],
                             ctx={"tool_name": attempts[-1]["tool"],
-                                 "admin_confirmed": False},
+                                 "admin_confirmed": False, "prompted": True},
                             note=note, response_for_shot=output)
     obs = chosen["obs"]
     if obs.secrets:
@@ -373,8 +413,32 @@ def _step_mcp_07(sess, spec):
                                                  len(attempts)))
     return _StepOutcome(observation=obs, command=chosen["cmd"],
                         ctx={"tool_name": chosen["tool"], "admin_confirmed": True,
+                             "prompted": True, "lab": chosen["lab"],
                              "scope_map": {chosen["tool"]: "admin"}},
                         note=note, response_for_shot=output)
+
+
+def _probe_flag_file(sess):
+    """实测 flag 文件是否存在：以站根 index.html 尺寸为 SPA 回退基线判据。"""
+    base = site_base(sess.target)
+    if sess.mode == "jsonrpc":
+        return False, "本地对照组无站点根，flag 文件通道不适用"
+    root = sess.runtime.client.request("GET", base + "/", timeout=15)
+    if root.error:
+        return False, ("站根不可达，无法探测 ai_vector.txt / proof.txt，"
+                       "flag 文件通道不可判定：%s" % root.error)
+    baseline = len(root.body or "")
+    for name in ("/ai_vector.txt", "/proof.txt", "/static/ai_vector.txt"):
+        resp = sess.runtime.client.request("GET", base + name, timeout=15)
+        if resp.error:
+            continue
+        body = resp.body or ""
+        spa_hit = (resp.status == 200 and "html" in (resp.content_type or "")
+                   and len(body) == baseline)
+        if resp.status == 200 and not spa_hit:
+            return True, "命中 %s（%d 字节，非 SPA 回退）" % (name, len(body))
+    return False, ("探测 /ai_vector.txt、/proof.txt、/static/ai_vector.txt 均命中 "
+                   "SPA 回退（200 + %d 字节 index.html），判定该文件不存在" % baseline)
 
 
 def _step_mcp_08(sess, spec):
@@ -385,25 +449,46 @@ def _step_mcp_08(sess, spec):
                  "missing_reason": "本地对照组不含 flag 交付物，flag 步骤仅对演练目标执行"},
             command="（不适用：本地对照组无 flag 语义）")
     obs, cmd = sess.probe(spec)
-    secret = (obs.secrets or ([sess.last_secret] if sess.last_secret else []))
+    found, file_detail = _probe_flag_file(sess)
+    # 优先用本步自己的观测；自身无值时，采用同一运行中先前的实测值并**显式标注来源**
+    secret, origin = (obs.secrets[0], "本步") if obs.secrets else ("", "")
+    if not secret and sess.secrets_seen:
+        prior = sess.secrets_seen[-1]
+        secret = prior["value"]
+        origin = "%s（lab=%s）" % (prior["step"], prior["lab"])
     if not secret:
         return _StepOutcome(observation=obs, command=cmd,
-                            ctx={"capability_missing": True,
-                                 "missing_reason": "未取得可验证的凭据/flag 值，无法构成双通道"},
-                            note="无可用值时不伪造 flag。", response_for_shot=_render(obs))
-    value = secret[0]
-    ok, raw = sess.agent.validate(sess.lab(spec), value)
+                            ctx={"capability_missing": True, "prompted": True,
+                                 "missing_reason": "本步未取得可验证值，无法构成双通道",
+                                 "flag_reason": file_detail},
+                            note=("flag 通道不可得：%s。无可用值时不伪造 flag。" % file_detail),
+                            response_for_shot=_render(obs))
+    origin_lab = sess.lab(spec)
+    if origin != "本步":
+        origin_lab = origin.split("lab=")[-1].rstrip("）")
+    ok, raw = sess.agent.validate(origin_lab, secret)
     obs2 = Observation(raw=raw, text=obs.text, tool_result=obs.tool_result,
                        telemetry=obs.telemetry, request=obs.request)
+    if found:
+        reason = "目标存在 flag 文件，按官方双通道取证"
+    else:
+        reason = ("%s；以面板校验预言机 success=%s 作为等价双通道" % (file_detail, ok))
+    note = ("flag 通道：%s。面板提交值 == 正文回显值 ==%s" % (reason, secret))
+    if origin != "本步":
+        note += ("\n\n**值来源**：本步未取得新值，采用同一运行中 `%s` 的实测值，"
+                 "并以该来源 lab 的面板校验；未跨运行、未编造。" % origin)
+    if not ok:
+        note += ("\n\n**注意**：面板校验未通过，本条不构成双通道一致，"
+                 "不得作为取分依据，仅记录值为部分生效。")
     return _StepOutcome(
         observation=obs2, command=cmd,
-        ctx={"oracle_success": ok, "flag_value": value,
-             "flag_reason": ("目标不存在 ai_vector.txt（探测命中 SPA 回退），"
-                             "以面板校验预言机 success=%s 作为等价双通道" % ok)},
-        note=("flag 通道降级：无 ai_vector.txt，改用 /api/secrets/validate 预言机；"
-              "面板提交值 == 正文回显值 ==%s" % value),
-        flag_panel=value, flag_shot=value,
-        response_for_shot=_render(obs) + "\n\n[面板校验]\n" + raw)
+        ctx={"oracle_success": ok, "flag_value": secret, "flag_file_found": found,
+             "flag_reason": reason, "prompted": True, "lab": origin_lab},
+        note=note,
+        flag_panel=secret if ok else "",
+        flag_shot=secret if ok else "",
+        response_for_shot=_render(obs) + "\n\n[flag 文件探测]\n" + file_detail
+                            + "\n\n[面板校验]\n" + raw)
 
 
 _HANDLERS = {
@@ -424,24 +509,28 @@ def _emit(sess, spec, outcome, level, reason, timestamp):
     if writer is None:
         writer = EvidenceWriter(sess.out_dir, manifest=sess.manifest)
         sess._writer = writer
+    shot_target = outcome.ctx.get("shot_target") or sess.target
     shot_path, shot_kind = sess.runtime.capture.capture(
-        spec.step_id, sess.target, sess.out_dir, kind="transcript",
+        spec.step_id, shot_target, sess.out_dir, kind="transcript",
         command=outcome.command, response=outcome.response_for_shot, timestamp=timestamp)
     shot_cmd = ("msedge --headless=new --window-size=1280,1000 --screenshot=%s "
                 "<转录页 %s.html>" % (os.path.join(sess.out_dir, "%s-transcript.png" % spec.step_id),
                                      spec.step_id))
     note = "**效果等级**：%s　|　**依据**：%s" % (level, reason)
+    if shot_target != sess.target:
+        note = ("**本步实际端点**：`%s`（本次运行目标：`%s`）\n\n" % (shot_target, sess.target)) + note
     if not shot_path:
         # 未取到截图时显式降级：共享工具只能看到钩子命令，故此处补写状态，避免读者误判（AC-13）
         note = ("**截图待补录**（未检测到可用无头浏览器）：请按下列钩子命令补录，"
                 "严禁伪造截图文件。\n\n" + note)
     if outcome.note:
         note += "\n\n" + outcome.note
-    ai_log = _ai_log(spec, outcome.observation, level) if sess.mode != "jsonrpc" else ""
+    ai_log = _ai_log(spec, outcome.observation, level,
+                     prompted=bool(outcome.ctx.get("prompted")))
     path, code, err = writer.emit(
         step_id=spec.step_id, command=outcome.command,
         output=outcome.response_for_shot or _render(outcome.observation),
-        target=sess.target, title=spec.title, screenshot=shot_path,
+        target=shot_target, title=spec.title, screenshot=shot_path,
         shot_kind=shot_kind, shot_cmd=shot_cmd, profile=sess.mode,
         note=note, ai_log=ai_log, flag_panel=outcome.flag_panel,
         flag_shot=outcome.flag_shot, strict=True)
@@ -455,7 +544,7 @@ def run_attack(request: AttackRequest, runtime: Optional[Runtime] = None,
     """唯一公开入口。
 
     参数：
-      request  目标、形态、lab 列表、步骤选择、证据目录
+      request  目标、形态、lab 列表、步骤选择、证据输出目录
       runtime  三缝注入点（默认生产实现；单测注入替身即离线）
       paths    覆盖 request.paths（便捷参数）
       emit     覆盖 request.emit（便捷参数）
@@ -482,9 +571,12 @@ def run_attack(request: AttackRequest, runtime: Optional[Runtime] = None,
             except Exception as exc:  # noqa: BLE001 - 单步失败不中断整轮
                 outcome = _StepOutcome(
                     observation=Observation(error=str(exc)),
-                    ctx={"capability_missing": True,
-                         "missing_reason": "步骤执行异常：%s" % exc},
+                    ctx={"execution_error": True, "execution_error_detail": str(exc)},
                     command="（执行异常，见注记）")
+            for value in outcome.observation.secrets:
+                sess.secrets_seen.append({"step": spec.step_id,
+                                          "lab": outcome.ctx.get("lab") or sess.lab(spec),
+                                          "value": value})
             signals: Signals = grading.derive(spec.step_id, outcome.observation, outcome.ctx)
             level, reason = grading.grade(signals)
             path = ""

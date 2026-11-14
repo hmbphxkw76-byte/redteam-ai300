@@ -106,7 +106,7 @@ python tools/recon_ai/cli.py run --target http://192.168.40.189 --lab MM_04 \
 5. **环境边界**：本验证针对 AIVP 演练实例，其资产构成不外推为 OSAI 考试环境事实（见调研文档 §1）。
 6. **阶段 10 复审后的行为变更**：输出经凭据脱敏（`<REDACTED>`）后才入证据；时间盒为运行时到期即中止（不再仅记常量）；探测级存在性三值独立于类别级判定；凭据线索由 `set-cookie` 压缩为指纹。上述均已在本次重跑中生效。
 7. **判定文案重复包裹修正（v1.3）**：`probes.judge_guardrail` 的 `behavior` 已含「护栏」语义，`product` 又包一层「护栏（%s）」，产出 `护栏（护栏放行原样回显）`。现 `behavior` 改为 `放行原样回显`/`拒答`/`改写/截断`，产品名归一为 `护栏（放行原样回显）`。
-8. **报告侧截图形态（v1.4 修正）**：正文按 `report_exam/sections.py` 的契约以 `![]()` 内嵌（7/7），不再以文件名文字引用——文字引用在 PDF 中即为无图，属 §6.1 不可豁免项。图片地址为 `report/assets/<file>.png`：预览器按「工作区根 + 原文 src」解析，`../evidence/...` 曾被解析成 `D:/文档/GitHub/evidence/...` 而报 `Failed to load image`；且 `evidence/` 在 `.gitignore` 中，直接引用会使克隆者看到空图。`report/assets/` 为 `evidence/recon-ai/shots/` 的逐字节镜像（`diff` 校验相等），随仓库提交。
+8. **报告侧截图形态（v1.7 回退）**：正文按 `report_exam/sections.py` 的契约以 `![]()` 内嵌（7/7），不再以文件名文字引用——文字引用在 PDF 中即为无图，属 §6.1 不可豁免项。图片内联引用须写 `assets/<file>.png`（相对报告文件所在目录 `report/`），**不可写 `report/assets/<file>.png`**：预览器与 pandoc 均按「报告文件目录 + 原文 src」解析，后者会被解析成 `report/report/assets/...` 这类不存在路径而报 `Failed to load image`；`../evidence/...` 同样越级不可用。`evidence/` 在 `.gitignore` 中，直接引用会使克隆者看到空图；因此将截图**逐字节镜像**至 `report/assets/`（内联引用写 `assets/`），随仓库提交。`report/assets/` 是 `evidence/recon-ai/shots/` 原始截图（1280×900）的**逐字节镜像**，二者哈希一致（自检 `ASSETS_MATCH` 校验；附录 E 哈希同 `MANIFEST.jsonl`）。注：v1.6 曾将截图下采样至宽 800px 以减小显示尺寸，但文本截图缩放后清晰度明显下降，已回退至原始 1280×900 高清像素。
 9. **AI 交互日志归属修正**：首版实现对 `recon-03/04/05/06` 亦输出了复用 `recon-02` 的交互留痕，属跨步错归属（会把他人步骤的模型交互计入本步判定依据）。已改为仅「真的发送了提示」的步骤产出，并新增回归用例 `test_ai_log_only_for_steps_that_prompt_the_model`；本版证据为该修复后的重跑结果。
 
 ---

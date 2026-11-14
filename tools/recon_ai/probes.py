@@ -276,13 +276,13 @@ def judge_guardrail(results, ctx):
     sse = parse_sse(chat.body)
     notes, behavior = [], ""
     if ECHO_MARKER in sse.text:
-        behavior = "护栏放行原样回显"
+        behavior = "放行原样回显"
         notes.append("无害回显探针被原样返回（%s）" % ECHO_MARKER)
     elif re.search(r"(can't|cannot|unable|抱歉|无法|拒绝)", sse.text, re.I):
-        behavior = "护栏拒答"
+        behavior = "拒答"
         notes.append("无害回显探针被拒答")
     else:
-        behavior = "护栏改写/截断"
+        behavior = "改写/截断"
         notes.append("响应未原样回显，疑经改写或截断")
     missing = missing_security_headers(headers)
     if missing:

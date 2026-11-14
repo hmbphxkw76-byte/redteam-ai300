@@ -1,6 +1,6 @@
 # recon-ai 端到端验证结果与证据清单
 
-> **版本** v1.2 · **验证日期** 2026-11-14 22:24（GMT+8）· **修订** 修复 AI 交互日志跨步错归属后重跑（仅 `recon-02`/`recon-07` 保留交互留痕）
+> **版本** v1.3 · **验证日期** 2026-11-14 22:41–22:42（GMT+8）· **修订** 修正 `recon-07` 判定文案重复包裹（`护栏（护栏放行原样回显）` → `护栏（放行原样回显）`）后重跑；报告侧改为正文内嵌截图
 > **目标** `http://192.168.40.189`（OWASP AIVP 演练实例，非 OSAI 正式考试环境）
 > **性质** 阶段 8/9 验收留痕：执行 → 取证 → 结果产出 的闭环证据
 > **产物位置** `evidence/recon-ai/`（`.gitignore` 排除，可由第 8 节一条命令完整重建）
@@ -44,7 +44,7 @@ python tools/recon_ai/cli.py run --target http://192.168.40.189 --lab MM_04 \
 | recon-04 | **不可判定** | 不可判定 | 被动面无独立向量库端口证据；「未发现」不等于「不存在」，需 `--profile active` | `recon-04.md` | `recon-04-url.png`（url） |
 | recon-05 | 存在 | agent 编排面（推断，框架不可判定） | 实验面 422 暴露 `request_id` 语义 + 遥测端点 200 | `recon-05.md` | `recon-05-url.png`（url） |
 | recon-06 | 存在 | 凭据校验预言机（MCP 信任边界面） | 失败语义为 **HTTP 200** + `{"success":false}`（禁以状态码判失败） | `recon-06.md` | `recon-06-transcript.png` |
-| recon-07 | 存在 | 护栏（护栏放行原样回显） | 无害回显 `RECON-PROBE-OK` 原样返回；6 项安全响应头全缺；`control_mode=off` | `recon-07.md` | `recon-07-transcript.png` |
+| recon-07 | 存在 | 护栏（放行原样回显） | 无害回显 `RECON-PROBE-OK` 原样返回；6 项安全响应头全缺；`control_mode=off` | `recon-07.md` | `recon-07-transcript.png` |
 
 ---
 
@@ -68,13 +68,13 @@ python tools/recon_ai/cli.py run --target http://192.168.40.189 --lab MM_04 \
 
 | step_id | 时间戳 | 输出 sha256（前 16） | 截图 sha256（前 12） | 截图类型 | 三件套 |
 |---|---|---|---|---|---|
-| recon-01 | 22:24:19 | `b199edf0ab34f306` | `ca501313a881` | url | 齐全 |
-| recon-02 | 22:24:23 | `b2351e1730b18b79` | `e88b5b2ffaed` | transcript | 齐全 |
-| recon-03 | 22:24:31 | `efbd15a7acf72dd2` | `95ff51068bef` | url | 齐全 |
-| recon-04 | 22:24:39 | `7f4a083709669f0b` | `6ab9c85162c0` | url | 齐全 |
-| recon-05 | 22:24:47 | `d21a34d3f2f566d7` | `6ab9c85162c0` | url | 齐全 |
-| recon-06 | 22:24:49 | `0a77187e814fbe2c` | `7d97885185e0` | transcript | 齐全 |
-| recon-07 | 22:24:51 | `0c5daf1e1eac02df` | `210a9331a14a` | transcript | 齐全 |
+| recon-01 | 22:41:42 | `b199edf0ab34f306` | `ca501313a881` | url | 齐全 |
+| recon-02 | 22:41:48 | `f4df9d212ceb55b7` | `c7f1a9e49b8b` | transcript | 齐全 |
+| recon-03 | 22:41:57 | `efbd15a7acf72dd2` | `ea29965b9ac1` | url | 齐全 |
+| recon-04 | 22:42:05 | `7f4a083709669f0b` | `6ab9c85162c0` | url | 齐全 |
+| recon-05 | 22:42:14 | `d21a34d3f2f566d7` | `6ab9c85162c0` | url | 齐全 |
+| recon-06 | 22:42:15 | `0a77187e814fbe2c` | `7d97885185e0` | transcript | 齐全 |
+| recon-07 | 22:42:17 | `0c5daf1e1eac02df` | `210a9331a14a` | transcript | 齐全 |
 
 > **复核提示**：`recon-04` 与 `recon-05` 的截图哈希相同，属预期——两个 summary 端点返回**逐字节相同**的 422 schema（`{"detail":[{"type":"missing","loc":["query","request_id"],...}]}`），不是重复落盘。复核时以 sha256 比对 `recon-04-url.png` / `recon-05-url.png` 与 `curl` 原文即可确认。
 
@@ -105,7 +105,9 @@ python tools/recon_ai/cli.py run --target http://192.168.40.189 --lab MM_04 \
 4. **覆盖率**：`tools/recon_ai` 行覆盖 90.2%（门槛 80%）；未覆盖集中在 `shot.py` 的浏览器失败分支与 `runner` 的极端 IO 分支。
 5. **环境边界**：本验证针对 AIVP 演练实例，其资产构成不外推为 OSAI 考试环境事实（见调研文档 §1）。
 6. **阶段 10 复审后的行为变更**：输出经凭据脱敏（`<REDACTED>`）后才入证据；时间盒为运行时到期即中止（不再仅记常量）；探测级存在性三值独立于类别级判定；凭据线索由 `set-cookie` 压缩为指纹。上述均已在本次重跑中生效。
-7. **AI 交互日志归属修正**：首版实现对 `recon-03/04/05/06` 亦输出了复用 `recon-02` 的交互留痕，属跨步错归属（会把他人步骤的模型交互计入本步判定依据）。已改为仅「真的发送了提示」的步骤产出，并新增回归用例 `test_ai_log_only_for_steps_that_prompt_the_model`；本版证据为该修复后的重跑结果。
+7. **判定文案重复包裹修正（v1.3）**：`probes.judge_guardrail` 的 `behavior` 已含「护栏」语义，`product` 又包一层「护栏（%s）」，产出 `护栏（护栏放行原样回显）`。现 `behavior` 改为 `放行原样回显`/`拒答`/`改写/截断`，产品名归一为 `护栏（放行原样回显）`。
+8. **报告侧截图形态**：正文按 `report_exam/sections.py` 的契约以 `![]()` 内嵌（7/7，相对报告文件解析），不再以文件名文字引用——文字引用在 PDF 中即为无图，属 §6.1「每个阶段必须有截图」不可豁免项。既有复审 `report/evidence-review-20261114.md` 的 C-06/R-01 已就此给出同一判据。
+9. **AI 交互日志归属修正**：首版实现对 `recon-03/04/05/06` 亦输出了复用 `recon-02` 的交互留痕，属跨步错归属（会把他人步骤的模型交互计入本步判定依据）。已改为仅「真的发送了提示」的步骤产出，并新增回归用例 `test_ai_log_only_for_steps_that_prompt_the_model`；本版证据为该修复后的重跑结果。
 
 ---
 

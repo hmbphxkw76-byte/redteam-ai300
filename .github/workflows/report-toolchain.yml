@@ -52,30 +52,30 @@ jobs:
           EV="$RUNNER_TEMP/attack-ai-agent-real"
           mkdir -p "$EV"
           cat > "$EV/aia-01.md" <<'FRAG'
-### 步骤 aia-01：CI 工具链夹具
+          ### 步骤 aia-01：CI 工具链夹具
 
-> **目标**：`standalone`
+          > **目标**：`standalone`
 
-#### 确切命令
+          #### 确切命令
 
-```bash
-id
-```
+          ```bash
+          id
+          ```
 
-#### 关键输出
+          #### 关键输出
 
-```text
-uid=0(root)
-```
+          ```text
+          uid=0(root)
+          ```
 
-#### 截图（访问证明）
+          #### 截图（访问证明）
 
-![aia-01](shots/aia-01.png)
+          ![aia-01](shots/aia-01.png)
 
-#### AI 交互日志
+          #### AI 交互日志
 
-prompt: CI smoke fixture
-FRAG
+          prompt: CI smoke fixture
+          FRAG
           echo "CI fixture ready: $EV/aia-01.md"
 
       - name: 真实构建 PDF / .7z（演练，仅写 RUNNER_TEMP）

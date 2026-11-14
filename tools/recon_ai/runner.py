@@ -278,12 +278,13 @@ def _ai_log(spec, results, ctx):
 
     仅对「向目标 AI 系统发送提示」的步骤产出；无提示交互时返回空串。
     """
-    posts = [r for r in results if r.method == "POST"]
-    if not posts and ctx.get("reuse_chat") is not None:
+    # 仅对「真的向目标模型发送了提示」的步骤产出；否则不臆造交互留痕（§6.3 真实性）
+    posts = [r for r in results
+             if r.method == "POST" and (r.request_body or {}).get("prompt")]
+    reused_from = ""
+    if not posts and spec.reuse and ctx.get("reuse_chat") is not None:
         posts = [ctx["reuse_chat"]]
-        reused_from = "（复用 %s 的响应）" % (spec.reuse or "-")
-    else:
-        reused_from = ""
+        reused_from = "（复用 %s 的响应）" % spec.reuse
     if not posts:
         return ""
     result = posts[0]

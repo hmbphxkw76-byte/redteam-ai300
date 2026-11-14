@@ -238,6 +238,20 @@ class InventoryContractTests(unittest.TestCase):
 class EvidenceQualityTests(unittest.TestCase):
     """AC-16..AC-20：证据三件套、脚本来源、flag 双通道、清单、严格模式。"""
 
+    def test_ai_log_only_for_steps_that_prompt_the_model(self):
+        """§6.3 真实性：未发送提示的步骤不得出现 AI 交互日志（禁止跨步错归属）。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            report = run_fake(tmp)
+            for path in report.evidence_paths:
+                name = os.path.basename(path)
+                with open(path, encoding="utf-8") as f:
+                    text = f.read()
+                has_log = "#### AI 交互日志" in text
+                if name in ("recon-02.md", "recon-07.md"):
+                    self.assertTrue(has_log, "%s 应记录模型交互" % name)
+                else:
+                    self.assertFalse(has_log, "%s 未发送提示，不得臆造 AI 交互日志" % name)
+
     def test_ac16_fragments_have_three_required_sections(self):
         with tempfile.TemporaryDirectory() as tmp:
             report = run_fake(tmp)

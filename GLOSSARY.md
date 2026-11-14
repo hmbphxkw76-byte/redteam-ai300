@@ -59,6 +59,42 @@ _Avoid_: rabbit hole、蜜罐
 **Embedding**:
 嵌入向量，可经反演/信息提取泄露敏感数据。
 
+## PyRIT 实现层
+
+本仓库以 PyRIT 为 AI 红队攻击的实现框架（版本锁定 `pyrit==1.1.0`，见 ADR-0004）。下列术语为 PyRIT v1.1.0 原生对象在本文档中的规范称谓；来源统一为 PyRIT 官方文档 `microsoft.github.io/PyRIT/1.1.0/` 与 `docs/research/pyrit-canonical-references.md`。
+
+**攻击策略 (attack strategy)**:
+PyRIT v1.1.0 中封装单一攻击手法的可复用组件（位于 `pyrit.executor.attack` 的 `*Attack` 类，如 `PromptSendingAttack`、`RedTeamingAttack`、`XpiaAttack`），接收目标与评分配置后产出攻击结果。
+_Avoid_: 攻击编排器（v1.1.0 前称 orchestrator，已弃用）
+
+**执行器 (AttackExecutor)**:
+PyRIT 中驱动并执行一个攻击策略的运行时组件（`AttackExecutor().execute_attack_async`），负责编排策略、目标、转换器与评分器的协同。
+_Avoid_: 攻击执行器
+
+**目标 (Target)**:
+PyRIT 中接收提示并返回模型响应的 endpoint 抽象（如 `OpenAIChatTarget`、`HTTPTarget`），是攻击策略发力的对象。
+_Avoid_: 靶机、靶标（指红队计分主机，非 PyRIT Target）
+
+**转换器 (Converter)**:
+PyRIT 中对提示做编码/混淆/格式变换的组件（经 `AttackConverterConfig` 配置链式组合），用于绕过护栏或构造载荷。
+_Avoid_: 转译器、转换器链
+
+**评分器 (Scorer)**:
+PyRIT 中判定攻击是否生效的组件（如 `SelfAskTrueFalseScorer`、`SubStringScorer`），提供线索或决定性证据。
+_Avoid_: 评判器、评测器
+
+**记忆 (Memory)**:
+PyRIT 中跨步骤或跨会话暂存对话与状态的存储后端（如文件型 SQLite 持久后端、`IN_MEMORY` 临时后端），用于记忆滥用类攻击的跨会话验证。
+_Avoid_: 记忆库、记忆体
+
+**对象图 (object graph)**:
+一次攻击在代码中的装配形态 = 攻击策略 + 目标 + 转换器 + 评分器 + 记忆 的组合实例，由单一公开入口在运行时构造。
+_Avoid_: 装配图
+
+**证据片段 (evidence fragment)**:
+一次攻击步骤经 `collect_evidence.py` 落盘的原子证据单元（含三件套、AI 交互日志、flag 双通道记录），是评分与复核的基本单位。
+_Avoid_: 证据切片
+
 ## 工程治理
 
 **能力域 (capability domain)**:

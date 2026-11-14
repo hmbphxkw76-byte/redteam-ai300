@@ -20,22 +20,31 @@
 
 ## 3. v1.1.0 破坏性重构要点（影响所有实现）
 
+> **一手源核实**：以下内容已于 2026-11-14 逐条对照官方文档 v1.1.0 API Reference，详见 `pyrit-v110-api-verification.md`。经核实被推翻的旧结论已移除。
+
 - 删除 `pyrit.orchestrator`；编排器更名为 `pyrit.executor.attack` 下的**攻击策略**（`*Attack`）：
-  `PromptSendingAttack`、`RedTeamingAttack`、`CrescendoAttack`、`XpiaAttack`、`PAIRAttack`、`TAPAttack`、`TreeOfAttacksWithPruningAttack`、`FuzzerAttack`。
-- `AzureOpenAIChatTarget` 与 `OpenAIChatTarget` 合并为单一 `OpenAIChatTarget`（`pyrit.prompt_target`）。
-- 执行器：`AttackExecutor`（`execute_attack_async` / `execute_single_turn_attacks_async`）。
-- 配置对象（均位于 `pyrit.executor.attack`）：`AttackConverterConfig`、`AttackAdversarialConfig`、`AttackScoringConfig`。
-- 转换器：`pyrit.converter`（可链式组合）。
-- 评分器：`pyrit.score`（`SelfAskTrueFalseScorer`、`SelfAskLikertScorer`、`SelfAskRefusalScorer`、`SubStringScorer`、`AzureContentFilterScorer`、`InsecureCodeScorer`）。
-- 记忆：`pyrit.memory`（SQLite 默认，可换 Postgres/Azure SQL 后端）。
-- 初始化：`from pyrit.setup import IN_MEMORY, initialize_pyrit_async`；`await initialize_pyrit_async(memory_db_type=IN_MEMORY)`。
+  `PromptSendingAttack`、`RedTeamingAttack`、`CrescendoAttack`、`PAIRAttack`、`TreeOfAttacksWithPruningAttack` 等。
+  **注意**：`XpiaAttack` 不存在于 v1.1.0；间接注入（XPIA）由 `pyrit.executor.workflow` 的 `XPIATestWorkflow` / `XPIAWorkflow` 承担。
+- `AzureOpenAIChatTarget` 与 `OpenAIChatTarget` 合并为单一 `OpenAIChatTarget`（`pyrit.prompt_target`）；`HTTPTarget` 与 `get_http_target_json_response_callback_function` 同模块。
+- 执行器：`AttackExecutor(max_concurrency=1)`，批量方法为 `execute_attack_async(attack=..., objectives=...)`。**无** `execute_single_turn_attacks_async`。
+- 配置对象（均位于 `pyrit.executor.attack`）：`AttackConverterConfig`、`AttackAdversarialConfig`、`AttackScoringConfig`、`RTASystemPromptPaths`。
+- 转换器：`pyrit.converter`，已核实子类 `Base64Converter`、`LeetspeakConverter`、`TranslationConverter`、`ROT13Converter`。
+- 评分器：`pyrit.score`（`SelfAskTrueFalseScorer` + `TrueFalseQuestion`、`SelfAskLikertScorer`、`SelfAskRefusalScorer`、`SubStringScorer` 等）。
+- 记忆：`pyrit.memory`，后端类 `SQLiteMemory`（支持文件型与内存型）、`AzureSQLMemory`，接口 `MemoryInterface`，单例 `CentralMemory`。
+- 初始化：`initialize_pyrit_async(memory_db_type=...)`；`memory_db_type` 取值 `InMemory` / `SQLite` / `AzureSQL`（`MemoryDatabaseType` 字符串字面量）。
+- 结果导出：`PrettyAttackResultMemoryPrinter`（`pyrit.output.attack_result.pretty`），方法 `write_async(result)`。**无** `ConsoleAttackResultPrinter`。
+- 工具面 / MCP：v1.1.0 `pyrit.executor.attack` 无专用攻击策略，以 `HTTPTarget` + 回调对接，并标注与 `attack-mcp-tool`（D7）的衔接点。
 
-## 4. 待核实项（每次 research 若涉及，优先向官方 1.1.0 文档确认）
+## 4. 核实闸状态（2026-11-14 一手源取证后）
 
-1. `pyrit.converter` 在 1.1 的具体子类名（ROT13 / Base64 / Translation 等是否沿用）。
-2. `pyrit.memory` 后端抽象与类名（SQLite / Postgres / Azure SQL 后端类）。
-3. `XpiaAttack` 的精确导入路径与入参（间接注入的关键策略）。
-4. 工具面 / MCP（`attack-mcp-tool` / D7）在 1.1 核心是否提供专用攻击策略；若无，以 `HTTPTarget` + 自定义 target 对接，并标注与 backlog 中 `attack-mcp-tool` 的衔接点。
+已关闭（原 `[需核实]` 项）：converter 子类名、`pyrit.memory` 后端类、`XPIA` 归属、结果打印机、`memory_db_type` 取值、MCP 专用策略。
+
+仍为**带取证方式的核实闸**（实现前在已安装 `pyrit==1.1.0` 的环境确认，不阻塞其余路径）：
+
+1. `pyrit.setup` 是否导出 `IN_MEMORY` / `SQLITE` 常量（官方首页示例用 `IN_MEMORY`，API 页未列）；已核实替代：`memory_db_type="SQLite"` 字符串字面量。
+2. `XPIATestWorkflow` 的 `processing_callback` 与 `attack_content` 具体类型形态（参数名已核实）。
+3. `SelfAskTrueFalseScorer` / `TrueFalseQuestion` 构造参数精确类型（类名已核实）。
+4. `SQLiteMemory` 的 `db_path` 与 `CentralMemory.set_memory_instance` 跨会话复用细节（类名与 `db_path` 参数已核实）。
 
 ## 5. 关联文档
 

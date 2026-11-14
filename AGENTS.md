@@ -4,6 +4,10 @@ AI 编码智能体在本仓库工作的约定入口。工程技能（`to-tickets
 
 ## Agent skills
 
+### Mainline workflow
+
+每份 `skills/*/SKILL.md` 的主线落地：先读 `docs/operations/skill-mainline-workflow.md`（唯一可信源），按其中 11 阶段顺序自动推进并逐阶段过 G0 门禁。
+
 ### Issue tracker
 
 工作项以 GitHub Issue 形式存于 `hmbphxkw76-byte/redteam-ai300`，经 `gh` CLI 读写。见 `docs/operations/issue-tracker.md`。

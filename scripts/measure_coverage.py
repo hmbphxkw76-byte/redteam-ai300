@@ -51,6 +51,19 @@ def recon_ai_targets():
     return mods, ("tests.test_recon_ai", "tests.test_recon_ai_units")
 
 
+def attack_mcp_tool_targets():
+    """attack-mcp-tool 业务代码集合（阶段 9 / AC-20 覆盖率目标）。"""
+    import importlib
+    names = ("model", "transport", "mcp", "poison", "grade", "evidence",
+             "shot", "steps", "runner", "cli")
+    mods = tuple(importlib.import_module("tools.attack_mcp_tool." + n) for n in names)
+    return mods, ("tests.test_attack_mcp_tool_runner",
+                  "tests.test_attack_mcp_tool_poison",
+                  "tests.test_attack_mcp_tool_flag",
+                  "tests.test_attack_mcp_tool_units",
+                  "tests.test_attack_mcp_tool_evidence_contract")
+
+
 def resolve_target(mode):
     if mode == "attack-ai-agent":
         return list(AA_MODULES), list(AA_TESTS)
@@ -59,11 +72,14 @@ def resolve_target(mode):
         return list(mods), list(tests)
     if mode == "recon-ai":
         return list(recon_ai_targets()[0]), list(recon_ai_targets()[1])
+    if mode == "attack-mcp-tool":
+        return list(attack_mcp_tool_targets()[0]), list(attack_mcp_tool_targets()[1])
     if mode == "all":
         mods, tests = report_exam_targets()
         ra_mods, ra_tests = recon_ai_targets()
-        return (list(AA_MODULES) + list(mods) + list(ra_mods),
-                list(AA_TESTS) + list(tests) + list(ra_tests))
+        am_mods, am_tests = attack_mcp_tool_targets()
+        return (list(AA_MODULES) + list(mods) + list(ra_mods) + list(am_mods),
+                list(AA_TESTS) + list(tests) + list(ra_tests) + list(am_tests))
     raise ValueError("未知 --target：%s" % mode)
 
 
@@ -135,7 +151,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="标准库行覆盖率测量")
     ap.add_argument("--min", type=float, default=0.0, help="覆盖率门槛（百分比）")
     ap.add_argument("--target", default="attack-ai-agent",
-                    choices=("attack-ai-agent", "report-exam", "recon-ai", "all"),
+                    choices=("attack-ai-agent", "report-exam", "recon-ai",
+                             "attack-mcp-tool", "all"),
                     help="被测业务代码集合（默认 attack-ai-agent，兼容既有 CI）")
     args = ap.parse_args(argv)
 

@@ -40,7 +40,7 @@ jobs:
           printf '%s' "$PR_BODY" > /tmp/osai_pr_body.md
           python scripts/check_token_budget.py --artifact pr-body /tmp/osai_pr_body.md
       - name: 共享工具与新模块语法编译 (S1)
-        run: python -m py_compile tools/collect_evidence.py tools/recon_ai/*.py tools/verify_evidence.py tools/attack_ai_agent/*.py report_exam/*.py scripts/*.py
+        run: python -m py_compile tools/collect_evidence.py tools/recon_ai/*.py tools/verify_evidence.py tools/attack_ai_agent/*.py tools/attack_mcp_tool/*.py tools/serve_malicious_mcp.py report_exam/*.py scripts/*.py
 
   tests:
     name: 自动化测试 (S2)

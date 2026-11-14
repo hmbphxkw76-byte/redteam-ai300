@@ -56,6 +56,7 @@ MIN_DUP_CHARS = 240  # 小于此长度的段落不计入重复块，避免模板
 # 冷备文档：默认不随会话加载，仅在迁移 / 审计 / 取证时按路径按需读取（AGENTS.md C3）。
 COLD_GLOBS = (
     "docs/standards/cross-ide-mainline-workflow.md",
+    "docs/standards/prompts/*.md",  # 11 阶段独立提示词：按 C3 单文件按需取用（README §1）
     "docs/skill-specs-backlog.md",
     "docs/operations/pyrit-implementation-workflow.md",
     "docs/operations/attack-ai-agent-implementation.md",

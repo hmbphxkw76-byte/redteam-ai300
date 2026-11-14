@@ -1,9 +1,11 @@
 # 技能线提示词 backlog（/to-spec 就绪）
 
-> 依据 GOVERNANCE.md §4.4 生成。下列为**尚未落地**的技能线提示词，按优先级 **P0 → P1 → P2** 排序，
+> 依据 GOVERNANCE.md §4.4 生成。下列曾为**尚未落地**的技能线提示词，按优先级 **P0 → P1 → P2** 排序，
 > 每份均为自包含规格，可直接作为 `/to-spec` 的输入（单开一条消息发送即可）。
 >
-> **已落地、不在下表**：`recon-ai`（#22）、`attack-ai-agent`、`attack-rag`（#16）、`attack-mcp-tool`（#28）、`foothold-traditional`（#35）、`loot-manage`（#42）、`report-exam`（#47）。
+> **状态（2026-11-14 更新）：backlog 全部实例化完成**——13 项待办技能均已走通 `to-spec → to-tickets → implement-spec`，SKILL.md 合并 main 且 CI（S1+S2）全绿。GOVERNANCE §4.4 登记的 16 个技能现已全部落地。
+>
+> **已落地、不在下表**：`recon-ai`（#22）、`attack-ai-agent`、`attack-rag`（#16）、`attack-mcp-tool`（#28）、`foothold-traditional`（#35）、`loot-manage`（#42）、`report-exam`（#47）、`verify-evidence`（#55）、`attack-embeddings`（#62）、`attack-multi-agent`（#69）、`attack-supply-chain`（#76）、`attack-infra`（#84）、`threat-model`（#89）、`decoy-detect`（#94）、`capstone-rehearse`（#99）、`tooling-automate`（#104）。
 >
 > **共享工具已完成**：`tools/collect_evidence.py`（P0 / 计分单元：通用）已存在并满足 §质量门
 > 五件套（确切命令 / 关键输出 / 截图 / AI 交互日志 / flag 双通道一致），CI 门禁

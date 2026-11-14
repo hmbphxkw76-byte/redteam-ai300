@@ -27,7 +27,7 @@ jobs:
       - name: 术语一致性校验
         run: python scripts/check_glossary.py
       - name: 共享工具与新模块语法编译 (S1)
-        run: python -m py_compile tools/collect_evidence.py tools/attack_ai_agent/*.py
+        run: python -m py_compile tools/collect_evidence.py tools/attack_ai_agent/*.py report_exam/*.py scripts/*.py
 
   tests:
     name: 自动化测试 (S2)
@@ -40,6 +40,8 @@ jobs:
           python-version: "3.11"
       - name: 运行测试
         run: python -m unittest discover -s tests -q
+      - name: 行覆盖率门禁 (S2, ≥80%)
+        run: python scripts/measure_coverage.py --target all --min 80
 
   build:
     name: 构建 (S3)

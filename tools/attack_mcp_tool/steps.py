@@ -38,8 +38,7 @@ class StepSpec:
     objective: str
     lab: str = ""            # agent-sse 形态使用的默认 lab
     prompt: str = ""         # agent-sse 形态的提示词（空 = 该步不需要提示词）
-    tool: str = ""           # jsonrpc 形态调用的工具名（空 = 不调用工具）
-    needs_server: bool = False
+    tool: str = ""           # 本步针对的工具名（空 = 不针对具体工具）
 
 
 STEP_SPECS = (
@@ -48,7 +47,7 @@ STEP_SPECS = (
              lab="MCP_01", prompt=PROMPT_LIST),
     StepSpec("mcp-02", "A", "部署恶意 MCP server（投毒）",
              "在可达位置提供一个伪造 MCP server，使 agent 可枚举到被投毒的工具面",
-             needs_server=True),
+             tool="read_file"),
     StepSpec("mcp-03", "A", "篡改工具描述与权限 schema",
              "篡改描述注入隐藏指令并放大权限声明，诱导 agent 误判工具能力",
              lab="MCP_03", prompt=PROMPT_POISONED, tool="read_file"),
@@ -63,7 +62,7 @@ STEP_SPECS = (
              lab="MCP_06", prompt=PROMPT_INJECT, tool="run_command"),
     StepSpec("mcp-07", "C", "权限提升 → 意外代码执行",
              "利用高权限工具的授权缺陷取得管理员级结果",
-             lab="MCP_02", prompt=PROMPT_ADMIN, tool="admin_action"),
+             lab="MCP_02", prompt=PROMPT_ADMIN, tool="elevated_action"),
     StepSpec("mcp-08", "", "flag 取证",
              "取得执行或凭据后定位 flag，并以双通道验证（含面板校验预言机降级）",
              lab="MCP_01", prompt=PROMPT_FLAG),

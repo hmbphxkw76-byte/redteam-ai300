@@ -34,7 +34,7 @@ class EvidenceWriter:
     def emit(self, step_id, command, output, target="", title="",
              screenshot="", shot_kind="", shot_cmd="", profile="",
              script="", script_src="", script_note="", strict=True,
-             note="", ai_log=""):
+             note="", ai_log="", flag_panel="", flag_shot=""):
         """写一份证据片段；返回 (片段路径, 退出码, 标准错误摘要)。
 
         退出码语义沿用共享工具：0 成功；1 严格模式未过质量门；2 用法错误。
@@ -62,6 +62,12 @@ class EvidenceWriter:
             cmd += ["--note", note]
         if ai_log:
             cmd += ["--ai-log", ai_log]
+        # flag 双通道（§6.2）：共享工具已支持 --flag-panel/--flag-shot，
+        # 此处补齐透传，供 attack-mcp-tool 等下游技能复用同一适配层（C1）。
+        if flag_panel:
+            cmd += ["--flag-panel", flag_panel]
+        if flag_shot:
+            cmd += ["--flag-shot", flag_shot]
         if self.manifest:
             cmd += ["--manifest", self.manifest]
         if strict:

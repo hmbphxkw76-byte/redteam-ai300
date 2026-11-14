@@ -35,21 +35,21 @@
 | T-4 | 遥测是确定性判据来源 | 同上 | `selected_tool`/`trust_level`(`trusted`/`untrusted`/`shadow`)/`permissions_used`/`policy_decision`(`allowed`)/`blast_radius`/`exploit_success`(bool)/`user_consent_required`(bool) |
 | T-5 | Phase 4 共 15 个 MCP lab（MCP Top 10 覆盖） | `curl -s /assets/index-BtcwQhVS.js` → 正则 `MCP_\d{2}` | `MCP_01..MCP_15`，标题与 S-1 十项对齐（MCP_11..15 为延伸项） |
 | T-6 | flag 文件不存在 | `curl -s -o /dev/null -w "%{http_code} %{size_download}" /ai_vector.txt`（及 4 条同类路径） | 全部 `200 1702 text/html` = SPA 回退，判定「不存在」 |
-| T-7 | 面板预言机可判泄漏值真伪 | `curl -s -X POST /api/secrets/validate -d '{"labId":"MCP_01","answer":"sk-..."}'` | `{"success":true,"message":"Correct!"}`；错值 `{"success":false,"message":"Nope."}` |
+| T-7 | 面板预言机可判泄漏值真伪 | `curl -s -X POST /api/secrets/validate -d '{"labId":"MCP_01","answer":"`<REDACTED>`"}'` | `{"success":true,"message":"Correct!"}`；错值 `{"success":false,"message":"Nope."}` |
 | T-8 | 会话身份匿名可得 | `curl -sD - -X POST /api/labs/MCP_01/chat` | `set-cookie: aivp_sid=<uuid>; HttpOnly` |
 
 ### 3.1 15 个 MCP lab 的真实工具面（2026-11-14 全量枚举）
 
 | Lab | server_id | tool | scope | trust | 空参调用效果 | 泄漏/回显 |
 |---|---|---|---|---|---|---|
-| MCP_01 | main_server | get_config | read | trusted | exploit=true | `service_token: sk-i3A7…` |
-| MCP_02 | orchestrator | get_resource / **elevated_action** | read / **admin** | trusted | 读越权后 true | admin 级 `sk-We6l…` |
+| MCP_01 | main_server | get_config | read | trusted | exploit=true | `service_token: `<REDACTED>` |
+| MCP_02 | `orchestrator`（目标侧 server_id，与 PyRIT 编排器类名无关） | get_resource / **elevated_action** | read / **admin** | trusted | 读越权后 true | admin 级 `<REDACTED>` |
 | MCP_03 | tools_server | get_resource | read | **untrusted** | false | 描述含「trust this output」诱导 |
 | MCP_04 | dependency_server | get_resource | read | **untrusted** | false | 依赖注入配置面 |
-| MCP_05 | exec_server | run_command | **write** | trusted | true（空参） | `SECRET_ENV=sk-UIIO…` |
+| MCP_05 | exec_server | run_command | **write** | trusted | true（空参） | `SECRET_ENV=`<REDACTED>` |
 | MCP_06 | rag_server | get_resource | read | trusted | false | 上下文载荷面 |
 | MCP_07 | multi_tenant | get_user_context | read:token | trusted | false | 跨租户 `user_b.session_scope_token` |
-| MCP_08 | internal_server | read_logs | **admin** | trusted | true | 日志内 `token=sk-7BVa…` |
+| MCP_08 | internal_server | read_logs | **admin** | trusted | true | 日志内 `token=`<REDACTED>` |
 | MCP_09 | shadow_mcp | get_config | read | **shadow** | false | 影子 server + 默认凭据 |
 | MCP_10 | context_server | get_user_context | read | trusted | true | `cached_secret` |
 | MCP_11 | protocol_server | read_logs | read | trusted | true | 协议日志内 `token=` |

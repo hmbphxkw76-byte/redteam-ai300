@@ -122,5 +122,53 @@ class EvidenceContractTests(unittest.TestCase):
         self.assertEqual(records[0]["step_id"], "mcp-08")
 
 
+class AllStepsEvidenceTests(unittest.TestCase):
+    """AC-12 全量：八步都必须经共享工具落盘且四节齐全、strict 退出码 0。"""
+
+    def test_all_eight_steps_emit_complete_fragments(self):
+        default = HttpResponse(status=200, content_type="text/event-stream",
+                               body=sse(tool_result="", telemetry={}, chunks=["no tools"]))
+        routes = dict(routes_for())
+        routes[("GET", "http://t.example/")] = HttpResponse(
+            status=200, content_type="text/html", body="<html></html>")
+        for name in ("/ai_vector.txt", "/proof.txt", "/static/ai_vector.txt"):
+            routes[("GET", "http://t.example" + name)] = HttpResponse(
+                status=200, content_type="text/html", body="<html></html>")
+        with tempfile.TemporaryDirectory() as tmp:
+            writer = EvidenceWriter(tmp, manifest=os.path.join(tmp, "manifest.jsonl"))
+            runtime = Runtime(client=FakeHttpClient(routes, default=default),
+                              writer=writer, capture=NullCapture())
+            report = run_attack(AttackRequest(target="http://t.example"), runtime)
+            self.assertEqual(len(report.verdicts), 8)
+            for verdict in report.verdicts:
+                with open(verdict.evidence_path, encoding="utf-8") as f:
+                    text = f.read()
+                with self.subTest(step=verdict.step_id):
+                    self.assertIn("#### 确切命令", text)
+                    self.assertIn("#### 关键输出", text)
+                    self.assertIn("#### 截图（访问证明）", text)
+            records = load_manifest(os.path.join(tmp, "manifest.jsonl"))
+        self.assertEqual(len(records), 8)
+        self.assertTrue(all(r["complete"] for r in records))
+
+    def test_ai_log_only_for_steps_that_prompt_the_model(self):
+        """§6.3 真实性：未向目标发提示的步骤不得出现 AI 交互日志（防跨步臆造）。"""
+        default = HttpResponse(status=200, content_type="text/event-stream",
+                               body=sse(tool_result="", telemetry={}))
+        routes = {("GET", "http://t.example/"): HttpResponse(
+            status=200, content_type="text/html", body="<html></html>")}
+        with tempfile.TemporaryDirectory() as tmp:
+            writer = RecordingWriter()
+            runtime = Runtime(client=FakeHttpClient(routes, default=default),
+                              writer=writer, capture=NullCapture())
+            run_attack(AttackRequest(target="http://t.example"), runtime)
+        prompted = {c["step_id"]: bool(c["ai_log"]) for c in writer.calls}
+        for step_id in ("mcp-02", "mcp-04"):
+            self.assertFalse(prompted[step_id],
+                             "%s 未发送提示，不得臆造 AI 交互日志" % step_id)
+        for step_id in ("mcp-01", "mcp-05", "mcp-07", "mcp-08"):
+            self.assertTrue(prompted[step_id], "%s 应记录模型交互" % step_id)
+
+
 if __name__ == "__main__":
     unittest.main()

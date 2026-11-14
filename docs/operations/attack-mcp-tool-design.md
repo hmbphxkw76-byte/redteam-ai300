@@ -8,29 +8,32 @@
 1. **一个公开入口 + 三缝**：`run_attack()` 是唯一对外入口；三缝为传输（`HttpClient`）、证据写入（`EvidenceWriter`）、截图（`ShotCapture`）。缝数与阶段 2 确认结论一致，未新增第四缝。
 2. **两种形态在同一缝内分派**：裸 JSON-RPC 与 agent 会话形态都是「HTTP 请求 + 文本响应」，由 `mcp.py` 的两个客户端解释同一 `HttpClient` 的响应，步骤契约不变。
 3. **定级是纯函数**：`grade.py` 不依赖传输、不依赖网络、不导入模型框架；输入是已解析的观测值 + 步骤期望，输出是 `(level, reason)`。
-4. **投毒自证走本地 server 对象**：`PoisonedMcpServer` 是可启停的资源对象，不被 `run_attack` 隐式启动，由调用方或 CLI 显式启动，避免隐式网络副作用。
+4. **投毒自证走本地 server 对象**：`PoisonedMcpServer` 是可启停的资源对象。`run_attack` 在 `mcp-02/03` 需要时**按需启动**（仅回环、幂等、运行结束即关闭），也可由 `tools/serve_malicious_mcp.py` 独立启动供人工对照；两处不并存监听。
 
 ## 2. 模块职责与依赖方向
 
 ```
 cli.py ──▶ runner.py ──▶ steps.py
-                  ├──▶ mcp.py ────▶ transport.py ──▶ model.py
+                  ├──▶ mcp.py ────▶ transport.py
+                  │        └─────▶ model.py
                   ├──▶ poison.py ─▶ model.py
                   ├──▶ grade.py ──▶ model.py
                   ├──▶ evidence.py
-                  └──▶ shot.py
+                  └──▶ shot.py（复用 recon_ai.shot.find_browser）
 ```
+
+`transport.py` 不依赖 `model.py`；`mcp.py` 同时依赖两者。
 
 依赖方向单向，无环。`model.py` 与 `transport.py` 为叶节点，不依赖包内其它模块。
 
 | 模块 | 职责（单一） | 对外接口 | 错误行为 |
 |---|---|---|---|
-| `model.py` | 值对象与常量（工具描述、工具面、差分、观测、信号、报告数据） | 数据类构造器；`LEVELS`；秘密值正则 | 构造非法值抛 `ValueError` |
+| `model.py` | 值对象与常量（工具描述、工具面、差分、观测、信号、报告数据） | 数据类；`LEVELS`；`find_secrets`/`redact`/`has_admin_scope`/`parse_tool_entries` | 构造非法值抛 `ValueError` |
 | `transport.py` | 唯一网络出口 | `HttpClient.request(method, url, json_body, timeout) → HttpResponse` | 网络失败返回 `HttpResponse.error` 非空，**不抛** |
 | `mcp.py` | 协议解释：SSE 解析、JSON-RPC 客户端、agent 会话客户端 | `parse_sse(text) → list[Event]`；`JsonRpcMcpClient.list_tools()/call_tool(name,args)`；`AgentSseClient.probe(lab,prompt) → Turn` | 协议不符返回结构化失败并带原因串，不抛 |
 | `poison.py` | 投毒能力：基线/投毒工具面构造、差分、可启停本地 server | `baseline_surface()`；`poisoned_surface()`；`diff_surfaces(a,b)`；`PoisonedMcpServer(host,port).start()/stop()/url` | 端口占用抛 `OSError`（由调用方记录为「不可用」） |
-| `grade.py` | 定级纯函数与判据 | `grade(signals) → (level, reason)`；`find_secrets(text)`；`has_admin_scope(telemetry)` | 输入缺失 → `已跳过` + 依据，不抛 |
-| `steps.py` | 步骤契约（标识、标题、目标、命令模板、截图钩子） | `STEP_IDS`、`STEP_SPECS`、`steps_for_paths(paths)`、`build_command(step_id,target,mode)` | 未知标识抛 `ValueError` |
+| `grade.py` | 定级纯函数与判据 | `grade(signals) → (level, reason)`；`derive(step_id, observation, ctx) → Signals` | 输入缺失 → `已跳过` + 依据，不抛 |
+| `steps.py` | 步骤契约（标识、标题、目标、默认 lab 与提示词） | `STEP_IDS`、`STEP_SPECS`、`STEP_BY_ID`、`steps_for_paths(paths, step)` | 未知标识抛 `ValueError` |
 | `evidence.py` | 委托共享证据工具写入片段与清单 | `EvidenceWriter.emit(...) → (path, code, err)` | 非 0 退出码原样返回，由 `runner` 决定是否失败 |
 | `shot.py` | 截图缝的薄适配：复用既有渲染与无头截图实现 | `make_capture(enabled)`；`capture(...)` | 无浏览器返回空路径（降级「待补录」），不伪造 |
 | `runner.py` | 编排：按步骤执行 → 定级 → 落盘 → 汇总报告 | `run_attack(request, runtime=None) → AttackReport` | 单步异常收敛为「未生效/已跳过」并记原因，不中断整轮 |
@@ -42,7 +45,7 @@ cli.py ──▶ runner.py ──▶ steps.py
 
 - **输入** `AttackRequest`：`target`、`mode`（`agent-sse` / `jsonrpc`）、`labs`、`paths`、`step`（空串=全量）、`evidence_dir`、`emit`。
 - **输入** `Runtime`（注入点集合，全部有默认实现）：`client`（HttpClient）、`writer`（证据）、`capture`（截图）、`prompt_for`（按步骤给提示词的可调用对象，默认内置）。
-- **输出** `AttackReport`：`verdicts`（每步 `step_id`/`path`/`level`/`reason`/`command`/`observation`/`evidence_path`）、`object_graph`、`manifest`、`backend`。
+- **输出** `AttackReport`：`verdicts`（每步 `step_id`/`path`/`level`/`reason`/`command`/`observation`/`evidence_path`）、`object_graph`、`backend`。证据清单由 `evidence.EvidenceWriter` 直接写 JSONL，不挂在报告对象上。
 - **错误行为**：未知 `step` → `ValueError`；单一目标不可达 → 该步「已跳过」；证据严格模式失败 → 抛出带片段路径的 `RuntimeError`（证据链断裂不得静默）。
 
 ### 3.2 形态分派（不新增缝）

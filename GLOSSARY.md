@@ -64,8 +64,12 @@ _Avoid_: rabbit hole、蜜罐
 本仓库以 PyRIT 为 AI 红队攻击的实现框架（版本锁定 `pyrit==1.1.0`，见 ADR-0004）。下列术语为 PyRIT v1.1.0 原生对象在本文档中的规范称谓；来源统一为 PyRIT 官方文档 `microsoft.github.io/PyRIT/1.1.0/` 与 `docs/research/pyrit-canonical-references.md`。
 
 **攻击策略 (attack strategy)**:
-PyRIT v1.1.0 中封装单一攻击手法的可复用组件（位于 `pyrit.executor.attack` 的 `*Attack` 类，如 `PromptSendingAttack`、`RedTeamingAttack`、`XpiaAttack`），接收目标与评分配置后产出攻击结果。
+PyRIT v1.1.0 中封装单一攻击手法的可复用组件（位于 `pyrit.executor.attack` 的 `*Attack` 类，如 `PromptSendingAttack`、`RedTeamingAttack`），接收目标与评分配置后产出攻击结果。
 _Avoid_: 攻击编排器（v1.1.0 前称 orchestrator，已弃用）
+
+**XPIA 工作流 (XPIA workflow)**:
+PyRIT v1.1.0 中承担间接提示注入（跨域提示注入）的工作流策略，位于 `pyrit.executor.workflow`（`XPIATestWorkflow` / `XPIAWorkflow`），由投放目标、摄取目标与评分器协同；**不是** `*Attack` 攻击策略。来源：`microsoft.github.io/PyRIT/1.1.0/api/pyrit-executor-workflow`。`XpiaAttack` 在 v1.1.0 不存在，属已排除名称。
+_Avoid_: 跨域注入攻击策略、间接注入编排器
 
 **执行器 (AttackExecutor)**:
 PyRIT 中驱动并执行一个攻击策略的运行时组件（`AttackExecutor().execute_attack_async`），负责编排策略、目标、转换器与评分器的协同。
@@ -84,7 +88,7 @@ PyRIT 中判定攻击是否生效的组件（如 `SelfAskTrueFalseScorer`、`Sub
 _Avoid_: 评判器、评测器
 
 **记忆 (Memory)**:
-PyRIT 中跨步骤或跨会话暂存对话与状态的存储后端（如文件型 SQLite 持久后端、`IN_MEMORY` 临时后端），用于记忆滥用类攻击的跨会话验证。
+PyRIT 中跨步骤或跨会话暂存对话与状态的存储后端（`pyrit.memory` 的 `SQLiteMemory` 文件型 / 内存型、`AzureSQLMemory`），经 `initialize_pyrit_async(memory_db_type=...)` 选择 `InMemory` / `SQLite` / `AzureSQL`；跨会话验证须用 `SQLite` 文件型后端。
 _Avoid_: 记忆库、记忆体
 
 **对象图 (object graph)**:

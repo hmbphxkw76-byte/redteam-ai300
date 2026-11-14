@@ -1,0 +1,5 @@
+# attack-ai-agent 的 PyRIT 原生实现依赖（CI-CD §3 S2 登记）
+# 版本锁定依据：ADR-0004 + docs/research/pyrit-canonical-references.md
+# 注意：CI S1/S2 不安装本文件；实现采用延迟导入 + 标准库假后端，保持零依赖（ADR-0003）。
+# 测试框架：标准库 unittest（零外部依赖），运行 `python -m unittest discover -s tests -q`。
+pyrit==1.1.0

@@ -49,10 +49,17 @@ class FakePyRITModules:
     NAMES = ("pyrit", "pyrit.prompt_target", "pyrit.score",
              "pyrit.executor", "pyrit.executor.attack",
              "pyrit.executor.workflow", "pyrit.converter",
-             "pyrit.prompt_normalizer", "pyrit.setup", "pyrit.memory")
+             "pyrit.prompt_normalizer", "pyrit.setup",
+             "pyrit.setup.initialization", "pyrit.memory")
+    # 双模型命名空间占位值（仅用于延迟导入契约测试，不连真实端点）
+    ENV_KEYS = ("OPENAI_CHAT_KEY", "OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_MODEL",
+                "OPENAI_SCORER_KEY", "OPENAI_SCORER_ENDPOINT", "OPENAI_SCORER_MODEL")
 
     def __enter__(self):
         self.saved = {n: sys.modules.get(n) for n in self.NAMES}
+        self.saved_env = {k: os.environ.get(k) for k in self.ENV_KEYS}
+        for k in self.ENV_KEYS:
+            os.environ.setdefault(k, "stub-value")
         target = _module("pyrit.prompt_target",
                          OpenAIChatTarget=_Stub, HTTPTarget=_Stub,
                          get_http_target_json_response_callback_function=lambda key: key)
@@ -70,6 +77,14 @@ class FakePyRITModules:
         workflow = _module("pyrit.executor.workflow", XPIATestWorkflow=_Stub,
                            XPIAWorkflow=_Stub)
         pkg = _module("pyrit")
+        setup = _module("pyrit.setup")
+        setup.__path__ = []  # 标为 package，使 `from pyrit.setup.initialization import ...` 可解析
+
+        async def _initialize_pyrit_async(**kwargs):
+            return None
+
+        initialization = _module("pyrit.setup.initialization",
+                                 initialize_pyrit_async=_initialize_pyrit_async)
         sys.modules.update({
             "pyrit": pkg, "pyrit.prompt_target": target, "pyrit.score": score,
             "pyrit.executor": _module("pyrit.executor"),
@@ -77,7 +92,8 @@ class FakePyRITModules:
             "pyrit.executor.workflow": workflow,
             "pyrit.converter": _module("pyrit.converter"),
             "pyrit.prompt_normalizer": _module("pyrit.prompt_normalizer"),
-            "pyrit.setup": _module("pyrit.setup"),
+            "pyrit.setup": setup,
+            "pyrit.setup.initialization": initialization,
             "pyrit.memory": _module("pyrit.memory"),
         })
         return self
@@ -88,13 +104,22 @@ class FakePyRITModules:
                 sys.modules.pop(name, None)
             else:
                 sys.modules[name] = value
+        for k, v in self.saved_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
 
 
 class AdapterTests(unittest.TestCase):
     def test_lazy_imports_use_official_modules(self):
         with FakePyRITModules():
             backend = RealPyRITBackend({"response_key": "answer"})
-            self.assertEqual(backend.describe(), "pyrit-1.1.0")
+            # 双模型命名空间（2026-11-14）：断言完整公开字符串
+            self.assertEqual(
+                backend.describe(),
+                "pyrit-1.1.0 (dual-model: attack=OPENAI_CHAT_*, "
+                "scorer=OPENAI_SCORER_*)")
             self.assertIsNotNone(backend.make_target("objective"))
             self.assertIsNotNone(backend.make_target("scorer"))
             self.assertIsNotNone(backend.make_target("tool"))

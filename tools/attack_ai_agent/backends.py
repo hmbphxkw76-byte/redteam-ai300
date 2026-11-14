@@ -297,6 +297,18 @@ class RealPyRITBackend:
 
         返回 TargetResponse（外部行为）；异常按「失败与豁免」记录，不抛未捕获异常。
         """
+        # 前置守卫：真实执行需要 pyrit==1.1.0 与目标端点；缺失时给出明确诊断，
+        # 而不是把 ModuleNotFoundError / KeyError 泄漏给调用方（失败与豁免）。
+        try:
+            import pyrit  # noqa: F401  (延迟导入契约：顶层不得导入 pyrit)
+        except ImportError as exc:
+            raise RuntimeError(
+                "真实执行需要 pyrit==1.1.0，当前环境未安装：%s" % exc) from exc
+        if not (all(os.environ.get(k) for k in ATTACK_ENV)
+                or str(self.target_config).find("http") >= 0):
+            raise RuntimeError(
+                "真实执行需要目标端点（OPENAI_CHAT_ENDPOINT 或 target_config 中的 http 目标主机）")
+
         import asyncio
         from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
         from pyrit.score import SubStringScorer, ContentScorable

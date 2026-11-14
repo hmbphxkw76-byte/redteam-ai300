@@ -4,7 +4,6 @@
 
 以下为两个代表步骤（知识库投毒、检索操纵前后对照）的采集结果。命令与输出均为**示例**，仅用于验证证据链路与 CI 校验兼容性，不引入真实攻击逻辑；真实场景中 `--screenshot` 应指向实际落盘的访问证明截图（本演示以 `--shot-cmd` 记录捕获钩子）。
 
-
 ### 步骤 rag-01：知识库投毒：注入带指令的恶意文档
 
 > **目标**：`rag-host/vector-db`　|　**时间戳**：`2026-11-13T21:45:19+08:00`　|　**证据片段**（collect_evidence.py）
@@ -22,7 +21,6 @@ HTTP/1.1 200 OK {"status":"indexed","doc_id":"mal-0001","collection":"kb"}
 ```
 
 #### 截图（访问证明）
-
 
 > 截图捕获钩子：`screenshot-tool --target rag-host/vector-db --out evidence/rag-01-poison.png`（由操作者执行后落盘）
 
@@ -55,7 +53,6 @@ curl -s http://<RAG_QUERY>/search?q="%E9%87%8D%E7%BD%AE%E5%AF%86%E7%A0%81%E6%B5%
 ```
 
 #### 截图（访问证明）
-
 
 > 截图捕获钩子：`screenshot-tool --target rag-host/retriever --out evidence/rag-02-retrieval.png`（由操作者执行后落盘）
 

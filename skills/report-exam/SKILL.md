@@ -70,11 +70,13 @@ Table of Contents                              (official，须含 "Offsec AI Red
 # Recommendations                              (extension)
 # Reproducibility                              (extension；S1 强制 copy/paste 复现的集中说明)
 # Appendix                                     (official)
-  A. Scripts & PoC                             (official：长 PoC 代码 / 来源链接 / 修改说明)
-  D. AI Session / Prompt History               (official：AI 会话与 prompt 全文)
-  E. Screenshot Index                          (official：补充截图索引)
+  A. Scripts & PoC                             (extension：长 PoC 代码 / 来源链接 / 修改说明；S1 未编号)
+  D. AI Session / Prompt History               (extension：AI 会话与 prompt 全文；S1 未编号)
+  E. Screenshot Index                          (extension：补充截图索引；S1 未编号)
   B / C / F / G / H                            (extension)
 ```
+
+> **T05 修正**：S1 的 `# Appendix` 为一段无编号说明，A/D/E 属仓库 (extension)，非官方逐字要求（canonical F-1.7 / 快照 §10）；改标不得删减——§6.3、§7.1 仍强制 AI 会话与截图入附录。
 
 **章节验收（§7.1）**：四章齐全（Introduction/Objective/Requirements → Executive Summary → Attack Walkthrough → Appendix）；Executive Summary 含 High-Level Attack Path；每台计分目标有独立小节；域控在 Chain 1 与 Chain 2 **两处**均有记录；诱饵机记为"确认不可利用"。
 
@@ -142,7 +144,7 @@ Table of Contents                              (official，须含 "Offsec AI Red
 
 ---
 
-## 5. 双语双版策略（适配补充，源自 failed-projects `offsec-report`）
+## 5. 双版策略（适配补充，源自 failed-projects `offsec-report`）
 
 failed-projects `offsec-report` 采用 **ZH 内部版 + EN 官方版** 双版。本仓库工作语言为中文、提交语言为英文，故适配为：
 
@@ -208,7 +210,7 @@ failed-projects `offsec-report` 采用 **ZH 内部版 + EN 官方版** 双版。
 - 证据片段引用无损：正文命令/输出与 `collect_evidence.py` 片段逐字一致（§3.2）。
 - 与 `verify-evidence` 衔接：其输出（通过/阻断 + 缺失项清单）为提交前置（§7.3）。
 - 术语符合 `GLOSSARY.md`（用「攻击链」「独立主机」「域控」「AI向量机」「传统向量机」「诱饵机」，禁用 `_Avoid_` 废弃术语）。
-- 双语一致：EN/ZH 两版证据 ID、flag、命令、输出、IPv4、时间戳逐字一致（§5）。
+- 双版一致：EN/ZH 两版证据 ID、flag、命令、输出、IPv4、时间戳逐字一致（§5）。
 
 ---
 
@@ -241,7 +243,7 @@ failed-projects `offsec-report` 采用 **ZH 内部版 + EN 官方版** 双版。
 - **原版**：通用 10 机模板，无本仓库证据绑定。
 - **本版**：新增 §4「与现有 evidence 的映射」与 `references/evidence-mapping.md`，把 `evidence/attack-ai-agent-real/aia-*.md` 显式映射到 Standalone/AI-vector 主机小节与 Appendix D，并说明当前仅覆盖 1 个 AI 向量主机、flag 双通道未提供等现状。
 
-### 10.5 双语策略务实化（修改）
+### 10.5 双版策略务实化（修改）
 - **原版**：默认产出 ZH+EN 双版且 EN 为提交候选。
 - **本版**：保留双版概念，但明确 **EN 官方版为强制提交候选**、ZH 为可选内部镜像；强调两版证据 ID/命令/输出逐字一致（§5）。
 

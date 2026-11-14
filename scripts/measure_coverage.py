@@ -7,8 +7,10 @@
 过滤与 AST 语句起始行错位造成的假阴性。
 
 用法：
-  python scripts/measure_coverage.py            # 全量输出
-  python scripts/measure_coverage.py --min 80  # 低于门槛时以退出码 1 失败
+  python scripts/measure_coverage.py                       # attack-ai-agent（默认，兼容既有 CI）
+  python scripts/measure_coverage.py --min 80              # 低于门槛时以退出码 1 失败
+  python scripts/measure_coverage.py --target report-exam # 仅 report-exam 业务代码
+  python scripts/measure_coverage.py --target all --min 80  # 全部业务代码（CI S2）
 """
 import argparse
 import contextlib
@@ -24,10 +26,32 @@ if ROOT not in sys.path:
 
 from tools.attack_ai_agent import backends, paths, runner, steps  # noqa: E402
 
-MODULES = (runner, backends, paths, steps)
-TEST_NAMES = ("tests.test_attack_ai_agent_runner",
-              "tests.test_attack_ai_agent_evidence_contract",
-              "tests.test_attack_ai_agent_adapters")
+AA_MODULES = (runner, backends, paths, steps)
+AA_TESTS = ("tests.test_attack_ai_agent_runner",
+            "tests.test_attack_ai_agent_evidence_contract",
+            "tests.test_attack_ai_agent_adapters")
+
+
+def report_exam_targets():
+    """以 importlib 取子模块（避免 __init__.py 中同名函数覆盖包属性）。"""
+    import importlib
+    names = ("_types", "index", "skeleton", "sections", "ai_appendix",
+             "bilingual", "package", "assemble")
+    mods = tuple(importlib.import_module("report_exam." + n) for n in names)
+    return (mods,
+            ("tests.test_report_exam", "tests.test_report_exam_evidence_contract"))
+
+
+def resolve_target(mode):
+    if mode == "attack-ai-agent":
+        return list(AA_MODULES), list(AA_TESTS)
+    if mode == "report-exam":
+        mods, tests = report_exam_targets()
+        return list(mods), list(tests)
+    if mode == "all":
+        mods, tests = report_exam_targets()
+        return list(AA_MODULES) + list(mods), list(AA_TESTS) + list(tests)
+    raise ValueError("未知 --target：%s" % mode)
 
 
 def executable_lines(code):
@@ -47,8 +71,10 @@ def executable_lines(code):
     return out
 
 
-def measure():
-    targets = {os.path.normcase(os.path.abspath(m.__file__)): m for m in MODULES}
+def measure(modules=None, test_names=None):
+    modules = list(AA_MODULES) if modules is None else modules
+    test_names = list(AA_TESTS) if test_names is None else test_names
+    targets = {os.path.normcase(os.path.abspath(m.__file__)): m for m in modules}
     seen = {key: set() for key in targets}
 
     def tracer(frame, event, arg):
@@ -64,9 +90,9 @@ def measure():
         # 在追踪窗口内重载模块，使模块顶层可执行行也计入覆盖率，
         # 避免「导入发生在 settrace 之前」造成的系统性假阴性。
         import importlib
-        for module in MODULES:
+        for module in modules:
             importlib.reload(module)
-        suite = unittest.defaultTestLoader.loadTestsFromNames(list(TEST_NAMES))
+        suite = unittest.defaultTestLoader.loadTestsFromNames(list(test_names))
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             return unittest.TextTestRunner(verbosity=0).run(suite)
 
@@ -78,7 +104,7 @@ def measure():
 
     total = covered = 0
     rows = []
-    for module in MODULES:
+    for module in modules:
         filename = module.__file__
         key = os.path.normcase(os.path.abspath(filename))
         with open(filename, encoding="utf-8") as handle:
@@ -95,9 +121,13 @@ def measure():
 def main(argv=None):
     ap = argparse.ArgumentParser(description="标准库行覆盖率测量")
     ap.add_argument("--min", type=float, default=0.0, help="覆盖率门槛（百分比）")
+    ap.add_argument("--target", default="attack-ai-agent",
+                    choices=("attack-ai-agent", "report-exam", "all"),
+                    help="被测业务代码集合（默认 attack-ai-agent，兼容既有 CI）")
     args = ap.parse_args(argv)
 
-    result, rows, covered, total = measure()
+    modules, test_names = resolve_target(args.target)
+    result, rows, covered, total = measure(modules, test_names)
     overall = 100.0 * covered / total if total else 100.0
     print("测试数 %d，失败 %d，错误 %d" %
           (result.testsRun, len(result.failures), len(result.errors)))

@@ -1,4 +1,9 @@
 {
+  // 官方报告模板按 S1 要求保留逐字标题（含多个 H1、封面邮箱、附录 H4 层级），
+  // 改写会偏离 GOVERNANCE §7.1 / §9.2 的官方事实，故整目录豁免 markdownlint。
+  "ignores": [
+    "skills/report-exam/templates/**"
+  ],
   "config": {
     "MD013": false,
     "MD022": false,
@@ -8,6 +13,16 @@
     "MD040": false,
     "MD041": false,
     "MD058": false,
-    "MD060": false
+    "MD060": false,
+    // 以下 5 条与仓库既有合法内容冲突，按 GOVERNANCE §8.3 显式豁免并留理由：
+    // MD001 证据片段标题层级须镜像 collect_evidence.py 的 ###/#### 结构。
+    // MD029 攻击技能用稳定步骤编号作有序列表前缀，重编号会破坏 step_id 与 S2 夹具断言。
+    // MD034 官方一手源 URL 与封面邮箱须逐字保留。
+    // MD038 / MD056 门禁表内的命令字面量含管道符 |，转义会破坏 §6.1 的 copy/paste 复现性。
+    "MD001": false,
+    "MD029": false,
+    "MD034": false,
+    "MD038": false,
+    "MD056": false
   }
 }

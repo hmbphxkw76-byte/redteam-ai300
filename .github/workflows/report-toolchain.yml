@@ -1,0 +1,107 @@
+# T06 / VG-PANDOC-1：报告渲染工具链机读验收（演练，产物绝不上传或提交）。
+#
+# 独立 workflow 的理由：ci.yml 为并发会话在制品（T01 分组 B），跨组改动会破坏
+# T09 的按 hunk 拆分提交纪律；本文件归 report-exam 主线（A 组），职责单一。
+# 固定版本与本机便携工具链一致：pandoc 3.14 / typst 0.15.1 / 7z（p7zip-full）。
+#
+# 证据目录 evidence/ 整体被 .gitignore 忽略（0 个 tracked 文件），干净 checkout
+# 无真实证据；故本 workflow 在 RUNNER_TEMP 生成最小自足夹具，仅验证渲染/归档
+# 工具链与 AC-12，不视为真实取证，产物不上传、不提交。
+
+name: 报告渲染工具链 (T06)
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  report-toolchain:
+    name: AC-12 真实 PDF / .7z 冒烟
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: 安装固定版本渲染工具链
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq p7zip-full poppler-utils
+          curl -sSL -o /tmp/pandoc.tar.gz \
+            https://github.com/jgm/pandoc/releases/download/3.14/pandoc-3.14-linux-amd64.tar.gz
+          tar -xzf /tmp/pandoc.tar.gz -C /tmp
+          sudo install -m 0755 /tmp/pandoc-3.14/bin/pandoc /usr/local/bin/pandoc
+          curl -sSL -o /tmp/typst.tar.xz \
+            https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz
+          tar -xJf /tmp/typst.tar.xz -C /tmp
+          sudo install -m 0755 /tmp/typst-x86_64-unknown-linux-musl/typst /usr/local/bin/typst
+          pandoc --version | head -1
+          typst --version
+          7z i | head -1
+
+      - name: 生成自足证据夹具（CI 无 gitignored evidence/ 目录）
+        run: |
+          set -euo pipefail
+          EV="$RUNNER_TEMP/attack-ai-agent-real"
+          mkdir -p "$EV"
+          cat > "$EV/aia-01.md" <<'FRAG'
+          ### 步骤 aia-01：CI 工具链夹具
+
+          > **目标**：`standalone`
+
+          #### 确切命令
+
+          ```bash
+          id
+          ```
+
+          #### 关键输出
+
+          ```text
+          uid=0(root)
+          ```
+
+          #### 截图（访问证明）
+
+          ![aia-01](shots/aia-01.png)
+
+          #### AI 交互日志
+
+          prompt: CI smoke fixture
+          FRAG
+          echo "CI fixture ready: $EV/aia-01.md"
+
+      - name: 真实构建 PDF / .7z（演练，仅写 RUNNER_TEMP）
+        env:
+          PANDOC_PDF_ENGINE: typst
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/osai-report-smoke"
+          python -m report_exam build \
+            --evidence-dir "$RUNNER_TEMP/attack-ai-agent-real" \
+            --out-dir "$OUT" --osid XXXXX | tee "$OUT-build.log"
+          grep -q "AC-12: PASS" "$OUT-build.log"
+          grep -q "submission-ready: yes" "$OUT-build.log"
+          grep -q "verify-evidence: passed" "$OUT-build.log"
+
+      - name: 断言目录条目 / 无密码 / 档内成员 / 体积
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/osai-report-smoke"
+          PDF="$OUT/OSAI-OS-XXXXX-Exam-Report.pdf"
+          ARC="$OUT/OSAI-OS-XXXXX-Exam-Report.7z"
+          test "$(head -c 5 "$PDF")" = "%PDF-"
+          pdftotext "$PDF" - | grep -q "Contents"
+          pdftotext "$PDF" - | grep -q "Offsec AI Red Teamer Report"
+          7z l -slt "$ARC" | grep -q "Encrypted = -"
+          test "$(7z l -slt "$ARC" | grep -c '^Path = .*\.pdf$')" -eq 1
+          test "$(7z l -slt "$ARC" | grep '^Path = ' | grep -vcE '\.(pdf|7z)$' || true)" -eq 0
+          test "$(stat -c %s "$ARC")" -le $((100 * 1024 * 1024))
+          echo "T06: PDF TOC / 无密码 / 单 PDF 成员 / ≤100MB 全部 PASS"

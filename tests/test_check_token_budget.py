@@ -43,6 +43,7 @@ class BudgetRulesTests(unittest.TestCase):
 
     def test_cold_classification(self):
         self.assertTrue(ctb.is_cold("docs/standards/cross-ide-mainline-workflow.md"))
+        self.assertTrue(ctb.is_cold("docs/standards/prompts/01-research.md"))
         self.assertTrue(ctb.is_cold("skills/report-exam/templates/osai-report-template-en.md"))
         self.assertTrue(ctb.is_cold(".workbuddy/memory/2026-11-14.md"))
         self.assertFalse(ctb.is_cold("docs/governance/GOVERNANCE.md"))

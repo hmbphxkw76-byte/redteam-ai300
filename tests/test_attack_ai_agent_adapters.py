@@ -115,9 +115,11 @@ class AdapterTests(unittest.TestCase):
     def test_lazy_imports_use_official_modules(self):
         with FakePyRITModules():
             backend = RealPyRITBackend({"response_key": "answer"})
-            # 双模型命名空间（2026-11-14）：describe() 追加 attack/scorer 标注
-            self.assertTrue(backend.describe().startswith("pyrit-1.1.0"))
-            self.assertIn("OPENAI_SCORER_*", backend.describe())
+            # 双模型命名空间（2026-11-14）：断言完整公开字符串
+            self.assertEqual(
+                backend.describe(),
+                "pyrit-1.1.0 (dual-model: attack=OPENAI_CHAT_*, "
+                "scorer=OPENAI_SCORER_*)")
             self.assertIsNotNone(backend.make_target("objective"))
             self.assertIsNotNone(backend.make_target("scorer"))
             self.assertIsNotNone(backend.make_target("tool"))

@@ -304,10 +304,10 @@ class RealPyRITBackend:
         except ImportError as exc:
             raise RuntimeError(
                 "真实执行需要 pyrit==1.1.0，当前环境未安装：%s" % exc) from exc
-        if not (os.environ.get("OPENAI_CHAT_ENDPOINT")
+        if not (all(os.environ.get(k) for k in ATTACK_ENV)
                 or str(self.target_config).find("http") >= 0):
             raise RuntimeError(
-                "真实执行需要目标端点（OPENAI_CHAT_ENDPOINT 或 target_config 中的 http 靶机）")
+                "真实执行需要目标端点（OPENAI_CHAT_ENDPOINT 或 target_config 中的 http 目标主机）")
 
         import asyncio
         from pyrit.executor.attack import AttackExecutor, PromptSendingAttack

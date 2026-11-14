@@ -4,11 +4,11 @@
 |---|---|
 | 性质 | **报告试样**（结构演示件），非考试提交件；不参与评分，不含任何取分声明 |
 | 环境 | 演练目标 `http://192.168.40.189`（OWASP AIVP 部署实例）；**非** OSAI 正式考试环境，结论不外推 |
-| 证据源 | `evidence/recon-ai/`：7 份证据片段 + 7 张访问证明截图 + `MANIFEST.jsonl`，由 `tools/recon_ai` 于 2026-11-14 22:24 生成 |
+| 证据源 | `evidence/recon-ai/`：7 份证据片段 + 7 张访问证明截图 + `MANIFEST.jsonl`，由 `tools/recon_ai` 于 2026-11-14 22:41–22:42 生成 |
 | 成文依据 | `skills/report-exam/SKILL.md` 的章节契约与证据引用规则（§1 结构、§3.2 引用、§7 质量门） |
-| 引用方式 | 正文按路径引用 `（证据：evidence/recon-ai/recon-0N.md）`；关键输出**逐字摘录**，不改写、不润色 |
+| 引用方式 | 每步先按路径引用片段 `（证据：evidence/recon-ai/recon-0N.md）`，再以 `![]()` **内嵌访问证明截图**（图片地址 `../evidence/recon-ai/shots/<file>.png`，相对本报告文件解析）；关键输出**逐字摘录**，不改写、不润色 |
 | 计分状态 | 未取分（0/100）；无 flag；`proof.txt` 未涉及 |
-| 校验状态 | 结构四章齐全；证据三件套 7/7；实跑 `tools/verify_evidence.py --payload <本报告+7 片段> --no-artifacts`：vrf-01/02/03/04/05/06/08 与 `proof-single` 均为真，**blocking 0**；vrf-07 因 dry-run 未判定（pending VG-3）；`missing` 2 项（无 flag 双通道、域控 proof 未取分）为预期项。结论：结构可提交、内容不可提交（未取分） |
+| 校验状态 | 结构四章齐全；证据三件套 7/7（含正文内嵌截图 7/7，图片语法与文件存在性均已核）；实跑 `tools/verify_evidence.py --payload <本报告+7 片段> --no-artifacts`：vrf-01/02/03/04/05/06/08 与 `proof-single` 均为真，**blocking 0**；vrf-07 因 dry-run 未判定（pending VG-3）；`missing` 2 项（无 flag 双通道、域控 proof 未取分）为预期项。结论：结构可提交、内容不可提交（未取分） |
 
 ---
 
@@ -193,7 +193,12 @@ GET http://192.168.40.189/api/config → HTTP 200
 {"training_labs_enabled":false,"training_lab_ids":["MM_05","MM_04","MM_07"],"artifact_replay_labs":["MM_05","MM_04","MM_07"],"llm_model_default":"LongCat-2.5"}
 ```
 
-（证据：`evidence/recon-ai/recon-01.md`；截图 `shots/recon-01-url.png`）
+（证据：`evidence/recon-ai/recon-01.md`）
+
+#### 截图（访问证明）
+
+![recon-01 /api/config 的 JSON 响应（含 llm_model_default）](../evidence/recon-ai/shots/recon-01-url.png)
+
 
 同一片段记录了反向验证：`/v1/models` 返回 **`200` + `text/html`** 的 SPA 回退页（完整响应 1702 字节），而非模型清单。因此该端点在本环境中**判定为不存在**，且不据此新增任何资产条目。这条判据是后续所有「端点是否存在」判断的前提：状态码 `200` 不等于资源存在。
 
@@ -211,7 +216,12 @@ data: {"content": "CON-PROBE"}
 data: {"content": "-OK"}
 ```
 
-（证据：`evidence/recon-ai/recon-02.md`；截图 `shots/recon-02-transcript.png`）
+（证据：`evidence/recon-ai/recon-02.md`）
+
+#### 截图（访问证明）
+
+![recon-02 聊天端点 curl + SSE 原文 + 判定](../evidence/recon-ai/shots/recon-02-transcript.png)
+
 
 判读要点有三：其一，响应随 `set-cookie: aivp_sid` 建立匿名会话，属性为 `HttpOnly; Max-Age=2592000; Path=/; SameSite=lax`；其二，`meta` 事件下发 `phase` 与 `control_mode`，属运行配置的侧信道；其三，`data` 事件按分片推送，需拼接后才是完整回复——这决定了后续任何针对对话面的攻击都必须按流式语义处理，否则会误判为「截断」。
 
@@ -225,7 +235,12 @@ GET http://192.168.40.189/assets/index-BtcwQhVS.js → HTTP 200
 …（已截断：完整响应 392145 字节，命令可原样重跑取全文）
 ```
 
-（证据：`evidence/recon-ai/recon-03.md`；截图 `shots/recon-03-url.png`）
+（证据：`evidence/recon-ai/recon-03.md`）
+
+#### 截图（访问证明）
+
+![recon-03 /explore 实验面（Phase 1–4）](../evidence/recon-ai/shots/recon-03-url.png)
+
 
 工具面的证据更直接：校验接口对错误答案返回 `200`，失败语义藏在响应体。
 
@@ -237,18 +252,46 @@ GET http://192.168.40.189/api/labs/MCP_01/summary → HTTP 422
 {"detail":[{"type":"missing","loc":["query","request_id"],"msg":"Field required","input":null}]}
 ```
 
-（证据：`evidence/recon-ai/recon-06.md`；截图 `shots/recon-06-transcript.png`）
+（证据：`evidence/recon-ai/recon-06.md`）
+
+#### 截图（访问证明）
+
+![recon-06 校验预言机 curl + 200/success:false + 422 schema](../evidence/recon-ai/shots/recon-06-transcript.png)
+
 
 这里有一条对下游技能影响很大的判据：**该接口用 `200` 表达失败**。任何以状态码判别成败的自动化都会把「错误答案」记成「校验通过」，在取分场景中直接导致误报。
 
 **护栏与输入输出**：一次无害回显被原样返回，说明输入未经过滤直达模型；同时 6 项安全响应头全部缺失。
 
 ```text
-判定：存在（护栏（护栏放行原样回显））
+判定：存在（护栏（放行原样回显））
 依据：无害回显探针被原样返回（RECON-PROBE-OK）；缺失安全响应头：Content-Security-Policy、X-Frame-Options、X-Content-Type-Options、Strict-Transport-Security、Referrer-Policy、Permissions-Policy；control_mode=off
 ```
 
-（证据：`evidence/recon-ai/recon-07.md`；截图 `shots/recon-07-transcript.png`）
+（证据：`evidence/recon-ai/recon-07.md`）
+
+#### 截图（访问证明）
+
+![recon-07 护栏回显与缺失响应头的判定](../evidence/recon-ai/shots/recon-07-transcript.png)
+
+
+**agent 编排面**：实验面接口以 `request_id` 为查询参数，暗示服务端存在按请求编排的运行实体；遥测端点匿名可读但当前为空。
+
+```text
+GET http://192.168.40.189/api/labs/DE_01/summary → HTTP 422
+{"detail":[{"type":"missing","loc":["query","request_id"],"msg":"Field required","input":null}]}
+
+GET http://192.168.40.189/api/me/runs?limit=1 → HTTP 200
+{"runs":[]}
+```
+
+（证据：`evidence/recon-ai/recon-05.md`）
+
+#### 截图（访问证明）
+
+![recon-05 /api/labs/DE_01/summary 与 /api/me/runs 的响应](../evidence/recon-ai/shots/recon-05-url.png)
+
+判读上须区分「面存在」与「框架可知」：`request_id` 语义与遥测端点同时成立，足以认定**编排面存在**；但运行时的框架指纹未被获取，故产品名一律记「不可判定」。此处以推断落定存在性、以「不可判定」锁住产品名，二者不可互相替代。
 
 **向量库**：被动面无独立端口证据，如实记「不可判定」而非「不存在」。
 
@@ -257,7 +300,12 @@ GET http://192.168.40.189/api/labs/MM_05/summary → HTTP 422
 {"detail":[{"type":"missing","loc":["query","request_id"],"msg":"Field required","input":null}]}
 ```
 
-（证据：`evidence/recon-ai/recon-04.md`；截图 `shots/recon-04-url.png`）
+（证据：`evidence/recon-ai/recon-04.md`）
+
+#### 截图（访问证明）
+
+![recon-04 /api/labs/MM_05/summary 的 422 响应](../evidence/recon-ai/shots/recon-04-url.png)
+
 
 注：`recon-04` 与 `recon-05` 的截图哈希相同，属预期——两个 `summary` 端点返回**逐字节相同**的 422 响应体，浏览器渲染结果一致，非重复落盘。
 
@@ -284,8 +332,8 @@ GET http://192.168.40.189/api/labs/MM_05/summary → HTTP 422
 | 步骤 | 证据片段 | 截图（类型） | 输出 sha256（前 16） | 截图 sha256（前 12） |
 |---|---|---|---|---|
 | recon-01 | `evidence/recon-ai/recon-01.md` | `recon-01-url.png`（url） | `b199edf0ab34f306` | `ca501313a881` |
-| recon-02 | `evidence/recon-ai/recon-02.md` | `recon-02-transcript.png`（transcript） | `b2351e1730b18b79` | `e88b5b2ffaed` |
-| recon-03 | `evidence/recon-ai/recon-03.md` | `recon-03-url.png`（url） | `efbd15a7acf72dd2` | `95ff51068bef` |
+| recon-02 | `evidence/recon-ai/recon-02.md` | `recon-02-transcript.png`（transcript） | `f4df9d212ceb55b7` | `c7f1a9e49b8b` |
+| recon-03 | `evidence/recon-ai/recon-03.md` | `recon-03-url.png`（url） | `efbd15a7acf72dd2` | `ea29965b9ac1` |
 | recon-04 | `evidence/recon-ai/recon-04.md` | `recon-04-url.png`（url） | `7f4a083709669f0b` | `6ab9c85162c0` |
 | recon-05 | `evidence/recon-ai/recon-05.md` | `recon-05-url.png`（url） | `d21a34d3f2f566d7` | `6ab9c85162c0` |
 | recon-06 | `evidence/recon-ai/recon-06.md` | `recon-06-transcript.png`（transcript） | `0a77187e814fbe2c` | `7d97885185e0` |
@@ -347,7 +395,20 @@ python tools/recon_ai/cli.py inventory --path evidence/recon-ai/ai-assets.json
 # 3. 单步复现（以 recon-01 为例，输出应与片段「关键输出」一致）
 curl -s http://192.168.40.189/api/config
 curl -s http://192.168.40.189/v1/models
+
+# 4. 核对正文内嵌截图：应为 7，且下列文件全部存在
+grep -c '^!\[recon' report/recon-ai-report-sample-20261114.md
+ls evidence/recon-ai/shots/*.png | wc -l
 ```
+
+截图嵌入与构建说明：正文 7 处截图均以 `![]()` 内嵌（地址 `../evidence/recon-ai/shots/<file>.png`），路径相对**本报告文件**解析（`report/` 的上一级即仓库根），因此在预览器中可直接渲染。若需按 `report-exam` 的 rpt-05 流程产出 PDF，须在图片可解析的工作目录下执行：
+
+```bash
+cd report && pandoc --toc recon-ai-report-sample-20261114.md \
+  -o ../OSAI-OS-XXXXX-Exam-Report.pdf
+```
+
+若跳过 `cd report`、直接从仓库根运行 pandoc，`../evidence/...` 会越出仓库根而丢图——PDF 中缺图即视为「无截图支撑」，属 §6.1 不可豁免项，故该目录约束不是习惯问题而是合规问题。
 
 数据一致性说明：证据清单 `MANIFEST.jsonl` 逐行记录 `step_id`、命令、输出 sha256、时间戳、执行分级、留存入径与件套状态；重跑后命令与判定应一致，输出 hash 可能因模型回复的文字差异而变化（`recon-02` 的 SSE 分片属模型生成内容），该差异不影响判定结论，但会使 hash 不同——复核时应以「判定 + 关键字段」为准，并同时比对截图。
 
@@ -403,11 +464,13 @@ curl -s http://192.168.40.189/v1/models
 
 ## E. Screenshot Index
 
+正文每步均已内嵌上述截图（同一文件、同一哈希），本表仅提供**索引与校验值**，便于逐张对照与抽查。
+
 | # | 文件 | 类型 | 内容 | sha256（前 12） |
 |---|---|---|---|---|
 | 1 | `recon-01-url.png` | url | `/api/config` 的 JSON 响应（含 `llm_model_default`） | `ca501313a881` |
-| 2 | `recon-02-transcript.png` | transcript | 聊天端点 curl + SSE 原文 + 判定 | `e88b5b2ffaed` |
-| 3 | `recon-03-url.png` | url | `/explore` 实验面（Phase 1–4，55 lab） | `95ff51068bef` |
+| 2 | `recon-02-transcript.png` | transcript | 聊天端点 curl + SSE 原文 + 判定 | `c7f1a9e49b8b` |
+| 3 | `recon-03-url.png` | url | `/explore` 实验面（Phase 1–4，55 lab） | `ea29965b9ac1` |
 | 4 | `recon-04-url.png` | url | `/api/labs/MM_05/summary` 的 422 响应 | `6ab9c85162c0` |
 | 5 | `recon-05-url.png` | url | `/api/labs/DE_01/summary` 的 422 响应 | `6ab9c85162c0` |
 | 6 | `recon-06-transcript.png` | transcript | 校验预言机 curl + 200/`success:false` + 422 schema | `7d97885185e0` |

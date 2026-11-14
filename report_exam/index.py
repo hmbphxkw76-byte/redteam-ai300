@@ -1,20 +1,23 @@
 """证据索引：把 collect_evidence.py 片段解析并聚合为 ReportModel。
 
 Seam-1（唯一外部依赖注入点）即 `EvidenceSource`：默认 `DirEvidenceSource`
-从 evidence/<skill>/*.md 读取；测试注入内存假后端。
+从 evidence/<skill>-real/*.md 读取；测试注入内存假后端。
 """
+import glob
 import os
 import re
-import glob
-from typing import Iterable, Iterator
+from typing import Dict, Iterable, Iterator, List
 
-from ._types import Fragment, ReportModel
+from ._types import Fragment, ReportModel, SCORED_HOSTS, STANDALONE_KEY
+
+# 正式提交仅接受 `-real` 真实证据目录；演练/仿真与实现日志目录一律排除
+EXCLUDED_DIR_MARKERS = ("report-exam", "evidence/attack-ai-agent/")
 
 
 def parse_fragment(text: str, source_path: str = "") -> Fragment:
     """解析单个 collect_evidence.py 片段 markdown 为 Fragment。
 
-    字段定位依赖固定标题（`#### 确切命令` 等），对缺失字段返回空串。
+    `raw` 保留原文（逐字 include 的唯一渲染源）；结构化字段仅用于校验判据。
     """
     frag = Fragment(raw=text, source_path=source_path)
 
@@ -58,21 +61,36 @@ class EvidenceSource:
 
 
 class DirEvidenceSource(EvidenceSource):
-    """从 evidence/<skill>/*.md 读取并解析片段。"""
+    """从 evidence/<skill>-real/*.md 读取并解析片段。
 
-    def __init__(self, roots):
-        # roots: 目录列表或单目录；递归匹配 **/*.md
+    `real_only=True`（默认）时只接受路径含 `-real` 的证据目录，
+    防止演练/仿真片段与实现日志混入正式提交（SKILL §4 / F-7.3）。
+    测试夹具可显式传 real_only=False。
+    """
+
+    def __init__(self, roots, real_only=True):
         self.roots = [roots] if isinstance(roots, str) else list(roots)
+        self.real_only = real_only
+
+    def _allowed(self, path: str) -> bool:
+        p = path.replace("\\", "/")
+        if any(marker in p for marker in EXCLUDED_DIR_MARKERS):
+            return False
+        if not self.real_only:
+            return True
+        # 正式提交仅接受路径中带 `-real` 目录段的证据（SKILL §4）
+        return any(seg.endswith("-real") for seg in p.split("/"))
 
     def iter_fragments(self) -> Iterator[Fragment]:
         for root in self.roots:
             for path in sorted(glob.glob(os.path.join(root, "**", "*.md"), recursive=True)):
+                if not self._allowed(path):
+                    continue
                 try:
                     with open(path, "r", encoding="utf-8") as f:
                         text = f.read()
                 except OSError:
                     continue
-                # 一个文件可能含多个 `### 步骤` 片段
                 parts = re.split(r"(?=^###\s+步骤\s+)", text, flags=re.M)
                 for part in parts:
                     if part.strip().startswith("### 步骤"):
@@ -90,34 +108,37 @@ class MemoryEvidenceSource(EvidenceSource):
             yield f
 
 
-def build_index(source: EvidenceSource, expected_hosts=None, osid="XXXXX") -> ReportModel:
+def build_index(source: EvidenceSource, expected_hosts=None, osid="XXXXX",
+                panel_flags=None) -> ReportModel:
     """聚合证据源为 ReportModel。
 
-    - 按 frag.host 分组；
-    - expected_hosts 中存在但无片段的主机标记为「未达成」（hosts 中置空列表）；
-    - dual_channel 默认按 flag 是否非空占位（真实双通道一致需运行时比对面板值）。
+    - 按 frag.host 分组；expected_hosts 中缺片段的主机置空（未达成）。
+    - dual_channel：面板提交值与报告 flag 值**逐字比对**（§6.2）；无 flag
+      记 False（未取分，待补录）。
     """
     model = ReportModel(osid=osid)
     model.expected_hosts = list(expected_hosts or [])
+    model.panel_flags = dict(panel_flags or {})
 
+    # 主机键归一化：非规范键（如真实片段的 target URL）按 MAP §C 归入
+    # Standalone / AI-vector 计分目标，保证报告不产生额外或重复的主机小节。
+    canonical = set(model.expected_hosts or SCORED_HOSTS)
     grouped: Dict[str, List[Fragment]] = {}
     for f in source.iter_fragments():
+        if f.host not in canonical:
+            f.host = STANDALONE_KEY
         grouped.setdefault(f.host, []).append(f)
-
     model.hosts = grouped
 
-    # 缺失主机回溯（AC-02）
     for h in model.expected_hosts:
         if h not in model.hosts:
-            model.hosts[h] = []  # 空列表 = 未达成
+            model.hosts[h] = []
 
-    # 双通道占位覆盖**全部**主机（含未在 expected_hosts 中的真实片段主机）；
-    # 仅记录是否已提供 flag 文本，真实一致性比对在运行时由面板值驱动（VG-4）。
     for h, fs in model.hosts.items():
-        model.dual_channel[h] = bool(any(f.flag for f in fs))
-
-    model.proof_submitted_once = sum(
-        1 for f in (ff for fs in model.hosts.values() for ff in fs)
-        if "proof.txt" in (f.flag or "")
-    ) <= 1
+        report_flags = [f.flag for f in fs if f.flag]
+        panel = model.panel_flags.get(h)
+        model.dual_channel[h] = bool(
+            report_flags and panel is not None
+            and all(v == panel for v in report_flags)
+        )
     return model

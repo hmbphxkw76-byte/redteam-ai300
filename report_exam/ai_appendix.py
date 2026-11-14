@@ -8,13 +8,15 @@ from typing import Iterable
 from ._types import Fragment
 
 
-def collect_ai_logs(fragments: Iterable[Fragment], lang: str = "en") -> str:
+def collect_ai_logs(fragments: Iterable[Fragment], lang: str = "en",
+                    include_heading: bool = True) -> str:
     """汇总全部片段的 AI 交互日志为 Appendix D 正文。
 
     返回 markdown；无 AI 日志时返回明确占位说明（不虚构对话）。
     AI 日志**内容逐字复制**；仅说明性标签按 lang 切换（§5 EN 版无中文正文）。
+    `include_heading=False` 时省略 official 标题，用于填充骨架已有 `## D.` 小节。
     """
-    lines = ["## D. AI Session / Prompt History", ""]
+    lines = (["## D. AI Session / Prompt History", ""] if include_heading else [])
     found = 0
     for f in fragments:
         if not f.ai_log.strip():

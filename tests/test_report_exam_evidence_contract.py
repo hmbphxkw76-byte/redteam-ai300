@@ -10,7 +10,6 @@
 故本地与 CI 判定一致。运行：python -m unittest discover -s tests
 """
 import os
-import re
 import sys
 import unittest
 

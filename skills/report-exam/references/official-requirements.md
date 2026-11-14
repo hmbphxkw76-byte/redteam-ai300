@@ -1,7 +1,7 @@
 # OSAI / AI-300 官方报告要求 digest（S1 / S3）
 
 > **性质**：本文件为官方考试事实的单一 digest 来源，供 `report-exam` 技能引用。
-> **来源标注**：**S1** = `docs/governance/references/OSAI-Exam-Report.pdf`（OffSec 官方报告模板，6 页，本验证的唯一权威来源）；**S3** = OffSec OSAI Exam Guide（help.offsec.com，补充评分/时长/提交，**本 digest 中的 S3 引用尚未实际抓取官方 Exam Guide 核验，仅作占位与推导参考**）。凡未标 S1/S3 的为本仓库推导（标「推导」）。
+> **来源标注**：**S1** = `docs/governance/references/OSAI-Exam-Report.pdf`（OffSec 官方报告模板，6 页，逐字结构唯一权威来源，T02 已机读抽取核对）；**S3** = OffSec OSAI Exam Guide（`help.offsec.com/hc/en-us/articles/46593096734612`，补充评分/时长/提交），**T02 已抓取核验**，逐字原文与补充约束见 `docs/governance/references/OSAI-Exam-Guide-snapshot.md`。凡未标 S1/S3 的为本仓库推导（标「推导」）；完整事实索引见 `docs/research/report-exam-canonical.md`。
 > **时效**：以官方最新发布为准；如与 S1 原文冲突，以 S1 原文为权威。
 
 ---
@@ -11,15 +11,15 @@
 - **8 个计分目标（S1 明确命名）**：2 条攻击链 × 3 台链式主机（6 台）+ 1 台独立主机 + 1 台域控。
 - 每条攻击链自单一公网入口起始，内网横向至 3 台主机，并汇聚于域控。
 - 独立主机（AI 向量）在取得任一链内网立足点后方可达。
-- （推导/假设：典型 OffSec 环境常另含 2 台诱饵机/「确认不可利用」主机，S1 未明列；本仓库以 extension 小节记录，不计入 8 计分目标。）
+- **2 台诱饵机（S3 明示，T02 已核实）**：`two intentionally not vulnerable machines`，0 分、仅增加真实感；S1 未明列，本仓库以 extension 小节记为「确认不可利用」，不计入 8 计分目标。
 
 ## 2. 计分模型（S1 明示 + 推导补全）
 
 - **总分 100、及格 75（S1 明示**，见 Objective："A total of 100 points is available … at least 75 points to pass"）。
 - **8 个计分目标（S1 明示命名）** = 6 链式 + 1 独立 + 1 域控。
-- 分值（**推导，非 S1 明示**）：AI 向量机 15 分/台、传统向量机 10 分/台、独立机 15 分、域控 5 分。*（此拆分依「总分 100 + 8 目标」倒推，未见于 S1 原文；S3 核验后可能调整，正式提交前须复核。）*
-- **推导**：由「6 台链式 + 独立 15 + 域控 5 = 100」且 AI 15/传统 10 推得链式构成 = **4 台 AI向量(60) + 2 台传统向量(20)**。
-- **及格线 75/100（S1 明示）**。推导达标最小组合（基于上条推导分值）：4 AI向量(60) + 独立(15) = 75，无需传统/域控即可及格 → AI 向量为最高杠杆能力。
+- 分值（**S3 明示，T02 由「推导」升级为已核实**）：AI 向量机 15 分/台、传统向量机 10 分/台、独立机 15 分、域控 5 分。S3 另明示给分取决于答案正确性与报告发现完整度（快照 §3）。
+- **仍属推导**：链式 6 台的 AI/传统台数 S3 未明示；由「6 台链式 + 独立 15 + 域控 5 = 100」且 AI 15/传统 10 推得 **4 台 AI向量(60) + 2 台传统向量(20)**。
+- **及格线 75/100（S1 明示）**。推导达标最小组合（基于上条推导的链式构成）：4 AI向量(60) + 独立(15) = 75，无需传统/域控即可及格 → AI 向量为最高杠杆能力。
 - 域控 `proof.txt` **仅可提交一次**（S1：even if both chains are completed）。
 
 ## 3. 报告结构（S1，逐字章节）
@@ -61,7 +61,7 @@ No part of this publication, in whole or in part, may be reproduced, copied, tra
 > The candidate is required to write a report describing the exploitation process for each target in the environment. The report must document all attacks, including every step taken, all commands issued, any code or scripts written, and the relevant console output. Where an existing script or exploit is used, the candidate must provide a link to its source or a copy of the code, along with documentation of any modifications made to it. Each stage of the attack should be supported by screenshots showing the various steps and stages of the exploitation process.
 >
 > In addition, the report must include a summary and overview of the vulnerabilities identified, the attacks performed, and the overall exploitation process. The documentation should be thorough enough that the attacks can be replicated step-by-step, via a copy/paste approach, by a technically competent reader.
-
+>
 > Because effective use of AI is a core component of this assessment, any AI tooling used during the engagement — including prompts, model interactions, and AI-assisted payload generation — should be documented to the same standard as any other tool or technique.
 
 ## 6. flag 文件与取证（S1）
@@ -79,6 +79,7 @@ No part of this publication, in whole or in part, may be reproduced, copied, tra
 - 归档为 `.7z`，**无密码**，命名 `OSAI-OS-XXXXX-Exam-Report.7z`，≤100MB。
 - 考试 24h + 提交窗口考试结束后 24h；提交后不可修改；无提交后补加。
 - AI 工具允许使用，须以同等标准记录。
+- **S3 补充约束（T02）**：`.7z` 内仅允许 PDF 文件；报告须以文本包含全部 queries（AI 提示）；上传后比对站点返回的 MD5 哈希；逾期自动不及格（快照 §6 / §7）。
 
 ## 8. 评分/失分要点（S3）
 

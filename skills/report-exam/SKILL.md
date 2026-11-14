@@ -70,11 +70,13 @@ Table of Contents                              (official，须含 "Offsec AI Red
 # Recommendations                              (extension)
 # Reproducibility                              (extension；S1 强制 copy/paste 复现的集中说明)
 # Appendix                                     (official)
-  A. Scripts & PoC                             (official：长 PoC 代码 / 来源链接 / 修改说明)
-  D. AI Session / Prompt History               (official：AI 会话与 prompt 全文)
-  E. Screenshot Index                          (official：补充截图索引)
+  A. Scripts & PoC                             (extension：长 PoC 代码 / 来源链接 / 修改说明；S1 未编号)
+  D. AI Session / Prompt History               (extension：AI 会话与 prompt 全文；S1 未编号)
+  E. Screenshot Index                          (extension：补充截图索引；S1 未编号)
   B / C / F / G / H                            (extension)
 ```
+
+> **T05 修正**：S1 的 `# Appendix` 为一段无编号说明，A/D/E 属仓库 (extension)，非官方逐字要求（canonical F-1.7 / 快照 §10）；改标不得删减——§6.3、§7.1 仍强制 AI 会话与截图入附录。
 
 **章节验收（§7.1）**：四章齐全（Introduction/Objective/Requirements → Executive Summary → Attack Walkthrough → Appendix）；Executive Summary 含 High-Level Attack Path；每台计分目标有独立小节；域控在 Chain 1 与 Chain 2 **两处**均有记录；诱饵机记为"确认不可利用"。
 

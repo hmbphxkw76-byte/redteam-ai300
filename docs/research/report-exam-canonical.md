@@ -1,6 +1,6 @@
 # report-exam 权威事实索引（research 阶段产物）
 
-> **版本** v1.0 · **状态** 生效（阶段 1 收口）· **性质** 唯一事实来源（仅管 API / 官方事实 / 仓库现状）
+> **版本** v1.2 · **状态** 生效（阶段 1 收口；T02 一手源核实、T06 工具链实测修订）· **性质** 唯一事实来源（仅管 API / 官方事实 / 仓库现状）
 > **适用技能** `skills/report-exam/`（把全套攻击证据组装为对齐 S1 官方模板的考试报告 PDF/`.7z`）
 > **冲突优先级**（依 `skill-mainline-workflow.md` 文首）：官方考试事实（S1/S3）> GOVERNANCE「必须」条款 > CI-CD 门禁 > 本规范 > 技能局部约定
 > **B7 适用性声明**：本技能**不依赖 PyRIT**（报告组装器，非攻击执行），故基线 B7（PyRIT==1.1.0 对象图）**不适用**；凡涉及 PyRIT 的旧名（`pyrit.orchestrator` / `*Orchestrator` / `AzureOpenAIChatTarget`）在本技能中均**不应出现**，出现即不符合项。
@@ -13,9 +13,9 @@
 |---|---|---|---|
 | **S1** | `docs/governance/references/OSAI-Exam-Report.pdf` | OffSec 官方报告模板（6 页，文件 213253 字节，mtime Jul 24 14:06） | 官方事实（权威） |
 | **S1-digest** | `skills/report-exam/references/official-requirements.md` | 本仓库 S1 事实单一 digest | 派生（引用 S1） |
-| **S3** | OffSec OSAI Exam Guide（help.offsec.com） | **未实际抓取核验**，仅占位/推导（见官方 requirements.md 头注） | 待核实 |
-| **Gov** | `docs/governance/GOVERNANCE.md` | v1.0 | 治理（宪法级） |
-| **CI** | `docs/standards/CI-CD.md` | v1.0 | 工程标准 |
+| **S3** | `https://help.offsec.com/hc/en-us/articles/46593096734612-OSAI-Exam-Guide` · 快照 `docs/governance/references/OSAI-Exam-Guide-snapshot.md` | 2026-11-14 抓取核验（页面仅显示相对时间 "1 month ago"） | 官方事实（权威） |
+| **Gov** | `docs/governance/GOVERNANCE.md` | v1.1 | 治理（宪法级） |
+| **CI** | `docs/standards/CI-CD.md` | v1.1 | 工程标准 |
 | **GLOS** | `GLOSSARY.md` | 现行 | 术语基准 |
 | **EVID-TOOL** | `tools/collect_evidence.py` | 现行（CI S1 校验一致） | 代码（已读源码） |
 | **VERIFY** | `skills/verify-evidence/SKILL.md` | 现行 | 技能（已读） |
@@ -23,7 +23,9 @@
 | **MAP** | `skills/report-exam/references/evidence-mapping.md` | 现行 | 映射协议（已读） |
 | **ATK-AI-EVID** | `evidence/attack-ai-agent-real/*.md` | 现行 7 个片段 | 真实证据（已列目录） |
 
-> **S1 PDF 抽取说明**：沙箱内无 `pdftotext` / `pypdf` / `PyPDF2`，无法机读抽取 PDF 正文；其结构以 **S1-digest** 为已核实载体（digest 逐字摘自 PDF 且为仓库引用的事实单一来源）。结论以 S1-digest 为准，与 GOVERNANCE §7 交叉核对一致。
+> **S1 PDF 抽取说明（2026-11-14 T02）**：已用 `workbuddy-pdf -f md` 机读抽取 6 页正文（sha256 `f6be0a90…`；副本见会话空间 `OSAI-Exam-Report-extracted.md`），逐字比对 (official) 标题、封面、版权、TOC、flag 文件名、Appendix，与 digest **零差异**；6 张内嵌图片均为徽标、无正文。详见 T02 执行记录。
+
+**S1-digest 时效提示（T02）**：`skills/report-exam/references/official-requirements.md` 头注「S3 尚未抓取核验」与 §2「分值属推导」已过时，以本文 §0 的 S3 行及 `OSAI-Exam-Guide-snapshot.md` 为准；digest 正文修订列入 T05（该文件已有并发会话未提交改动，避免跨组混提）。
 
 ---
 
@@ -51,9 +53,9 @@
 
 **F-1.6（已核实·S1 / Gov §2.2）** 域控 `proof.txt` **仅可提交一次**（即使两条链均完成）。
 
-**F-1.7（已核实·S1）** Appendix 至少含 A（Scripts & PoC）、D（AI Session / Prompt History）、E（Screenshot Index）。
+**F-1.7（已核实·S1 原文，T02 修正）** S1 Appendix 为**一段无编号说明**（要求长 PoC、补充截图、AI 会话/提示历史），官方**未**要求字母编号 A/D/E；模板中的 A/D/E 属 (extension)，`SKILL.md` §1 标注偏差待 T05 收口。原文见快照 §10。
 
-**F-1.8（已核实·S1-digest §3）** 章节标题 `(official)` 须与 S1 逐字一致（含大小写）；`(extension)` 为本仓库质量补充（Target Inventory、Key Findings、Intentionally Not Vulnerable Hosts、Attack Timeline、Findings & Risk、Recommendations、Reproducibility），**不得删减任何 (official) 项**。
+**F-1.8（已核实·S1-digest §3 / T02）** 章节标题 `(official)` 须与 S1 逐字一致（含大小写）；S1 未出现者不得标 (official)。`(extension)` 含 Target Inventory、Key Findings、Intentionally Not Vulnerable Hosts、Attack Timeline、Findings & Risk、Recommendations、Reproducibility 及 Appendix A/D/E，**不得删减任何 (official) 项**。
 
 ---
 
@@ -78,16 +80,16 @@
 
 **F-3.2（已核实）** `verify-evidence` 是 `report-exam` 提交前置（§7.3）：八项全过 + `proof.txt` 提交次数==1 + 每个 flag 双通道一致 + 每计分目标三件套齐，方可通过。
 
-**F-3.3（已核实·Gov §2.4）** 失分条款：未在控制面板**与**报告中同时提供 flag 内容与截图，或文档缺失，即对应目标失分。
+**F-3.3（已核实·S3 / Gov §2.4）** 失分条款：未在控制面板**与**报告中同时提供 flag 内容与截图，或文档缺失，即对应目标失分；文档不充分 → reduced or zero points（原文见快照 §1 / §4）。
 
 ---
 
-## 4. 提交与格式事实（Gov §6.4 / S1-digest §7）
+## 4. 提交与格式事实（S3 已核实 / Gov §6.4 / S1-digest §7）
 
-**F-4.1（已核实）** 报告 PDF 命名 `OSAI-OS-XXXXX-Exam-Report.pdf`（`XXXXX`=OSID）。
-**F-4.2（已核实）** 归档 `.7z` 命名 `OSAI-OS-XXXXX-Exam-Report.7z`，**无密码**，≤100MB。
-**F-4.3（已核实·S3占位/推导）** 提交窗口 = 考试结束后 24h；提交后不可修改、不可补加。**（S3 未实际抓取，待核实）**
-**F-4.4（已核实·SKILL §6 rpt-05）** 渲染须带 `--toc`：`pandoc --toc report/*.md -o OSAI-OS-<OSID>-Exam-Report.pdf`，否则 TOC 不生成（违反 F-1.2）。
+**F-4.1（已核实·S3）** 报告 PDF 命名 `OSAI-OS-XXXXX-Exam-Report.pdf`（`XXXXX`=OSID）。
+**F-4.2（已核实·S3）** 归档 `.7z` 命名 `OSAI-OS-XXXXX-Exam-Report.7z`，**无密码**，≤100MB，档内仅 PDF，报告须含全部 queries 文本，上传后比对 MD5（快照 §6 / §7）。
+**F-4.3（已核实·S3）** 考试 24h + 结束后 24h 提交窗口，逾期自动不及格；提交后不可修改、不可补加（快照 §5 / §6）。
+**F-4.4（已核实·SKILL §6 rpt-05 / T06 实测）** 渲染须带 `--toc`；pandoc 默认 `pdflatex` 在无 LaTeX 环境退出码 47，故须显式 `--pdf-engine`（`report_exam/package.py` 依 `PANDOC_PDF_ENGINE` 或按序探测 typst…pdflatex 注入）。命令：`pandoc --toc --pdf-engine=typst report/*.md -o OSAI-OS-<OSID>-Exam-Report.pdf`。否则 TOC/PDF 不生成（违反 F-1.2）。
 
 ---
 
@@ -98,11 +100,11 @@
 
 ---
 
-## 6. 计分模型事实（Gov §2 / S1-digest §2）
+## 6. 计分模型事实（S3 已核实 / Gov §2 / S1-digest §2）
 
-**F-6.1（已核实·S1明示）** 8 计分目标 = 6 链式 + 1 独立 + 1 域控；总分 100、及格 75。
-**F-6.2（推导）** 分值拆分（非 S1 原文，倒推）：AI 向量机 15/台、传统向量机 10/台、独立机 15、域控 5；链式构成 = 4 AI向量(60) + 2 传统(20)。推导达标最小组合：4 AI向量+独立=75 → AI 向量最高杠杆。
-**F-6.3（已核实·Gov §2.1）** 环境 10 台：2×3 链式 + 独立 + 域控 + 2 诱饵机；诱饵机记为"确认不可利用"，不计分。
+**F-6.1（已核实·S1 / S3）** 8 计分目标 = 6 链式 + 1 独立 + 1 域控；总分 100、及格 75；给分取决于答案正确性与报告完整度（快照 §3）。
+**F-6.2（已核实·S3，原推导升级）** AI 向量 15/台、传统向量 10/台、独立机 15、域控 5；**仍属推导**：链式 6 台 = 4 AI + 2 传统（S3 未明示台数）→ 4 AI + 独立 = 75。
+**F-6.3（已核实·S3 / Gov §2.1）** 环境 10 台：2×3 链式 + 独立 + 域控 + 2 台 intentionally not vulnerable（S3 明示 0 分）；记为"确认不可利用"，不计分。
 
 ---
 
@@ -132,7 +134,8 @@
 ## 10. 已核实 / 待核实 / 已排除 三清单
 
 ### 已核实（可直接用于 to-spec）
-- S1 四章结构、封面/TOC/标题逐字要求、五段式、flag 文件名、Appendix 必备项（F-1.*）
+- S1 四章结构、封面/TOC/标题逐字要求、五段式、flag 文件名、Appendix 要求（F-1.*）
+- **S3 一手源（T02）**：Exam Guide 逐字存档 `docs/governance/references/OSAI-Exam-Guide-snapshot.md`；S1 PDF 已机读抽取逐字核对；通用 AI Usage Policy（快照 §11）明确 OSAI 与 OSEE 并列为 LLM 允许例外，15:21 记录的政策冲突已消解。
 - collect_evidence 证据契约三/五件套结构（F-2.*）
 - verify-evidence 八项检查单 + proof.txt 单次 + 提交前置（F-3.*）
 - 提交命名/无密码/≤100MB、pandoc `--toc`（F-4.*）
@@ -142,10 +145,12 @@
 - 术语基准与校验器实跑 PASS（F-8/F-9）
 
 ### 待核实（实现/取证前必须取证闸）
-- **VG-S3-1**：S3（OSAI Exam Guide）24h 提交窗口、≤100MB、评分细则 **未实际抓取官方源**，当前为占位/推导；正式提交前须复核（SKILL 与 official-requirements.md 均自注此缺口）。
-- **VG-S3-2**：S1 PDF 正文未能机读抽取，结构以 digest 为准；若后续要逐字比对，需补 pdftotext 环境或人工核对 PDF。
 - **VG-LOOT-1**：`loot/registry.md` 格式（列：编号/类型/内容/来源主机/证据片段路径/时间戳/状态/双通道）以 `MAP §A` 描述为暂定，实战产生后须与 `loot-manage` 实际格式对齐。
-- **VG-PANDOC-1**：报告渲染依赖 `pandoc` 与 `7z`，沙箱/CI 是否预装需实测（影响 rpt-05 可机读性）。
+
+### 已关闭的核实闸（T02 / T06）
+- **VG-S3-1**：S3 已抓取核验，快照含 URL / 日期 / 逐字段落；F-3.3、F-4.1–4.3、F-6.1–6.3 已按 S3 修订。
+- **VG-S3-2**：S1 PDF 已机读抽取（sha256 `f6be0a90…`），(official) 项与 digest 零差异；F-1.7 的 A/D/E 标注偏差已修正。
+- **VG-PANDOC-1（T06）**：pandoc 3.14 + typst 0.15.1 + 7zr 26.04 便携工具链实跑成功；**AC-12 PASS**，PDF 目录含 `Offsec AI Red Teamer Report`，`.7z` 仅 1 个 PDF 成员、`Encrypted = -`、≤100MB。详见会话空间 T06 执行记录。
 
 ### 已排除（明确不在本技能范围）
 - **PyRIT 对象图（B7）**：report-exam 是报告组装器，不调用 PyRIT；任何 `pyrit.orchestrator`/`*Orchestrator`/`AzureOpenAIChatTarget` 均不出现。
@@ -162,6 +167,7 @@
 | 战利品单一事实源 | `loot-manage` 登记簿 `loot/registry.md`（生成后） |
 | 报告骨架 | `templates/osai-report-template-en.md` / `-zh.md` |
 | 官方事实 digest | `references/official-requirements.md` |
+| S3 一手源快照 | `docs/governance/references/OSAI-Exam-Guide-snapshot.md` |
 | 证据→章节映射 | `references/evidence-mapping.md` |
 | 提交前校验 | `skills/verify-evidence`（八项检查单） |
 | 渲染/打包 | `pandoc --toc` + `7z a -mx=9`（rpt-05） |
@@ -184,3 +190,5 @@
 | 验收⑤ | 文档落盘 docs/research/ | 本文件 | `docs/research/report-exam-canonical.md` | 符合 | — |
 
 **阶段 1 结论：PASS**（B7 N/A 已声明；B8 持续项于后续阶段闭合；无「缺来源/版本含糊/攻击路径未映射」类不符合项）。
+
+> 事后更新（T02 / T06）：VG-S3-1 / VG-S3-2 / VG-PANDOC-1 已关闭，见 §10；本表为阶段 1 历史判定，不改写。

@@ -25,14 +25,16 @@ from report_exam import (  # noqa: E402
     extract_facts, verify_report, render_pdf, make_archive,
     assemble_report, package,
 )
+from report_exam._types import SCORED_HOSTS  # noqa: E402
 from report_exam.bilingual import (  # noqa: E402
     LONG_POC_THRESHOLD, long_poc_fragments, render_appendix_a,
 )
 
-EXPECTED = ["chain1-h1", "standalone", "domain-controller"]
+EXPECTED = list(SCORED_HOSTS)
+PANEL = {"chain1-host1": "OSAI{x}"}
 
 
-def frag(step_id="aia-01", host="h1", **kw):
+def frag(step_id="aia-01", host="chain1-host1", **kw):
     base = dict(step_id=step_id, host=host, target="10.0.0.1",
                 title="step", command="whoami", output="uid=0(root)",
                 screenshot="shots/aia-01.png", ai_log="", flag="",
@@ -114,20 +116,39 @@ OSAI{proof}
         self.assertEqual(f.host, "")
 
     def test_AC01_index_covers_all_expected_hosts_without_duplicates(self):
-        src = MemoryEvidenceSource([frag(host="h1"), frag("aia-02", host="h1")])
+        src = MemoryEvidenceSource([frag(), frag("aia-02")])
         m = build_index(src, expected_hosts=EXPECTED)
-        self.assertTrue(set(m.hosts) >= set(EXPECTED))
-        self.assertEqual(len(m.hosts["h1"]), 2)
+        self.assertEqual(set(m.hosts), set(EXPECTED))
+        self.assertEqual(len(m.hosts["chain1-host1"]), 2)
         self.assertEqual(m.hosts["standalone"], [])
+
+    def test_noncanonical_host_normalized_to_standalone(self):
+        src = MemoryEvidenceSource([frag(host="http://192.168.40.189/api/chat")])
+        m = build_index(src, expected_hosts=EXPECTED)
+        self.assertEqual(set(m.hosts), set(EXPECTED))
+        self.assertEqual(len(m.hosts["standalone"]), 1)
 
     def test_dir_evidence_source_reads_multiple_fragments(self):
         with tempfile.TemporaryDirectory() as d:
             with open(os.path.join(d, "a.md"), "w", encoding="utf-8") as f:
                 f.write("### 步骤 aia-01\n\n#### 确切命令\n\n```bash\nid\n```\n"
                         "\n### 步骤 aia-02\n\n#### 确切命令\n\n```bash\nwhoami\n```\n")
-            src = DirEvidenceSource(d)
+            src = DirEvidenceSource(d, real_only=False)  # 测试夹具显式关闭 -real 白名单
             ids = [f.step_id for f in src.iter_fragments()]
             self.assertEqual(ids, ["aia-01", "aia-02"])
+
+    def test_dir_evidence_source_excludes_drill_and_implementation_logs(self):
+        with tempfile.TemporaryDirectory() as d:
+            for name in ("aia-01.md", "rpt-01.md"):
+                with open(os.path.join(d, name), "w", encoding="utf-8") as f:
+                    f.write("### 步骤 %s\n\n#### 确切命令\n\n```bash\nid\n```\n"
+                            % name[:-3])
+            drill = os.path.join(d, "attack-ai-agent")
+            os.makedirs(drill)
+            with open(os.path.join(drill, "drill.md"), "w", encoding="utf-8") as f:
+                f.write("### 步骤 drill-01\n")
+            src = DirEvidenceSource(d)
+            self.assertEqual(list(src.iter_fragments()), [])  # 非 -real 目录全排除
 
 
 class SkeletonTests(unittest.TestCase):
@@ -146,10 +167,22 @@ class SkeletonTests(unittest.TestCase):
         self.assertIn("Offsec AI Red Teamer Report", t)
         self.assertIn("Copyright © 2026 OffSec Ltd. All rights reserved.", t)
 
-    def test_AC14_two_decoys_confirmed_not_exploitable(self):
+    def test_T05_B_cover_h1_verbatim_no_unlisted(self):
+        """T05 决策 B（不采纳净化）：封面 4 行 H1 逐字保留，不注入目录排除属性。"""
         t = render_skeleton(build_index(MemoryEvidenceSource([])))
+        for line in ["# OffSec AI Red Teamer", "# Exam Report",
+                     "# student@youremailaddress.com", "# OSID: XXXXX"]:
+            with self.subTest(line=line):
+                self.assertIn(line, t)
+        self.assertNotIn("{.unlisted}", t)
+        self.assertIn("Offsec AI Red Teamer Report", t)  # AC-04 必备条目仍在
+
+    def test_AC14_two_decoys_confirmed_not_exploitable(self):
+        t = render_skeleton(build_index(MemoryEvidenceSource([]), expected_hosts=EXPECTED))
         self.assertIn("Intentionally Not Vulnerable Hosts", t)
-        self.assertEqual(t.count("confirmed not exploitable"), 3)
+        self.assertEqual(t.count("confirmed not exploitable"), 2)
+        self.assertEqual(t.count("确认不可利用"), 2)  # 机读中文标记（HTML 注释）
+        self.assertIn("pending backfill", t)  # 无证据时不得虚构枚举佐证
 
 
 class SectionTests(unittest.TestCase):
@@ -178,15 +211,16 @@ class SectionTests(unittest.TestCase):
         zh = render_all_host_sections(m, lang="zh")
         self.assertIn("未达成", zh)
 
-    def test_en_and_zh_labels_switch_but_values_stay_verbatim(self):
+    def test_en_and_zh_evidence_values_stay_verbatim(self):
+        """证据区间语言无关（AC-10）；仅叙述性状态措辞按 lang 切换。"""
         f = frag(ai_log="prompt: test", flag="OSAI{x}")
-        en = render_host_section("h1", [f], lang="en")
-        zh = render_host_section("h1", [f], lang="zh")
-        self.assertIn("AI Interaction Log", en)
-        self.assertIn("AI 交互日志", zh)
+        en = render_host_section("chain1-host1", [f], lang="en")
+        zh = render_host_section("chain1-host1", [f], lang="zh")
         for t in (en, zh):
             self.assertIn(f.command, t)
             self.assertIn(f.flag, t)
+            self.assertIn("AI Interaction Log", t)
+        self.assertEqual(extract_facts(en), extract_facts(zh))
 
     def test_flag_and_privilege_routing(self):
         f = frag(command="id", flag="OSAI{ai_vector}")
@@ -228,7 +262,7 @@ class AppendixTests(unittest.TestCase):
 class BilingualTests(unittest.TestCase):
     def test_AC10_facts_block_identical_between_versions(self):
         m = build_index(MemoryEvidenceSource([frag(flag="OSAI{x}")]),
-                        expected_hosts=EXPECTED)
+                        expected_hosts=EXPECTED, panel_flags=PANEL)
         en, zh = render_bilingual(m)
         self.assertTrue(extract_facts(en))
         self.assertEqual(extract_facts(en), extract_facts(zh))
@@ -249,8 +283,8 @@ class BilingualTests(unittest.TestCase):
 class VerifyTests(unittest.TestCase):
     def setUp(self):
         self.m = build_index(
-            MemoryEvidenceSource([frag(flag="OSAI{ai_vector}", ai_log="prompt: p")]),
-            expected_hosts=EXPECTED)
+            MemoryEvidenceSource([frag(flag="OSAI{x}", ai_log="prompt: p")]),
+            expected_hosts=EXPECTED, panel_flags=PANEL)
         self.en, _ = render_bilingual(self.m)
         self.app = collect_ai_logs([f for fs in self.m.hosts.values() for f in fs])
 
@@ -258,7 +292,8 @@ class VerifyTests(unittest.TestCase):
         v = verify_report(self.m, self.en, appendix_md=self.app)
         self.assertTrue(v["passed"], "blocking=%s" % v["blocking"])
         self.assertEqual(len(v["checks"]), 9)  # vrf-01..08 + proof-single
-        self.assertTrue(all(v["checks"].values()))
+        self.assertIsNone(v["checks"]["vrf-07"])  # dry-run 记未判定，不放宽
+        self.assertFalse(v["failed_checks"])
 
     def test_AC09_duplicate_proof_submission_blocks(self):
         fs = [frag("aia-01", flag="proof.txt: OSAI{1}"),
@@ -324,9 +359,43 @@ class PackagingTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 make_archive("x.pdf", d, "12345", runner=FakeRunner(fail_on="7z"))
 
+    def test_T06_pdf_engine_explicit_and_toc_preserved(self):
+        """T06 / VG-PANDOC-1：无 LaTeX 环境须显式 --pdf-engine，且 --toc 不丢。"""
+        from unittest import mock
+        with mock.patch.dict(os.environ, {"PANDOC_PDF_ENGINE": "typst"}):
+            with tempfile.TemporaryDirectory() as d:
+                r = FakeRunner()
+                render_pdf("# report", d, "12345", runner=r)
+                self.assertIn("--toc", r.calls[0])
+                self.assertIn("--pdf-engine=typst", r.calls[0])
+
+    def test_T06_packaged_verify_has_no_stale_VG3_pending(self):
+        """真实打包后 submission_ready=yes 与 VG-3 dry-run 核实闸不得并存（T06 CLI 修复）。"""
+        src = MemoryEvidenceSource([frag(flag="OSAI{x}", ai_log="prompt: p")])
+        with tempfile.TemporaryDirectory() as d:
+            r = assemble_report(src, expected_hosts=EXPECTED, panel_flags=PANEL,
+                                out_dir=d, runner=FakeRunner())
+            self.assertTrue(r["ac"]["AC-12"])
+            self.assertTrue(r["submission_ready"])
+            self.assertFalse(any("VG-3" in x
+                                 for x in r["package"]["verify"]["pending"]))
+
+    def test_T06_pdf_engine_absent_falls_back_to_pandoc_default(self):
+        """无任何引擎时交 pandoc 默认（明确报 VG-3），不静默改命令语义。"""
+        from unittest import mock
+        import importlib
+        pkg = importlib.import_module("report_exam.package")
+        with mock.patch.dict(os.environ, {"PANDOC_PDF_ENGINE": ""}), \
+                mock.patch.object(pkg.shutil, "which", return_value=None):
+            with tempfile.TemporaryDirectory() as d:
+                r = FakeRunner()
+                render_pdf("# report", d, "12345", runner=r)
+                self.assertEqual(r.calls[0][:2], ["pandoc", "--toc"])
+                self.assertFalse(any("--pdf-engine" in a for a in r.calls[0]))
+
     def test_package_success_with_injected_runner(self):
         m = build_index(MemoryEvidenceSource([frag(flag="OSAI{x}", ai_log="p")]),
-                        expected_hosts=EXPECTED)
+                        expected_hosts=EXPECTED, panel_flags=PANEL)
         en, _ = render_bilingual(m)
         with tempfile.TemporaryDirectory() as d:
             res = package(m, en, d, runner=FakeRunner())
@@ -345,7 +414,8 @@ class PackagingTests(unittest.TestCase):
 class AssembleTests(unittest.TestCase):
     def test_all_AC_pass_except_packaging_when_skipped(self):
         src = MemoryEvidenceSource([frag(flag="OSAI{x}", ai_log="prompt: p")])
-        r = assemble_report(src, expected_hosts=EXPECTED, do_package=False)
+        r = assemble_report(src, expected_hosts=EXPECTED, panel_flags=PANEL,
+                            do_package=False)
         self.assertTrue(r["all_ac_pass"] or not r["ac"]["AC-12"])
         for k, v in r["ac"].items():
             with self.subTest(ac=k):
@@ -358,14 +428,14 @@ class AssembleTests(unittest.TestCase):
         src = MemoryEvidenceSource([frag(flag="OSAI{x}", ai_log="prompt: p")])
         with tempfile.TemporaryDirectory() as d:
             r = assemble_report(src, expected_hosts=EXPECTED, osid="12345",
-                                out_dir=d, runner=FakeRunner())
+                                panel_flags=PANEL, out_dir=d, runner=FakeRunner())
             self.assertTrue(r["all_ac_pass"], str(r["ac"]))
             self.assertIsNotNone(r["package"]["pdf"])
 
     def test_cli_index_and_build(self):
         from report_exam.__main__ import main
         with tempfile.TemporaryDirectory() as d:
-            ev = os.path.join(d, "ev")
+            ev = os.path.join(d, "attack-ai-agent-real")
             os.makedirs(ev)
             with open(os.path.join(ev, "a.md"), "w", encoding="utf-8") as f:
                 f.write("### 步骤 aia-01\n\n#### 确切命令\n\n```bash\nid\n```\n")

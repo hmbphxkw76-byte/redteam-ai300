@@ -396,17 +396,24 @@ python tools/recon_ai/cli.py inventory --path evidence/recon-ai/ai-assets.json
 curl -s http://192.168.40.189/api/config
 curl -s http://192.168.40.189/v1/models
 
-# 4. 核对正文内嵌截图 7 处，且镜像与证据源逐字节一致
+# 4. 核对正文内嵌截图 7 处；report/assets 为 evidence 原始截图的派生展示副本（宽 800px），不再逐字节一致
 grep -c '^!\[recon' report/recon-ai-report-sample-20261114.md
-diff <(cd report/assets && sha256sum *.png) \
-     <(cd evidence/recon-ai/shots && sha256sum *.png) && echo ASSETS_MATCH
+# 校验展示副本尺寸（宽须为 800px，派生自 evidence/.../shots 的 1280×900）
+python3 - <<'PY'
+import glob, os, struct
+def dim(p): return struct.unpack('>II', open(p, 'rb').read(33)[16:24])
+ok = all(dim(p)[0] == 800 for p in sorted(glob.glob('report/assets/*.png')))
+for p in sorted(glob.glob('report/assets/*.png')):
+    print(f'{os.path.basename(p):28s}', '%dx%d' % dim(p))
+print('ASSETS_DERIVED_OK' if ok else 'ASSETS_CHECK_FAILED')
+PY
 ```
 
 截图嵌入与构建说明：正文 7 处截图均以 `![]()` 内嵌，地址为 `assets/<file>.png`（相对报告文件所在目录 `report/`，**不含 `..`**）。此形态有三项约束来源：
 
 1. 预览器与 pandoc 均按「报告文件所在目录 + 原文 src」解析图片，故引用须相对 `report/` 目录写作 `assets/<file>.png`；若误写为 `report/assets/<file>.png` 会被解析成 `report/report/assets/...` 这类不存在路径而报 `Failed to load image`，亦不得使用 `../` 越级引用；
-2. `evidence/` 在 `.gitignore` 中，若直接引用则克隆者看到空图；本报告将截图镜像到 `report/assets/`（相对引用写作 `assets/`），随报告提交，样例自足；
-3. `report/assets/` 是 `evidence/recon-ai/shots/` 的**逐字节镜像**，一致性由 sha256 相等保证（见上方第 4 步命令与附录 E 哈希列）。
+2. `evidence/` 在 `.gitignore` 中，若直接引用则克隆者看到空图；本报告将截图**派生副本**存入 `report/assets/`（相对引用写作 `assets/`），随报告提交，样例自足；
+3. `report/assets/` 是 `evidence/recon-ai/shots/` 原始截图（1280×900）的**派生展示副本**：统一缩放至宽 800px、无损压缩。二者**不再逐字节一致**，故哈希不同；原始证据哈希以 `MANIFEST.jsonl` 与证据片段为准，本报告内嵌副本哈希见附录 E。
 
 产出 PDF 时进入 `report/` 目录执行（图片相对报告文件解析，pandoc 默认按工作目录定位资源）：
 
@@ -415,7 +422,7 @@ cd report && pandoc --toc recon-ai-report-sample-20261114.md \
   -o OSAI-OS-XXXXX-Exam-Report.pdf
 ```
 
-PDF 中缺图即视为「无截图支撑」，属 §6.1 不可豁免项，故该目录约束不是习惯问题而是合规问题。镜像与源不一致同样会使附录 E 的哈希对不上，故第 4 步同时校验两者。
+PDF 中缺图即视为「无截图支撑」，属 §6.1 不可豁免项，故该目录约束不是习惯问题而是合规问题。`report/assets/` 为派生展示副本，与 `evidence/` 原始证据哈希不同属预期；第 4 步校验展示副本宽度为 800px，并核对附录 E 哈希与本表一致。
 
 数据一致性说明：证据清单 `MANIFEST.jsonl` 逐行记录 `step_id`、命令、输出 sha256、时间戳、执行分级、留存入径与件套状态；重跑后命令与判定应一致，输出 hash 可能因模型回复的文字差异而变化（`recon-02` 的 SSE 分片属模型生成内容），该差异不影响判定结论，但会使 hash 不同——复核时应以「判定 + 关键字段」为准，并同时比对截图。
 
@@ -471,17 +478,17 @@ PDF 中缺图即视为「无截图支撑」，属 §6.1 不可豁免项，故该
 
 ## E. Screenshot Index
 
-正文每步均已内嵌上述截图（同一文件、同一哈希），本表仅提供**索引与校验值**，便于逐张对照与抽查。
+正文每步均已内嵌上述截图（文件位于 `report/assets/`，为 `evidence/recon-ai/shots/` 原始截图 **1280×900** 的**派生展示副本**：统一缩放至宽 800px、无损压缩，故哈希与原始证据不同）。本表提供报告内嵌文件的**索引与校验值**，便于逐张对照；原始全分辨率证据的哈希以 `MANIFEST.jsonl` 为准。
 
 | # | 文件 | 类型 | 内容 | sha256（前 12） |
 |---|---|---|---|---|
-| 1 | `recon-01-url.png` | url | `/api/config` 的 JSON 响应（含 `llm_model_default`） | `ca501313a881` |
-| 2 | `recon-02-transcript.png` | transcript | 聊天端点 curl + SSE 原文 + 判定 | `c7f1a9e49b8b` |
-| 3 | `recon-03-url.png` | url | `/explore` 实验面（Phase 1–4，55 lab） | `ea29965b9ac1` |
-| 4 | `recon-04-url.png` | url | `/api/labs/MM_05/summary` 的 422 响应 | `6ab9c85162c0` |
-| 5 | `recon-05-url.png` | url | `/api/labs/DE_01/summary` 的 422 响应 | `6ab9c85162c0` |
-| 6 | `recon-06-transcript.png` | transcript | 校验预言机 curl + 200/`success:false` + 422 schema | `7d97885185e0` |
-| 7 | `recon-07-transcript.png` | transcript | 护栏回显判定与缺失响应头 | `210a9331a14a` |
+| 1 | `recon-01-url.png` | url | `/api/config` 的 JSON 响应（含 `llm_model_default`） | `27187d1760b9` |
+| 2 | `recon-02-transcript.png` | transcript | 聊天端点 curl + SSE 原文 + 判定 | `546336abcf91` |
+| 3 | `recon-03-url.png` | url | `/explore` 实验面（Phase 1–4，55 lab） | `307042d7805e` |
+| 4 | `recon-04-url.png` | url | `/api/labs/MM_05/summary` 的 422 响应 | `05b9a9b137b0` |
+| 5 | `recon-05-url.png` | url | `/api/labs/DE_01/summary` 的 422 响应 | `05b9a9b137b0` |
+| 6 | `recon-06-transcript.png` | transcript | 校验预言机 curl + 200/`success:false` + 422 schema | `7fdf54ecf43c` |
+| 7 | `recon-07-transcript.png` | transcript | 护栏回显判定与缺失响应头 | `b013c5c7ba83` |
 
 ## F. Evidence Manifest
 

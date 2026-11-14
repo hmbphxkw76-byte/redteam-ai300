@@ -16,6 +16,8 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、AI 交互日志、
 
 按「定位攻击面 → 提示注入 → 记忆滥用 → 工具滥用 → flag 取证」顺序推进，每步落盘证据，未过质量门不得进入下一步。
 
+> **职责分离**：本 SKILL.md 仅定义**行为规格**（攻击流程 / 证据 / 验收标准），**不含任何 PyRIT 代码**；全部实现落在 `tools/attack_ai_agent/`（版本锁定 `pyrit==1.1.0`），步骤标识 `aia-01..12` 为规格与实现的稳定契约。每个步骤的**实现文件、PyRIT 1.1.0 对象与执行命令**见下节「实现映射（PyRIT 1.1.0）」。本节以 `<id>` 指代对应稳定步骤标识。
+
 ### 前置：定位 agent 攻击面
 
 1. 复用 `recon-ai` 资产清单，确认 agent 的 I/O 通道与身份边界。
@@ -44,6 +46,29 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、AI 交互日志、
 
 1. 取得主机立足点后定位 `ai_vector.txt`。
 2. 取证须含访问证明：`whoami`/`id` + flag 内容同屏截图（对齐 §6.2 双通道要求）。
+
+## 实现映射（PyRIT 1.1.0）
+
+行为规格与实现脚本分离：SKILL.md 只定义流程 / 证据 / 验收，实现全部在 `tools/attack_ai_agent/`（`pyrit==1.1.0`，禁用 0.x 命名空间）。下表给出每个步骤的**实现文件**与**关键 PyRIT 1.1.0 对象**，保证「规格 → 实现」引用关系可追溯。
+
+| 步骤 / 范围 | 实现文件 | 关键 PyRIT 1.1.0 对象 |
+|---|---|---|
+| `aia-01`..`aia-12` 步骤契约 | `tools/attack_ai_agent/steps.py` | `STEP_SPECS`（objective / 载荷 / 截图钩子 / 稳定步骤标识） |
+| 路径 A（`aia-02/03/04`，ASI01 提示注入） | `tools/attack_ai_agent/paths.py` + `backends.py` | `pyrit.executor.attack.PromptSendingAttack`；间接注入 `pyrit.executor.workflow.XPIATestWorkflow`（B7 受控例外）；转换器 `Base64Converter` / `ROT13Converter` / `LeetspeakConverter` / `TranslationConverter` |
+| 路径 B（`aia-05/06/07`，ASI06 记忆滥用） | `paths.py` + `backends.py` | `RedTeamingAttack` + `SQLiteMemory`（`initialize_pyrit_async(memory_db_type="SQLite")`，跨会话持久后端） |
+| 路径 C（`aia-08/09/10`，ASI02 工具滥用） | `paths.py` + `backends.py` | `pyrit.prompt_target.HTTPTarget`（工具 / MCP 端点）+ `get_http_target_json_response_callback_function`；越权外呼判定 `SubStringScorer` |
+| 全步骤编排与效果分级 | `tools/attack_ai_agent/runner.py` | `AttackExecutor(max_concurrency=1).execute_attack_async(attack=, objectives=)`；纯函数 `grade()`（决定性 / LLM 线索 / 跳过分级，不夸大） |
+| 真实双模型实跑 | `tools/attack_ai_agent/run_real.py` | 攻击 / 目标模型 `OpenAIChatTarget(OPENAI_CHAT_*)`；评分模型 `SelfAskTrueFalseScorer(OpenAIChatTarget(OPENAI_SCORER_*))` + `SubStringScorer` + `ContentScorable`（两套独立模型命名空间） |
+| 标准库假后端（CI 零依赖） | `tools/attack_ai_agent/demo.py` | `FakePyRITBackend`（与 `RealPyRITBackend` 同一 `BackendFactory` 协议） |
+| 证据产出（五件套 / 三件套） | `tools/collect_evidence.py` | `--strict` 质量门，结构与 `report-exam` Attack Walkthrough 兼容 |
+
+**执行方式**（均为实现脚本，非本规格）：
+
+- 真实靶机全量：`python tools/attack_ai_agent/run_real.py --lab <LAB> --paths "A C"`（需仓库根 `.env` 的 `OPENAI_CHAT_*` / `OPENAI_SCORER_*` 凭据）。
+- 单步复现：`python tools/attack_ai_agent/run_real.py --step aia-02 --lab <LAB>`。
+- CI / 无 pyrit 环境演示：`python tools/attack_ai_agent/demo.py --step aia-02`。
+
+> 单一真实 seam：`RealPyRITBackend` 承载全部 PyRIT 调用；`FakePyRITBackend` 实现同一协议，测试可在未安装 pyrit 的环境注入假后端验证全部外部行为（AC-23），真实执行由 `runner` / `run_real` 编排。
 
 ## 质量门
 

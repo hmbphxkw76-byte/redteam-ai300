@@ -42,15 +42,28 @@ def report_exam_targets():
             ("tests.test_report_exam", "tests.test_report_exam_evidence_contract"))
 
 
+def recon_ai_targets():
+    """recon-ai 业务代码集合（阶段 9 / AC-23 覆盖率目标）。"""
+    import importlib
+    names = ("model", "transport", "fingerprint", "probes", "shot",
+             "evidence", "policy", "inventory", "runner", "cli")
+    mods = tuple(importlib.import_module("tools.recon_ai." + n) for n in names)
+    return mods, ("tests.test_recon_ai", "tests.test_recon_ai_units")
+
+
 def resolve_target(mode):
     if mode == "attack-ai-agent":
         return list(AA_MODULES), list(AA_TESTS)
     if mode == "report-exam":
         mods, tests = report_exam_targets()
         return list(mods), list(tests)
+    if mode == "recon-ai":
+        return list(recon_ai_targets()[0]), list(recon_ai_targets()[1])
     if mode == "all":
         mods, tests = report_exam_targets()
-        return list(AA_MODULES) + list(mods), list(AA_TESTS) + list(tests)
+        ra_mods, ra_tests = recon_ai_targets()
+        return (list(AA_MODULES) + list(mods) + list(ra_mods),
+                list(AA_TESTS) + list(tests) + list(ra_tests))
     raise ValueError("未知 --target：%s" % mode)
 
 
@@ -122,7 +135,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="标准库行覆盖率测量")
     ap.add_argument("--min", type=float, default=0.0, help="覆盖率门槛（百分比）")
     ap.add_argument("--target", default="attack-ai-agent",
-                    choices=("attack-ai-agent", "report-exam", "all"),
+                    choices=("attack-ai-agent", "report-exam", "recon-ai", "all"),
                     help="被测业务代码集合（默认 attack-ai-agent，兼容既有 CI）")
     args = ap.parse_args(argv)
 

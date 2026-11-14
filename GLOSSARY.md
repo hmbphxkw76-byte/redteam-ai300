@@ -59,6 +59,22 @@ _Avoid_: rabbit hole、蜜罐
 **Embedding**:
 嵌入向量，可经反演/信息提取泄露敏感数据。
 
+**AI 资产 (AI asset)**:
+目标环境中承担推理、检索、编排或工具调用的可识别组件实例（LLM 引擎、模型服务、RAG 库、向量库、agent 系统、MCP 工具面、护栏），是 `recon-ai` 的输出单元。
+_Avoid_: AI 靶标、AI 组件资产
+
+**资产清单 (asset inventory)**:
+`recon-ai` 产出的结构化资产集合，每条含资产ID、组件类别、产品/引擎、版本、暴露端点、凭证线索指纹、关联证据 step_id 七字段，可被下游技能按资产ID直接引用。
+_Avoid_: 资产报表
+
+**证据清单 (evidence manifest)**:
+按步骤逐行登记证据片段的 JSONL 记录，含 step_id、确切命令、产物哈希、时间戳、执行分级、留存入径与件套状态，用于整份证据集的独立复核。
+_Avoid_: 证据目录、证据汇总表
+
+**演练目标 (drill target)**:
+经授权用于演练的目标主机或入口（如 AIVP 实例），非 OSAI 正式考试环境，其结论不外推为考试环境事实。
+_Avoid_: 靶机、靶标
+
 ## PyRIT 实现层
 
 本仓库以 PyRIT 为 AI 红队攻击的实现框架（版本锁定 `pyrit==1.1.0`，见 ADR-0004）。下列术语为 PyRIT v1.1.0 原生对象在本文档中的规范称谓；来源统一为 PyRIT 官方文档 `microsoft.github.io/PyRIT/1.1.0/` 与 `docs/research/pyrit-canonical-references.md`。

@@ -64,7 +64,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、AI 交互日志、
 
 **执行方式**（均为实现脚本，非本规格）：
 
-- 真实靶机全量：`python tools/attack_ai_agent/run_real.py --lab <LAB> --paths "A C"`（需仓库根 `.env` 的 `OPENAI_CHAT_*` / `OPENAI_SCORER_*` 凭据）。
+- 真实目标主机全量：`python tools/attack_ai_agent/run_real.py --lab <LAB> --paths "A C"`（需仓库根 `.env` 的 `OPENAI_CHAT_*` / `OPENAI_SCORER_*` 凭据）。
 - 单步复现：`python tools/attack_ai_agent/run_real.py --step aia-02 --lab <LAB>`。
 - CI / 无 pyrit 环境演示：`python tools/attack_ai_agent/demo.py --step aia-02`。
 

@@ -1,6 +1,6 @@
 # CI/CD 流水线设计规范
 
-> **版本** v1.0 · **状态** 生效 · **性质** 《治理规范》第八章的可执行落地
+> **版本** v1.1 · **状态** 生效（2026-11-14 T07/T08 工具链与契约修订）· **性质** 《治理规范》第八章的可执行落地
 > **依据** [GOVERNANCE.md](../governance/GOVERNANCE.md) · [GLOSSARY.md](../../GLOSSARY.md) · [ADR-0003](../governance/adr/0003-ci-cd-github-actions.md)
 
 ---
@@ -37,6 +37,8 @@ commit ──S0──▶ PR ──S1──▶ S2 ──▶ merge ──S3──�
 
 **关键约束**：S0–S2 运行于未合并分支，失败只阻断、不回滚（直接修复重推）；S3–S5 运行于已合并/已发布产物，失败需回滚或撤销。
 
+> **T06 补充**：`.github/workflows/report-toolchain.yml` 为独立工具链冒烟 workflow（不占 S1–S5 阶段号），随 PR/push 触发；固定 pandoc 3.14 / typst 0.15.1 / p7zip-full，真实构建并机读断言 AC-12、PDF 目录条目、无密码、单 PDF 成员、≤100MB。产物仅写 `RUNNER_TEMP`，不上传、不提交。
+
 ---
 
 ## 3. 各阶段规范
@@ -48,19 +50,23 @@ commit ──S0──▶ PR ──S1──▶ S2 ──▶ merge ──S3──�
   1. 秘密扫描（gitleaks），禁止凭据/密钥入库。
   2. commit message 规范校验（Conventional Commits：`type(scope): subject`）。
   3. 文件大小与二进制检查（拒绝 >1MB 的非必要二进制，参考 §6.4 报告归档上限 100MB）。
+  4. 本地记忆：`--local`（`.workbuddy/` 被 gitignore，CI 不可见，按 C7 蒸馏）。
+  5. 仓库外产物：`--artifact <KIND> <PATH>`，写 PR 正文 / issue 摘要 / brief 前判 C4 上限。
 - **成功标准**：全部通过，允许进入 PR。
 - **失败标准**：任一检查非零退出。
 - **回滚/修复**：未合并，无回滚；本地修正后 `git commit --amend` 或新增 commit 重推。
 
 ### S1 代码检查（Static Checks）
 
-- **触发条件**：PR `opened`/`synchronize`；向 feature 分支 `push`。
+- **触发条件**：PR `opened`/`synchronize`；向任意分支 `push`（`ci.yml` 的 `push.branches: ['**']`，feature 分支同样受门禁约束；S3/S4 仍由 `github.ref == 'refs/heads/main'` 限定）。
 - **执行步骤**（对应 `ci.yml` 的 `checks` job）：
-  1. Markdown 规范（markdownlint）——作用于 `docs/**`、`GLOSSARY.md`、`skills/**`。
+  1. Markdown 规范——作用于 `docs/**`、`GLOSSARY.md`、`skills/**`；`globs` 逐行分隔（逗号分隔会假绿）。官方模板按 `.markdownlint-cli2.jsonc` 的 `ignores` 豁免，理由见配置注释（§8.3）。
   2. 技能解剖校验（`scripts/validate_skill.py`）——强制 §4.2 五要素、优先级/能力域/计分单元枚举、目录与 `name` 一致。
   3. 术语一致性（`scripts/check_glossary.py`）——技能不得使用 `GLOSSARY.md` 标注 `_Avoid_` 的废弃术语（§1.3、§8.2-8）。
-  4. 共享工具语法编译（`python -m py_compile tools/collect_evidence.py`）——证据收集工具引入后强制语法门禁。
-- **成功标准**：四项均 0 错误。
+  4. Token 预算 / 规范契约（`check_token_budget.py --check`）——判 `BUDGETS` 字节上限、冷备清单、重复块，及 `CONTRACTS` 的 14 项锚点（C1–C8、§2.4、ADR-0005、CI 接线、跨 IDE 指针）是否齐全；任一缺失或超限即阻断。依据 `AGENTS.md` C4、主流程 §2.4、ADR-0005。
+  5. PR 正文 C4 产物上限（仅 `pull_request` 事件）——把 `github.event.pull_request.body` 落盘后执行 `--artifact pr-body`，超 3KB 阻断。
+  6. 共享工具语法编译（`python -m py_compile tools/collect_evidence.py`）——证据收集工具引入后强制语法门禁。
+- **成功标准**：六项均 0 错误。
 - **失败标准**：任一脚本非零退出，CI 报告精确到文件与缺失字段。
 - **回滚/修复**：未合并，无回滚；依检查器输出修正后重推。
 
@@ -91,6 +97,7 @@ commit ──S0──▶ PR ──S1──▶ S2 ──▶ merge ──S3──�
   1. `validate_skill.py` 全量（含「name 是否登记于 §4.4」的登记核对）。
   2. `check_glossary.py` 全量。
   3. 治理文档结构校验（`GOVERNANCE.md` 条款编号唯一、`GLOSSARY.md` 术语定义完整、ADR 编号连续）。
+  4. `check_token_budget.py --check` 复核（产物上限 + 14 项规范契约锚点），防止合并后语料或契约回退。
 - **成功标准**：全量合规，0 错误。
 - **失败标准**：任一检查失败。
 - **回滚/修复**：已合并；`git revert` 回滚该 merge；修复后以新 PR 重新进入 S1–S4。
@@ -149,6 +156,7 @@ commit ──S0──▶ PR ──S1──▶ S2 ──▶ merge ──S3──�
 scripts/
   validate_skill.py             # 技能解剖与登记校验（S1/S4）
   check_glossary.py             # 术语一致性校验（S1/S4）
+  check_token_budget.py         # Token 预算 / 产物上限 / 冷备清单（S1）
 tools/
   collect_evidence.py           # 共享证据收集工具（P0，通用，服务 P0 攻击技能）
 tests/

@@ -4,6 +4,7 @@
 > **用途**：把一份 `SKILL.md`（或任何「能力声明文档」）落地为代码 / 可纳入 CI 的交付物。
 > **与其他文档关系**：本仓库项目专属权威版见 `docs/operations/skill-mainline-workflow.md`；本文档是其**跨 IDE 可迁移的通用提炼**——剥离了平台绑定细节，保留统一流程、门禁与**提示词模板**，可直接迁入 Cursor / Cline / CodeBuddy / WorkBuddy / Aider 等任意支持 agent 的 IDE。
 > **核心资产**：第 4 节的「调用方法 + 提示词模板」与第 8 节的模板总索引——这些是与平台无关的通用资产。
+> **迁移必带（ADR-0005）**：把本流程迁入目标 IDE 时，必须同步 `AGENTS.md`「Token 预算纪律」**C1–C8** 到该 IDE 的 rules 文件，并接入 `scripts/check_token_budget.py --check`；仅复制 11 阶段流程视为迁移未完成。规范契约由 CI 静态层校验。
 
 ---
 
@@ -35,6 +36,7 @@
 | 11 | `pr-push-review` | PR + 推送前评审 + 双通道推送 | PR + CI 结果 + 推送记录 | 发布 |
 
 **执行顺序（固定）**：
+
 ```
 research → to-spec① → to-spec② → to-tickets → triage
         → codebase-design → domain-modeling → implement-spec
@@ -300,11 +302,13 @@ Testing Decisions / Out of Scope / Further Notes。
 步骤：①逐条审查 v1 User Stories 可判定性 → ②不可判定者改写为布尔验收条件 → ③补齐 Testing Decisions（只测外部行为、列既有参考测试）→ ④CI 门禁映射到每条验收条件 → ⑤收敛 seam 与对象图 → ⑥在 v1 同 issue 追加 v2 + 差异清单。
 
 **布尔验收条件写法（模板）**：
+
 ```
 给定 <前置条件/输入>，
 当 <动作/触发>，
 则 <可观测的判定结果，可为命令输出或人工判据>。
 ```
+
 示例：`给定 一个合法的 prompt 输入，当 调用 attack 入口，则 返回结构化结果且不含未处理异常（断言：exit 0 且输出含字段 result）。`
 
 ### 5.4 两遍之间的衔接件（映射表）
@@ -367,6 +371,8 @@ v1 User Story  →  v2 布尔验收条件  →  验证命令 / 人工判据  →
 
 ## 8. 提示词模板总索引（快速复制）
 
+> 各阶段提示词的**独立可执行版本**（统一「目标/输入/输出/触发条件/上下游衔接/G0 门禁」结构，单文件可复制部署）见 `docs/standards/prompts/`；部署到各 IDE（VS Code Copilot、Cursor、Claude Code、Cline 等）时以该目录为复制源，放置与激活方式见其 README §6。本节索引保留作快速导航。
+
 | 阶段 | 模板标题 | 用途 |
 |---|---|---|
 | 1 | 阶段1 research | 一手源核实事实 |
@@ -382,6 +388,7 @@ v1 User Story  →  v2 布尔验收条件  →  验证命令 / 人工判据  →
 | 11 | 阶段11 pr-push-review | PR + 双通道推送 |
 
 整体触发（唤醒词）模板（任意平台通用语义）：
+
 ```
 /主线 [技能名]
 # 语义：按 docs/standards/cross-ide-mainline-workflow.md 的 11 阶段顺序 1→11 推进，

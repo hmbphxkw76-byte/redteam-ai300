@@ -245,6 +245,23 @@ OSAI{demo-flag}
 """
 
 
+def dual_fragment(panel="OSAI{demo-flag}", shot="OSAI{demo-flag}",
+                  host="standalone"):
+    """按 `tools/collect_evidence.py` 写出端格式构造含双通道明细表的片段。"""
+    table = ("\n#### flag 取证（双通道一致）\n\n"
+             "```text\n%s\n```\n\n"
+             "| 通道 | 值 |\n|---|---|\n"
+             "| 控制面板提交值 | %s |\n"
+             "| 截图/正文中的值 | %s |\n"
+             "| 一致性 | **%s** |\n"
+             % (panel or shot,
+                ("`%s`" % panel) if panel else "（缺失）",
+                ("`%s`" % shot) if shot else "（缺失）",
+                "一致" if panel == shot else "不一致"))
+    return FRAGMENT_MD.replace("**目标**：`10.0.0.1`",
+                              "**目标**：`%s`" % host) + table
+
+
 class VerifyEvidenceV2Tests(unittest.TestCase):
     """v2 AC-01…AC-20 的验收用例（每条 AC 至少一个用例）。"""
 
@@ -297,6 +314,70 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
             self.assertEqual(res["checks"]["vrf-01"], True)
             with self.assertRaises(ValueError):
                 VE.from_fragments(os.path.join(d, "nope"))
+
+    def test_AC01c_fragments_dir_reads_dual_channel_table(self):
+        """无外部 panel_flags 时，片段自带双通道表须支撑 vrf-04（SKILL 执行入口）。"""
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "aia-01.md"), "w", encoding="utf-8") as f:
+                f.write(dual_fragment())
+            inp = VE.from_fragments(d, report_md=report_text())
+            self.assertEqual(inp["panel_flags"], {"standalone": "OSAI{demo-flag}"})
+            self.assertEqual(inp["fragments"][0]["flag"], "OSAI{demo-flag}")
+            res = VE.verify(inp, require_artifacts=False, tools=FakeTools())
+            self.assertIs(res["checks"]["vrf-04"], True)
+            self.assertTrue(res["passed"], str(res["blocking"]))
+
+    def test_AC01d_fragments_dir_dual_mismatch_blocks(self):
+        """面板值 != 截图/正文值 → 失分条款阻断，不得因同入口而放行。"""
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "aia-01.md"), "w", encoding="utf-8") as f:
+                f.write(dual_fragment(panel="OSAI{panel}", shot="OSAI{shot}"))
+            inp = VE.from_fragments(d, report_md=report_text())
+            self.assertEqual(inp["panel_flags"]["standalone"], "OSAI{panel}")
+            self.assertEqual(inp["fragments"][0]["flag"], "OSAI{shot}")
+            res = VE.verify(inp, require_artifacts=False, tools=FakeTools())
+            self.assertIs(res["checks"]["vrf-04"], False)
+            self.assertTrue(any("面板值" in b for b in res["blocking"]))
+
+    def test_AC01e_fragments_dir_incomplete_channel_blocks(self):
+        """任一通道缺失即不登记面板值，由 vrf-04 报缺面板（§2.4）。"""
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "aia-01.md"), "w", encoding="utf-8") as f:
+                f.write(dual_fragment(shot=""))
+            inp = VE.from_fragments(d, report_md=report_text())
+            self.assertEqual(inp["panel_flags"], {})
+            res = VE.verify(inp, require_artifacts=False, tools=FakeTools())
+            self.assertIs(res["checks"]["vrf-04"], False)
+            self.assertTrue(any("缺控制面板提交值" in b for b in res["blocking"]))
+
+    def test_AC01f_explicit_panel_flags_take_precedence(self):
+        """显式注入优先于片段归一；注入不一致值时仍须阻断。"""
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "aia-01.md"), "w", encoding="utf-8") as f:
+                f.write(dual_fragment())
+            inp = VE.from_fragments(d, report_md=report_text(),
+                                    panel_flags={"standalone": "OSAI{override}"})
+            self.assertEqual(inp["panel_flags"]["standalone"], "OSAI{override}")
+            res = VE.verify(inp, require_artifacts=False, tools=FakeTools())
+            self.assertIs(res["checks"]["vrf-04"], False)
+
+    def test_AC01g_fragments_dir_cli_entry_passes(self):
+        """SKILL 文档入口 `python tools/verify_evidence.py --fragments-dir` 真跑可过。"""
+        import subprocess
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "aia-01.md"), "w", encoding="utf-8") as f:
+                f.write(dual_fragment())
+            rep, app = os.path.join(d, "r.txt"), os.path.join(d, "a.txt")
+            with open(rep, "w", encoding="utf-8") as f:
+                f.write(report_text())
+            with open(app, "w", encoding="utf-8") as f:
+                f.write("")
+            proc = subprocess.run(
+                [sys.executable, "tools/verify_evidence.py", "--fragments-dir", d,
+                 "--report", rep, "--appendix", app, "--no-artifacts"],
+                cwd=ROOT, capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertTrue(json.loads(proc.stdout)["passed"])
 
     # --- AC-02 用法错误 ----------------------------------------------------
     def test_AC02_usage_errors_exit_2(self):

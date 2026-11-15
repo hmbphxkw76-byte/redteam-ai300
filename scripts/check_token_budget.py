@@ -47,7 +47,9 @@ BUDGETS: dict[str, int] = {
     # 推理网关 / 降级结论，+~470B），与 attack-rag 术语块合并后实测 16639，超
     # 16500（+139）。按 ADR-0006「取并集后按合并实际内容 + 余量重算」上调至
     # 17000，留 ~361B；属 ADR-0005「基线 + 必要增量」，不删除既有内容。
-    "GLOSSARY.md": 17000,
+    # 17000 → 17500：并入 #229 verify-evidence 术语块后实测 17186（+186），按
+    # ADR-0006「合并后实际内容 + 余量」重算，留 ~314B。
+    "GLOSSARY.md": 17500,
     "docs/governance/GOVERNANCE.md": 17000,
     "docs/operations/skill-mainline-workflow.md": 28000,
     "docs/standards/cross-ide-mainline-workflow.md": 30000,

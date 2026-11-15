@@ -104,8 +104,13 @@ def cmd_list() -> int:
 
 
 def cmd_remove(directory: str, force: bool) -> int:
-    """清理 worktree（默认不强删未提交改动）。"""
+    """清理 worktree（默认不强删未提交改动；目标已不存在视为幂等成功）。"""
     directory = os.path.abspath(directory)
+    if not os.path.exists(directory):
+        # 目录已不存在：可能已被合并分支删除连带清理。prune 残留元数据后幂等返回 0。
+        _run(["git", "worktree", "prune"], check=False)
+        print("worktree 已不存在（幂等）：%s" % directory)
+        return 0
     args = ["git", "worktree", "remove"]
     if force:
         args.append("--force")

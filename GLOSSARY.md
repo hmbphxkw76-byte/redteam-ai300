@@ -99,6 +99,32 @@ _Avoid_: 证据目录、证据汇总表
 经授权用于演练的目标主机或入口（如 AIVP 实例），非 OSAI 正式考试环境，结论不外推。
 _Avoid_: 靶机、靶标
 
+## AI 供应链 (supply chain)
+
+**AI 供应链 (AI supply chain)**:
+由模型仓库、依赖源、数据管道与信任边界构成的 AI 产物供应链，可被投毒污染间接影响下游模型；对齐 OWASP Agentic ASI04 / LLM03 / LLM05。
+
+**AI向量机 (AI vector machine)**:
+计 15 分的 AI 向量主机（链内或独立机），flag 文件为 `ai_vector.txt`；是 `attack-supply-chain` 等 AI 技能的目标计分单元。与「AI 向量（攻击路径）」区分：前者指主机，后者指路径。
+
+**数据集投毒 (dataset poisoning)**:
+污染训练/检索数据，使模型或 RAG 产物偏向攻击者（OWASP LLM03）。
+
+**模型投毒 (model poisoning)**:
+植入后门权重或恶意适配器，使模型在触发条件下输出攻击者期望结果。
+
+**适配器投毒 (adapter poisoning)**:
+以恶意 LoRA/适配器文件污染基座模型的推理行为（如恶意 safetensors 适配器）。
+
+**数据管道投毒 (data pipeline poisoning)**:
+在 ETL/预处理环节注入恶意变换，污染下游数据集。
+
+**依赖投毒 (dependency poisoning)**:
+在包索引/镜像/requirements 注入恶意依赖（typosquat 或替换），构建或安装时执行非预期代码（OWASP LLM05）。仅指依赖面，区别于数据集/模型投毒。
+
+**构建触发 (build trigger)**:
+使投毒在构建或推理时执行非预期代码的触发机制（setup 钩子 / 反序列化）。
+
 ## PyRIT 实现层
 
 实现框架为 PyRIT，版本锁定 `pyrit==1.1.0`（ADR-0004）。下列为 v1.1.0 原生对象的规范称谓；来源见 `docs/research/pyrit-canonical-references.md`。

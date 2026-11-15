@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Iterable, Optional, Sequence, Tuple
 
+from tools.loot_manage.registry import fragment_pieces
+
 from .clock import DECOY_TIMEBOX, DEFAULT_DURATIONS, EXAM_HOURS, SEGMENTS, Clock
 from .inventory import StageInventory, spec_for
 from .model import (BLOCKING, NON_BLOCKING, SCHEMA_VERSION, CoverageRow, Gap,
@@ -21,7 +23,11 @@ BLOCKING_STAGES = frozenset(("cr-07", "cr-08", "cr-09"))
 
 
 def _chain(stage: Stage, fragments: Sequence) -> bool:
-    """证据链贯通：该阶段有可被既有解析器消费的片段且三件套齐全。"""
+    """证据链贯通：复用既有 `registry.fragment_pieces` 三件套判据（C1）。
+
+    不另写真值判据：片段原文（`Fragment.raw`，由 `parse_fragment` 保留）交给
+    战利品登记簿的单一事实源判定；`raw` 为空即如实记为断点。
+    """
     spec = spec_for(stage.stage_id)
     skills = set(spec[4]) | {stage.skill}
     for frag in fragments:
@@ -30,8 +36,8 @@ def _chain(stage: Stage, fragments: Sequence) -> bool:
             getattr(frag, "step_id", "")))
         if not any(s in haystack for s in skills):
             continue
-        if (getattr(frag, "command", "") and getattr(frag, "output", "")
-                and getattr(frag, "screenshot", "")):
+        raw = getattr(frag, "raw", "") or ""
+        if fragment_pieces(raw)["complete"]:
             return True
     return False
 

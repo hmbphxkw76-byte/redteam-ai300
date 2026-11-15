@@ -23,7 +23,7 @@
 |---|---|---|---|
 | AC-01 | `inventory.stages_from_specs` + `walk.rehearse` 矩阵 9 行 | AC-14 | `cli.main` 只读构造 `DirEvidenceSource`，不改 `verify-evidence` |
 | AC-02 | `model.StageEvidence.ready` / `missing`；`MemoryStageInventory` 注入 | AC-15 | 门禁实跑 `check_glossary.py` |
-| AC-03 | `walk._chain` 只读既有 Fragment 字段，不重写 `parse_fragment` | AC-16 | `walk.rehearse` 的 `ready` 合取；实现无真实利用动作 |
+| AC-03 | `walk._chain` 委托 `registry.fragment_pieces(Fragment.raw)`，不另立判据 | AC-16 | `walk.rehearse` 的 `ready` 合取；实现无真实利用动作 |
 | AC-04 | `evidence.EvidenceWriter` + `report.SOURCES` + 片段路径引用 | AC-17 | `model.GATE_DETAILS` + `report` §4 核实闸清单 + `walk.pending` |
 | AC-05 | `clock.SEGMENTS` + `walk._timeline`（start/end/duration/key_node 递增） | AC-18 | `model.RehearsalResult.to_dict`（sort_keys）+ `FixedClock` 固定时间 |
 | AC-06 | `clock.DECOY_TIMEBOX` + `_timeline` 独立时间盒行 | AC-19 | `cli.main` 退出码 0/1/2 + `render_summary` |

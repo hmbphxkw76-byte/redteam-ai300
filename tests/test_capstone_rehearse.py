@@ -19,6 +19,7 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 from report_exam._types import Fragment  # noqa: E402
+from report_exam.index import MemoryEvidenceSource  # noqa: E402
 from tools.capstone_rehearse import (  # noqa: E402
     BLOCKING, NON_BLOCKING, SCHEMA_VERSION, EvidenceWriter, FixedClock,
     MemoryStageInventory, StageEvidence, rehearse, render_report,
@@ -29,12 +30,21 @@ GATES = ("VG-1", "VG-2", "VG-3", "VG-4", "VG-5", "VG-6")
 CLOSED_ALL = ("VG-2", "VG-3", "VG-4", "VG-5", "VG-6")
 
 
+DRILL_RAW = (
+    "### 步骤 cr-01\n\n"
+    "#### 确切命令\n\n```bash\npython -m tools.capstone_rehearse --stdout\n```\n\n"
+    "#### 关键输出\n\n```text\ncr-01 覆盖度矩阵: 9 行\n```\n\n"
+    "#### 截图（访问证明）\n\n> 截图捕获钩子：`edge --headless=new`\n"
+)
+
+
 def _fragment(skill, complete=True):
     return Fragment(
         step_id="cr-01", target="drill-target",
         source_path="evidence/%s-drill/x.md" % skill,
         command="cmd" if complete else "", output="out" if complete else "",
-        screenshot="shot.png" if complete else "")
+        screenshot="shot.png" if complete else "",
+        raw=DRILL_RAW if complete else "")
 
 
 def _fragments():
@@ -42,13 +52,15 @@ def _fragments():
 
 
 class CountingSource:
+    """包装既有 MemoryEvidenceSource，仅附加调用计数（复用既有 adapter）。"""
+
     def __init__(self, fragments):
-        self.fragments = fragments
+        self._inner = MemoryEvidenceSource(fragments)
         self.calls = 0
 
     def iter_fragments(self):
         self.calls += 1
-        return iter(self.fragments)
+        return self._inner.iter_fragments()
 
 
 def _result(inventory=None, clock=None, source=None, closed=None):
@@ -154,11 +166,14 @@ class ACTests(unittest.TestCase):
         self.assertEqual(ready.pending, ())
 
     def test_ac16_no_real_exploitation_actions(self):
-        path = os.path.join(ROOT, "tools", "capstone_rehearse", "walk.py")
-        with open(path, encoding="utf-8") as handle:
-            src = handle.read()
-        for forbidden in ("subprocess", "socket", "requests", "urllib"):
-            self.assertNotIn(forbidden, src)
+        pkg = os.path.join(ROOT, "tools", "capstone_rehearse")
+        # evidence.py 的 subprocess 仅用于委托共享证据收集器，属合法证据生产端。
+        for name in ("model.py", "inventory.py", "clock.py", "walk.py",
+                     "report.py", "cli.py"):
+            with open(os.path.join(pkg, name), encoding="utf-8") as handle:
+                src = handle.read()
+            for forbidden in ("subprocess", "socket", "requests", "urllib"):
+                self.assertNotIn(forbidden, src, name)
 
     # ---- AC-11 / AC-12 / AC-13 / AC-14 ----
     def test_ac11_report_four_deliverables(self):

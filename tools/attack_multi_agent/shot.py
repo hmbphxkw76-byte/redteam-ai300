@@ -98,7 +98,9 @@ class HeadlessCapture(ShotCapture):
     """无头浏览器截图：转录页先落盘再截，成功返回路径，失败返回空（不伪造）。"""
 
     def __init__(self, browser_path=None, budget_ms=8000, size="1280,1000"):
-        self.browser = browser_path or find_browser()
+        # None 表示「未指定」→ 回退到 find_browser()；"" 表示「明确无浏览器」→ 保持空，
+        # capture() 据此短路返回 ("", "")（测试依赖此语义）。
+        self.browser = find_browser() if browser_path is None else browser_path
         self.budget_ms = budget_ms
         self.size = size
 

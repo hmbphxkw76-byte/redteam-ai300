@@ -62,3 +62,45 @@ class AttackInfraEvidenceContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class AttackInfraRunnerContractTests(unittest.TestCase):
+    """T5 强化：八步运行时证据记录必须满足三件套字段与五值结论（AC-15）。"""
+
+    def _run(self):
+        import importlib
+        runner = importlib.import_module("tools.attack_infra.runner")
+        model = importlib.import_module("tools.attack_infra.model")
+        transport = importlib.import_module("tools.attack_infra.transport")
+        evidence = importlib.import_module("tools.attack_infra.evidence")
+        command = importlib.import_module("tools.attack_infra.command")
+        fake = evidence.FakeEvidence()
+        ctx = model.RunContext(
+            target="h", transport=transport.FakeTransport({}, default=transport.HttpResponse(
+                status=200, content_type="text/html", body="<html></html>")),
+            command=command.FakeCommand({}, default=command.CommandResult(
+                code=127, stderr="not found")),
+            evidence=fake, timeout=5, ports=(11434,))
+        report = runner.run(ctx)
+        return fake.records, report
+
+    def test_each_step_record_has_command_output_and_shot(self):
+        records, _ = self._run()
+        self.assertEqual(len(records), 8)
+        for record in records:
+            with self.subTest(step=record["step_id"]):
+                self.assertTrue(record["command"].strip(),
+                                "缺少确切命令")
+                self.assertTrue(record["output"].strip(),
+                                "缺少关键输出")
+                self.assertTrue(record.get("shot_cmd") or record.get("screenshot"),
+                                "缺少截图钩子")
+
+    def test_outcomes_are_within_five_values(self):
+        _, report = self._run()
+        allowed = {"ABSENT", "AUTH_REQUIRED", "EXPOSED_NO_AUTH",
+                   "EXPLOITED", "BLOCKED"}
+        self.assertEqual({s.outcome.value for s in report.steps} - allowed, set())
+
+
+if __name__ == "__main__":
+    unittest.main()

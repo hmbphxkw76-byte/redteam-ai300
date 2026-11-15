@@ -43,7 +43,11 @@ BUDGETS: dict[str, int] = {
     # 15895（脚本口径：LF 归一化 + UTF-8）。属「基线 + 必要增量」（ADR-0005），
     # 术语为阶段 7 质量门与 check_glossary 必需规范词，不可删减，故上调至 16500
     # 留 ~605B 余量以容纳并行 PR 的术语增量。
-    "GLOSSARY.md": 16500,
+    # 16500 → 17000：attack-infra（D9/P1）新增 3 条基础设施术语（模型服务器 /
+    # 推理网关 / 降级结论，+~470B），与 attack-rag 术语块合并后实测 16639，超
+    # 16500（+139）。按 ADR-0006「取并集后按合并实际内容 + 余量重算」上调至
+    # 17000，留 ~361B；属 ADR-0005「基线 + 必要增量」，不删除既有内容。
+    "GLOSSARY.md": 17000,
     "docs/governance/GOVERNANCE.md": 17000,
     "docs/operations/skill-mainline-workflow.md": 28000,
     "docs/standards/cross-ide-mainline-workflow.md": 30000,

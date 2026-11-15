@@ -315,3 +315,17 @@ _Avoid_: 权限截图
 
 **纳管 (onboarding)**:
 将新增 agent/skill 组件登记入流水线与 §4.4 流程，含 PR 门禁与验收。
+
+## AI 基础设施 (AI infrastructure)
+
+**模型服务器 (model server)**:
+面向推理请求的服务进程（vLLM / Triton / Ollama 等）；是否存在以「状态码 + `Content-Type` + 响应结构」三元组判定，不以 HTTP 200 为据。
+来源：`docs/research/attack-infra-canonical.md` §3（P-1、P-3）。
+
+**推理网关 (inference gateway)**:
+统一转发多家模型上游的代理层（如 LiteLLM），其配置常存放上游凭据；检索只记凭据指纹。
+来源：同上 F-5。
+
+**降级结论 (outcome verdict)**:
+`attack-infra` 每步的互斥判定结论；五值语义与非 `EXPLOITED` 的依据要求见 `docs/operations/attack-infra-terms.md` §2。
+来源：`docs/operations/attack-infra-terms.md` §2。

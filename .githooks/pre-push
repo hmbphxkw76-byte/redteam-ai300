@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# 三层隔离 ③：pre-push hook —— 推送前调用共享检出锁。
+# 检测同一共享文件是否被多个 worktree 并发修改，冲突则阻断推送。
+# 安装：`git config core.hooksPath .githooks`（仓库级）或复制到 .git/hooks/。
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+LOCK_SCRIPT="$REPO_ROOT/scripts/checkout_lock.py"
+
+if [ ! -f "$LOCK_SCRIPT" ]; then
+    echo "pre-push: 未找到 $LOCK_SCRIPT，跳过共享检出锁。" >&2
+    exit 0
+fi
+
+# 仅在推送到 main 或包含共享文件改动时强制检查。
+# 这里始终检查（保守）：共享文件冲突是全局风险，不区分目标分支。
+python "$LOCK_SCRIPT" --check || {
+    echo "" >&2
+    echo "pre-push: 已被共享检出锁阻断。请先在单个 worktree 串行合入共享文件（取并集）。" >&2
+    echo "          确需绕过时：git push --no-verify（不推荐，须人工确认并集无误）。" >&2
+    exit 1
+}

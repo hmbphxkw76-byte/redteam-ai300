@@ -19,4 +19,4 @@
 | B6 | 覆盖 tooling 91.8% / all 91.2%（≥80） |
 | B1/B2/C4 | PASS；GLOSSARY 17239/17500 |
 
-## CI S1–S4：待 push 后确认（见 PR #）。
+## CI S1–S4：待 push 后确认（见 PR #）

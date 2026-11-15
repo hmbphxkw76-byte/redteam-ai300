@@ -58,6 +58,7 @@ tools/tooling_automate/
 cli → runner(S-1) → manifest(解析) + reuse(构造 argv) + summary(渲染)
 reuse → (经注入 runner 调 collect_evidence.py / 各校验脚本)
 ```
+
 - 无模块 import 其他模块的校验实现；所有判定走外部 CLI，单一事实源。
 - runner 不反向依赖 summary/reuse 的具体实现，仅通过注入 runner 解耦。
 

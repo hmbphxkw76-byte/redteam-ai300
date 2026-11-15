@@ -15,6 +15,6 @@
 | AC 对位 | 逐条落点 | §3.8 | 01→EXPECTED_FIELDS；02→is_manual；03→compute_coverage；04→run_plan；05→strict argv；07→parse_step；08→CommandRunner；09/10→render_markdown；12→STEP_RE；13→dry_run；14→SubprocessRunner；17→exit_code；20→覆盖 89.6% | PASS |
 | 凭据 | 无硬编码 | B5 | 全文无 token/密码字面量 | PASS |
 
-**红→绿自检**：首轮 27 例 5 失败/3 错误（helper 返 dict 非 Task、argv 取位错、step 正则单 digit、断言裸文件名），均测试侧偏差；按 v2 修正后 27/27 通过，断言未放宽。
+__红→绿自检__：首轮 27 例 5 失败/3 错误（helper 返 dict 非 Task、argv 取位错、step 正则单 digit、断言裸文件名），均测试侧偏差；按 v2 修正后 27/27 通过，断言未放宽。
 
-**结论：PASS**（不符合项 0），进入阶段 9（`tdd`）。
+__结论：PASS__（不符合项 0），进入阶段 9（`tdd`）。

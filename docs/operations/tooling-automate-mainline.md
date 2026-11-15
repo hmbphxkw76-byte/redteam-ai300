@@ -16,10 +16,12 @@
 | 3 | to-spec② v2 | PASS（B1/B2/B6/B7/B8，0 不符合项） | `docs/operations/tooling-automate-gate-stage3.md` |
 | 4 | to-tickets | PASS（B2/B8，0 不符合项） | `docs/operations/tooling-automate-gate-stage4.md` |
 | 5 | triage | PASS（B8，0 不符合项） | `docs/operations/tooling-automate-gate-stage5.md` |
+| 6 | codebase-design | PASS（B2/B7/B8，0 不符合项） | `docs/operations/tooling-automate-gate-stage6.md` |
 
 - 阶段 1 交付物：`docs/research/tooling-automate-canonical.md`（16 条条款映射、VG-1…VG-4 核实闸、已排除清单）。
 - 阶段 2 交付物：v1 = `docs/specs/tooling-automate-spec-v1.md`（7993B，七节 / 30 US）；规格 issue = #240（`ready-for-agent`）；seam 结论 = 1 处（用户 2026-11-15 确认）。
 - 阶段 3 交付物：v2 = `docs/specs/tooling-automate-spec-v2.md`（7793B，20 条布尔 AC / CI 映射 / v1→v2 差异 / VG-1…VG-4 核实闸）；已追加至 issue #240 评论「工程规格定稿 (v2)」，v1 保留全文不动。
 - 阶段 4 交付物：父工单 #242 + 子工单 #243(A manifest) #244(B runner) #245(C reuse) #246(D summary) #247(E evidence-contract) #248(F test/coverage)；覆盖矩阵与依赖边见 #242 正文，API 核验阻塞边正确。
 - 阶段 5 交付物：7 张工单全标 `ready-for-agent`，每张含 范围/验收/约束/验证 四段 brief；无人工独占项（纯自动化可落地）。
-- 门禁摘要：阶段 1 / 2 / 3 / 4 / 5 已按 T5 补登于 issue #240 评论区。
+- 阶段 6 交付物：`docs/operations/tooling-automate-design.md`（单包 `tools/tooling_automate/`，5 模块，S-1 唯一 seam，零 pyrit，FakeRunner 假后端策略）。
+- 门禁摘要：阶段 1 / 2 / 3 / 4 / 5 / 6 已按 T5 补登于 issue #240 评论区。

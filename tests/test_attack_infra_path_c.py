@@ -56,6 +56,19 @@ class PrivescTests(unittest.TestCase):
         verdict = path_c.privesc(_ctx(command=cmd, exec_argv=("id",)))
         self.assertIs(verdict.outcome, Outcome.EXPLOITED)
 
+    def test_k8s_surface_needs_credential(self):
+        """C2：6443 /version 匿名 200 + / 403 → AUTH_REQUIRED。"""
+        fake = FakeTransport({
+            "GET https://h:6443/version": HttpResponse(
+                status=200, content_type="application/json",
+                body='{"gitVersion":"v1.37.2"}'),
+            "GET https://h:6443/": HttpResponse(status=403, body="forbidden"),
+        })
+        verdict = path_c.privesc(_ctx(transport=fake))
+        self.assertIs(verdict.outcome, Outcome.AUTH_REQUIRED)
+        self.assertEqual(verdict.reason, "no_credential")
+        self.assertIn("kubeconfig", verdict.output)
+
     def test_missing_binary_is_no_tool(self):
         cmd = FakeCommand({}, default=CommandResult(code=127,
                                                    stderr="not found: id"))
@@ -89,15 +102,16 @@ class ImpactTests(unittest.TestCase):
         self.assertIs(verdict.outcome, Outcome.BLOCKED)
         self.assertEqual(fake.calls, [])
 
-    def test_timestamp_only_difference_is_not_impact(self):
-        """AC-12：仅易变字段不同 → 不判「已证明影响」。"""
+    def test_stateless_success_proves_abuse_without_difference(self):
+        """A2：无状态服务两次成功但结构一致 → 未授权滥用已证明（非 BLOCKED）。"""
         fake = self._transport([_body("PWNED", created="2026-11-15T00:00:01Z",
                                       duration=100),
                                 _body("PWNED", created="2026-11-15T00:00:09Z",
                                       duration=999)])
         verdict = path_c.impact(_ctx(transport=fake, allow_inference=True))
-        self.assertIs(verdict.outcome, Outcome.BLOCKED)
-        self.assertEqual(verdict.reason, "no_difference")
+        self.assertIs(verdict.outcome, Outcome.EXPOSED_NO_AUTH)
+        self.assertIn("ai_log", verdict.evidence_extra)
+        self.assertIn("无状态", verdict.summary)
 
     def test_stable_difference_proves_impact_with_ai_log(self):
         fake = self._transport([_body("BEFORE"), _body("AFTER")])

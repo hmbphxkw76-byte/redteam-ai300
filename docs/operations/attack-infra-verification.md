@@ -1,7 +1,7 @@
 # attack-infra 实现与验证记录（阶段 8 / 9）
 
 > **版本** v1.0 · **对应规格** #213 v2（AC-01..AC-24）· **设计** `docs/operations/attack-infra-design.md` · **事实源** `docs/research/attack-infra-canonical.md`
-> **实测日期** 2026-11-15（GMT+8）· **实现落点** `tools/attack_infra/`（14 模块，1939 行）· **测试** 6 文件（1268 行）
+> **实测日期** 2026-11-15（GMT+8）· **实现落点** `tools/attack_infra/`（14 模块，2022 行）· **测试** 6 文件（1330 行）
 > **范围说明** 本技能为基础设施利用工具，八步判定全部实现；演练目标上未取得立足点，故 `infra-06`（提权）与 `infra-08`（flag）按「无输入」与「双通道缺项」判 `ABSENT` / `BLOCKED`，非实现缺失。
 
 ## 1. 结论摘要
@@ -11,7 +11,7 @@
 3. **面发现判据成立**：`infra-01` 判 `EXPOSED_NO_AUTH`，命中 3 个端点（Ollama `/api/tags`、Ollama `/v1/models`、kube-apiserver `/version`）；80 端口全部 `200 text/html` 被判 `ABSENT`（SPA 回退未误导）。
 4. **上游结论需修正**：`docs/research/recon-ai-canonical.md` F-3 仅探测 80 端口的 `/v1/models`，据此得出「无 OpenAI 兼容面」。本阶段一手探针显示 `11434/v1/models` 返回合法 `{"object":"list"}` —— **「80 端口无 AI 面」≠「目标无 AI 面」**，已记入 canonical §0 结论 1。
 5. **两处真实缺陷由测试与活体各暴露一次**：活体暴露「命令引号不可复现」「转技能措辞不准」「时间戳噪声被误判为影响」；测试红阶段暴露「空 target 未校验」「缺截图钩子导致三件套不全」「缺输入分支输出为空导致严格模式失败」。
-6. **覆盖率 91.1%**（attack-infra 目标，1310/1438 行；`--target all` 为 91.2%），高于 80% 门槛；全量 727 测试通过（并入 origin/main 后）（skip 2）。
+6. **覆盖率 91.1%**（attack-infra 目标，1354/1487 行；`--target all` 为 91.2%），高于 80% 门槛；全量 734 测试通过（skip 2）。
 
 ## 2. 八步实测（真实目标 `192.168.40.189`）
 
@@ -54,7 +54,7 @@
 | shot | 93.5% | runner | 89.3% |
 | fingerprint | 91.3% | cli | 81.9% |
 
-**总计 1310/1438 = 91.1%**（门槛 80%），全部模块 ≥84%（cli 87.6%）。
+**总计 1354/1487 = 91.1%**（门槛 80%），全部模块 ≥84%（cli 87.8%）。
 
 ## 5. 门禁记录（阶段 8 · implement-spec）
 
@@ -81,7 +81,7 @@
 
 | 编号 | 检查项 | 依据 | 实测 | 判定 | 结论 |
 |---|---|---|---|---|---|
-| B3 | 全量测试 | `unittest discover -s tests` | `Ran 727 tests … OK (skipped=2)` | 符合 | PASS |
+| B3 | 全量测试 | `unittest discover -s tests` | `Ran 734 tests … OK (skipped=2)` | 符合 | PASS |
 | B4 | 证据契约夹具 | 6 个测试文件 | 契约夹具 5 项（含新增 2 项运行时断言）通过 | 符合 | PASS |
 | B6 | CI 门禁一致 | 同命令本地复跑 | 本地：`unittest discover` + `measure_coverage --target all`，与 `ci.yml` S2 完全一致 | 符合 | PASS |
 | B8 | 留痕 | 本文 §3 | R1–R6 六条红—绿记录，每条含实际失败输出 | 符合 | PASS |
@@ -102,7 +102,7 @@
 | S2 | Standards | canonical F-16 复述三件套/flag 双通道却声明「不转抄」，自相矛盾 | F-16/F-18 改为纯指针（只记「要求存在于何处」） |
 | S3 | Standards | `attack-infra-terms.md` §2 的 reason 清单与 `model.py` 常量不一致（漏 `none_found`/`mismatch`/`no_difference`） | 改为指向 `model.py` 常量，不再本地枚举 |
 | S4 | Standards | `design.md` 签名与实现不符（`detect(resp)`）、模块数写作 13 | 按实现更正为 12 模块与真实签名 |
-| S5 | Standards | 本文件覆盖率/规模数字与实测漂移 | 按实测重写（91.1%、727 测试、1939 行） |
+| S5 | Standards | 本文件覆盖率/规模数字与实测漂移 | 按实测重写（91.1%、734 测试、2022 行） |
 | S6 | Standards | `test_attack_infra_path_a.py` 占位符断言恒真（先删再断言） | 改为直接断言命令不含 `<`/`> ` |
 | S7 | Standards | 契约夹具 `unittest.main()` 置于新类之前，直跑漏 2 条断言 | 移到文件末尾；直跑与 discover 均 5 条 |
 | F1 | Spec | **AC-07 为假**：`impact()` 未受 `--allow-inference` 约束，默认运行会发两次推理 | 加开关守卫（未开启→`BLOCKED(evidence_incomplete)`，零请求） |
@@ -123,3 +123,19 @@
 ## 9. SKILL.md 逐条核对
 
 SKILL.md 全部声明项（front-matter、前置 2 条、8 步、质量门 7 条、校验标准 3 条、豁免 4 条）的逐条对照表，以及三层隔离/推送留痕，见 `docs/operations/attack-infra-skill-coverage.md`（29 条，遗漏 0）。
+
+## 10. 目标运行环境适配（8 项，逐条留痕）
+
+对演练目标（189 AIVP / 183 DVAA）一手复核后，落地 8 项适配。每项含「修改原因 + 影响范围」，对齐 SKILL.md 硬要求与目标实际暴露面。
+
+| # | 类别 | 项 | 修改原因 | 影响范围 | 验证 |
+|---|---|---|---|---|---|
+| A1 | 功能 | 转技能步骤级映射 | `next_skills()` 恒返回 MCP 工具面，未区分步骤 | `model.py` | `ReportTests` 3 例；infra-05→supply-chain、infra-02 不触发 |
+| A2 | 功能 | infra-07 无状态滥用判据 | Ollama 无状态，`no_difference`→BLOCKED 误判「未授权滥用已成功」 | `path_c.py impact` | 活体 `EXPOSED_NO_AUTH`；`ImpactTests` 1 例 |
+| A3 | 功能 | 截图命令 Edge 无头 | `screenshot --region` 占位命令不可执行，质量门无法落地 | `shot.py` | `ShotTests`/`SkillClauseTests`/`SkillGateTests` 断言 `--headless=new` |
+| B1 | 事实 | canonical 补 F-19/20/21 | 8080=GitLab、8081=flannel、183=DVAA 未留痕；F-15「待核」过时 | `canonical.md` | 文档事实溯源 |
+| B2 | 指纹 | 增 gitlab + flannel | 8080/8081 不在 `ALL_PORTS`，且未知端口回退会把 flannel `/healthz` 误判为 kubelet | `fingerprint.py` | 活体识别 gitlab(AUTH)+flannel(EXPOSED)；`test_eight_kinds_covered` |
+| C1 | 增强 | infra-02 非云判定依据 | 无 bucket 仅凭「未提供」空判，缺可复现依据 | `path_a.py cloud_misconfig` | 活体「目标非云 AI 平台」；`CloudTests` 1 例 |
+| C2 | 增强 | infra-06 k8s 越权语义 | 目标无 `/exec`，真实提权面是 6443（匿名 403） | `path_c.py privesc` + `_k8s_surface` | 活体 `AUTH_REQUIRED`；`PrivescTests` 1 例 |
+
+**适配结论**：8 项全部落地，SKILL.md 硬要求（转技能精准、滥用证明不误判、截图命令可执行）与目标实际暴露面（Ollama/kube-apiserver/kubelet/GitLab/flannel）完全对齐。

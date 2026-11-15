@@ -233,8 +233,8 @@ class SkillGateTests(unittest.TestCase):
         ctx = _full_ctx()
         runner.run(ctx)
         for record in ctx.evidence.records:
-            self.assertIn("--target", record["shot_cmd"])
-            self.assertIn("--timestamp", record["shot_cmd"])
+            self.assertIn("--headless=new", record["shot_cmd"])
+            self.assertIn("--screenshot=", record["shot_cmd"])
 
     def test_evidence_failure_stops_following_steps(self):
         ctx = _full_ctx(evidence=FakeEvidence(exit_code=1, error="bad"))

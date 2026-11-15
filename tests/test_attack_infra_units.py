@@ -114,10 +114,24 @@ class FingerprintTests(unittest.TestCase):
                             body="Unauthorized")
         self.assertEqual(fp.shape_of(resp), fp.AUTH)
 
-    def test_six_kinds_covered(self):
+    def test_eight_kinds_covered(self):
         kinds = {p.kind for p in fp.PROBES}
         self.assertEqual(kinds, {"vllm", "triton", "litellm", "ollama",
-                                 "k8s_apiserver", "kubelet"})
+                                 "k8s_apiserver", "kubelet", "gitlab",
+                                 "flannel"})
+
+    def test_gitlab_version_hit(self):
+        resp = HttpResponse(status=200, content_type="application/json",
+                            body='{"version":"17.0.0","revision":"abc"}')
+        probe = fp.Probe("gitlab", "/api/v4/version",
+                         (fp.GITLAB_VERSION, fp.AUTH), (8080,))
+        self.assertEqual(fp.classify(probe, resp), "gitlab")
+
+    def test_flannel_healthz_hit(self):
+        resp = HttpResponse(status=200, content_type="text/plain",
+                            body="flanneld is running")
+        probe = fp.Probe("flannel", "/healthz", (fp.FLANNEL_HEALTHZ,), (8081,))
+        self.assertEqual(fp.classify(probe, resp), "flannel")
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -212,7 +226,8 @@ class ShotTests(unittest.TestCase):
         self.assertEqual(url_plan.kind, "url")
         transcript = planner.plan("infra-02")
         self.assertEqual(transcript.kind, "transcript")
-        self.assertIn("screenshot --region infra-02", transcript.cmd)
+        self.assertIn("--headless=new", transcript.cmd)
+        self.assertIn("--screenshot=", transcript.cmd)
 
 
 class _ErrorHandler(BaseHTTPRequestHandler):
@@ -293,8 +308,30 @@ class ReportTests(unittest.TestCase):
     def test_summary_counts(self):
         self.assertIn("exposed_no_auth=1", report.summary(self._report()))
 
+    def _absent_report(self, step_id):
+        rep = model.RunReport(target="h")
+        rep.steps.append(model.StepVerdict(step_id, model.Outcome.ABSENT,
+                                           reason="none_found", summary="none",
+                                           command="curl -s x"))
+        return rep
+
+    def test_next_skills_gateway_absent_maps_to_supply_chain(self):
+        """A1：infra-05 缺位 → attack-supply-chain-tools，而非笼统 MCP。"""
+        self.assertIn("attack-supply-chain-tools",
+                      self._absent_report("infra-05").next_skills())
+
+    def test_next_skills_surface_absent_maps_to_mcp(self):
+        """A1：infra-01 缺位 → attack-mcp-tool / attack-ai-agent。"""
+        skills = self._absent_report("infra-01").next_skills()
+        self.assertIn("attack-mcp-tool", skills)
+        self.assertIn("attack-ai-agent", skills)
+
+    def test_next_skills_cloud_absent_is_no_handoff(self):
+        """A1：infra-02 缺位属「非云」预期态，不触发转技能。"""
+        self.assertEqual(self._absent_report("infra-02").next_skills(), [])
+
     def test_render_lists_next_skills_and_no_placeholders(self):
-        text = report.render(self._report())
+        text = report.render(self._absent_report("infra-01"))
         self.assertIn("attack-mcp-tool", text)
         self.assertNotIn("<bucket>", text)
         for line in text.splitlines():
@@ -417,7 +454,12 @@ class SkillClauseTests(unittest.TestCase):
         self.assertIn("--script-note", argv)
 
     def test_shot_hook_carries_target_and_timestamp(self):
+        """A3：命令为真实 Edge 无头；目标标识与时间戳嵌入文件名。"""
         plan = shot.ShotPlanner("loot/shots").plan(
-            "infra-01", target="192.0.2.5", timestamp="2026-11-15T15:00:00+0800")
-        self.assertIn("--target 192.0.2.5", plan.cmd)
-        self.assertIn("--timestamp 2026-11-15T15:00:00+0800", plan.cmd)
+            "infra-01", url="http://192.0.2.5:11434/v1/models",
+            target="192.0.2.5", timestamp="2026-11-15T15:00:00+0800")
+        self.assertIn("--headless=new", plan.cmd)
+        self.assertIn("--virtual-time-budget=8000", plan.cmd)
+        self.assertIn("--screenshot=", plan.cmd)
+        self.assertIn("192.0.2.5", plan.path)   # 目标标识入文件名
+        self.assertIn("20261115", plan.path)    # 时间戳入文件名

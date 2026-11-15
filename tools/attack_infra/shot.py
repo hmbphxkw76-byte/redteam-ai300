@@ -7,11 +7,19 @@ AC-19 要求测试全程离线，故此处只计算「应当怎么截、落在�
 `collect_evidence.py --screenshot/--shot-cmd` 在证据容器侧完成。
 """
 import os
+import re
 import shlex
 from dataclasses import dataclass
 from typing import Optional
 
 DEFAULT_DIR = "loot/shots"
+# 截图可执行命令：Edge 无头（项目固化方式，见 recon-ai 同构 seam）。
+EDGE_HEADLESS = ("msedge --headless=new --disable-gpu --no-first-run "
+                 "--virtual-time-budget=8000 --window-size=1280,800")
+
+
+def _slug(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_.-]", "_", value or "")[:40] or "target"
 
 
 @dataclass(frozen=True)
@@ -34,15 +42,22 @@ class ShotPlanner:
         return "shot-planner(%s)" % self.out_dir
 
     def plan(self, step_id, url="", region="", target="", timestamp="") -> ShotPlan:
-        """计划一张截图（SKILL.md 质量门：访问证明须含目标标识与时间戳）。"""
+        """计划一张截图（SKILL.md 质量门：访问证明须含目标标识与时间戳）。
+
+        命令为真实可执行的 Edge 无头截图；目标标识与时间戳嵌入文件名，
+        保证「截图 + 目标 + 时刻」三者同屏可追溯（§6.2）。
+        """
         region = region or step_id
         kind = "url" if _looks_like_url(url) else "transcript"
-        path = os.path.join(self.out_dir, "%s.png" % step_id)
-        cmd = 'screenshot --region %s --out "%s"' % (region, path)
-        if target:
-            cmd += " --target %s" % shlex.quote(str(target))
-        if timestamp:
-            cmd += " --timestamp %s" % shlex.quote(str(timestamp))
+        stamp = re.sub(r"[^0-9]", "", timestamp or "") or "notime"
+        fname = "%s_%s_%s.png" % (step_id, _slug(target), stamp)
+        path = os.path.join(self.out_dir, fname)
+        if kind == "url":
+            cmd = '%s --screenshot="%s" %s' % (EDGE_HEADLESS, path,
+                                               shlex.quote(url))
+        else:
+            # 终端证据截图：由证据容器捕获；此处给可执行的 Edge 占位命令。
+            cmd = '%s --screenshot="%s" "about:blank"' % (EDGE_HEADLESS, path)
         return ShotPlan(step_id=step_id, kind=kind, path=path, cmd=cmd,
                         url=url, region=region)
 

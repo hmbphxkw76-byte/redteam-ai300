@@ -83,7 +83,24 @@ _Avoid_: 答案校验器
 **Embedding**:
 嵌入向量，可经反演/信息提取泄露敏感数据。
 
+**embedding 反演 (embedding inversion)**:
+从 dense embedding 还原源文本的攻击（vec2text 等多步受控生成），属 OWASP LLM08 敏感信息泄露面；`attack-embeddings` 的 emb-03 攻击原语。
+_Avoid_: 向量逆推
+
+**成员推断 (membership inference)**:
+判定某样本是否属于训练/检索集的攻击；以 embedding 空间噪声邻居（Noisy Neighbors）的困惑度差为判据；emb-04 攻击原语。
+_Avoid_: 成员判定
+
+**对抗样本 (adversarial example)**:
+经细微扰动使 embedding 或检索/分类结果偏离基线的输入（HotFlip / 连续空间扰动）；emb-05 攻击原语。
+_Avoid_: 对抗扰动样本
+
+**向量库反查 (vector store lookup)**:
+直接查询向量库、从嵌入空间反查知识库文档块（越权/数据外泄面，与 `attack-rag` 共享向量面）；emb-06 攻击原语。
+_Avoid_: 向量检索提取
+
 **AI 资产 (AI asset)**:
+
 目标环境中承担推理/检索/编排/工具调用的可识别组件实例（LLM 引擎、模型服务、RAG、向量库、agent、MCP 工具面、护栏），是 `recon-ai` 的输出单元。
 _Avoid_: AI 靶标、AI 组件资产
 

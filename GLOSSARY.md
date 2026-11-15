@@ -262,6 +262,21 @@ _Avoid_: 证据溯源（与审计溯源混淆）
 report-exam 中每台计分主机固定五段：枚举 / 漏洞描述与完整利用 / 提权（如适用）/ flag 取证 / 证据归属，对齐 S1 §7.2。
 _Avoid_: 五节格式
 
+## 提交前校验（verify-evidence）
+
+**提交前置 (submission gate)**:
+`verify-evidence` 的「通过」结论是提交的前置；未通过不得提交（§7.3）。
+
+**访问证明 (access proof)**:
+flag 取证截图中同一画面同时含 `whoami`/`id` 与 flag 值，用于排除他人截图与猜测填写（§6.2.2）。
+_Avoid_: 权限截图
+
+**判定分级 (verdict tier)**:
+校验结论三类互斥档位——阻断项（违反「必须」，禁止提交）、缺失项（未取分的预期缺失，不阻断）、核实闸（产物未生成，不阻断但不可提交）。
+
+**机读校验结果 (machine-readable verification result)**:
+带 `schema_version` 的固定键 JSON（九项 checks + 分级列表 + passed/submission_ready），供 CI 与报告组装直接消费；人读版称「校验报告」。
+
 ## CI/CD 治理
 
 **流水线 (pipeline)**:

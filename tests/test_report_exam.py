@@ -296,8 +296,9 @@ class VerifyTests(unittest.TestCase):
         self.assertFalse(v["failed_checks"])
 
     def test_AC09_duplicate_proof_submission_blocks(self):
-        fs = [frag("aia-01", flag="proof.txt: OSAI{1}"),
-              frag("aia-02", flag="proof.txt: OSAI{2}")]
+        # verify-evidence v2 AC-14：单次约束按目标键（domain-controller）判定
+        fs = [frag("aia-01", host="domain-controller", flag="proof.txt: OSAI{1}"),
+              frag("aia-02", host="domain-controller", flag="proof.txt: OSAI{2}")]
         m = build_index(MemoryEvidenceSource(fs))
         en, _ = render_bilingual(m)
         v = verify_report(m, en, appendix_md=en)

@@ -526,7 +526,11 @@ class IngestTests(unittest.TestCase):
         result = channel.put("mal-0000", "载荷")
         self.assertTrue(result.delivered)
         self.assertEqual(result.status, "201")
-        self.assertEqual(channel.requests[0]["doc"], "载荷")
+        self.assertEqual(channel.requests[0], {"doc": "载荷"})  # 与 SKILL.md 的 curl 载荷一致
+        with_id = HttpIngestChannel("http://t/ingest", include_id=True,
+                                    opener=lambda req, timeout: (200, "ok"))
+        with_id.put("mal-0000", "载荷")
+        self.assertEqual(with_id.requests[0]["id"], "mal-0000")
 
     def test_http_forbidden_is_read_only_evidence(self):
         import urllib.error

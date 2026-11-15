@@ -72,17 +72,23 @@ class HttpIngestChannel:
 
     def __init__(self, url: str, timeout: float = 5.0,
                  payload_key: str = DEFAULT_PAYLOAD_KEY,
-                 opener: Optional[Callable[[Any, float], Any]] = None):
+                 opener: Optional[Callable[[Any, float], Any]] = None,
+                 include_id: bool = False):
         if not (url or "").strip():
             raise ValueError("HttpIngestChannel 需要摄取端点 URL")
         self.url = url.strip()
         self.timeout = timeout
         self.payload_key = payload_key
         self.opener = opener or _default_opener
+        self.include_id = include_id
         self.requests = []
 
     def put(self, doc_id: str, text: str) -> IngestResult:
-        payload = {self.payload_key: text, "id": doc_id}
+        # 默认只发 {"doc": …}，与 SKILL.md 的 `curl -d '{"doc":"…"}'` 逐字一致；
+        # 需要文档标识时才追加 id，避免严格校验端点因多余字段 422。
+        payload = {self.payload_key: text}
+        if self.include_id:
+            payload["id"] = doc_id
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         request = urllib.request.Request(
             self.url, data=data, method="POST",

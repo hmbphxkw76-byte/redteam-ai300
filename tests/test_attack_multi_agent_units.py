@@ -65,6 +65,16 @@ class ModelTests(unittest.TestCase):
         # 冒号分隔的显式声明仍须命中
         self.assertEqual(parse_topology("agent: securebot")["agents"], ("securebot",))
 
+    def test_parse_topology_empty_value_no_crossline_borrow(self):
+        # F1-edge 回归：空值标签（行尾 "agent:"）不得跨行借用下一行首词为值。
+        # \s* 会跨 \n 使「agent: \nbus: kafka」把 "bus" 误当 agent 名；[ \t]* 则强制同行。
+        self.assertEqual(parse_topology("agent: \nagent:")["agent_count"], 0)
+        t = parse_topology("agent: \nbus: kafka")
+        self.assertEqual(t["agent_count"], 0)
+        self.assertTrue(t["bus_present"])  # bus 仍须被独立识别
+        # 标签/冒号/值同行、含水平空白仍须命中
+        self.assertEqual(parse_topology("agent :  securebot")["agents"], ("securebot",))
+
     def test_message_accepted_and_diff(self):
         self.assertTrue(message_accepted("accepted"))
         self.assertTrue(message_accepted("已接收"))

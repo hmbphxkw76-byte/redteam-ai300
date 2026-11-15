@@ -7,8 +7,20 @@ on:
     # CI-CD.md S1 声明「向 feature 分支 push」亦触发；仅 main 会让门禁在开发分支静默。
     branches: ['**']
 
+  # 三层隔离 ②：main 级串行合并（ADR「三层隔离」）。
+  # merge_group 使合并队列中的 PR 先按「预合并结果」跑门禁，失败不进入 main，
+  # 从机制上消除「两个 PR 各自绿、合并后冲突/超限」这类并发合并风险。
+  merge_group:
+    types: [checks_requested]
+
 permissions:
   contents: read
+
+# 三层隔离 ②：串行合并（main 级）。同一 group 的并发运行互相取消，
+# 保证 main 上的门禁（尤其 S3/S4）串行执行，避免并发写入 dist/ 与共享产物。
+concurrency:
+  group: ci-main-serial-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   checks:

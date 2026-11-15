@@ -12,8 +12,26 @@
 | `attacks.py` | 四类攻击原语 | `invert` `membership_inference` `adversarial_shift` `vector_lookup` `rag_impact` |
 | `evidence.py` | 证据 seam（复用 recon_ai） | `EvidenceWriter` `RecordingWriter`（C1 复用） |
 | `runner.py` | 对象图构造 + 编排 | `Runtime` `run_attack` `OBJECT_GRAPH` `STEP_IDS` |
-| `cli.py` | 命令行入口 | `main` |
+| `live.py` | 真实目标适配（stdlib urllib，核实闸 C-1/C-2） | `LiveEmbeddingClient` `LiveVectorStoreClient` `LiveError` |
+| `entry.py` | CLI 共用工具（向量读写、夹具构建、统一输出、退出码） | `load_vector` `save_vector` `emit` `fixture_harness` |
+| `cli.py` | 演练命令行入口（全路径一次跑通） | `main` |
 | `__init__.py` | 公开面聚合 | 仅导出上述公开符号 |
+
+## 1.1 SKILL.md 点名脚本 → 实现映射（C1 追溯）
+
+SKILL.md 的攻击步骤给出可直接 copy/paste 的命令；下列 4 个脚本为其落地入口，
+逻辑复用 `attacks.py` / `live.py` / `entry.py`，脚本本身只做参数解析与结果渲染：
+
+| SKILL.md 命令 | 脚本 | 负责 step | 模式 |
+|---|---|---|---|
+| `python tools/embed_invert.py --endpoint <EMBED_API> --vec out.vec --topk 50` | `tools/embed_invert.py` | emb-03 | fixture 精确反演 / live 最近邻反查 |
+| `python tools/membership_inference.py --endpoint <EMBED_API> --sample suspect.txt` | `tools/membership_inference.py` | emb-04 | fixture / live |
+| `python tools/adv_embed.py --endpoint <EMBED_API> --text "benign" --eps 0.01` | `tools/adv_embed.py` | emb-05 | fixture / live |
+| `python tools/vector_lookup.py --store <VECTOR_DB> --query "<concept>" --topk 50` | `tools/vector_lookup.py` | emb-06 | fixture / live |
+
+退出码统一：`0` 成功、`2` 入参错误、`3` 目标不可达（**不静默降级**，避免把「未连通」
+误报为「攻击未生效」）。emb-01/02/07/08 按 SKILL.md 用 `curl`/shell 原命令，
+并由 `tools/collect_evidence.py --step emb-0N --strict` 落盘三件套。
 
 ## 2. Seam 清单（与阶段 2 结论一致）
 

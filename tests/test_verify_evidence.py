@@ -361,6 +361,43 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
             res = VE.verify(inp, require_artifacts=False, tools=FakeTools())
             self.assertIs(res["checks"]["vrf-04"], False)
 
+    def test_AC21_loot_panel_vs_report_flag_mismatch_blocks(self):
+        """#225 J-1：登记簿面板值与报告侧 flag 不一致须阻断，不得自比放行。"""
+        with tempfile.TemporaryDirectory() as d:
+            text = dual_fragment(panel="OSAI{panel}", shot="OSAI{report}")
+            with open(os.path.join(d, "aia-01.md"), "w", encoding="utf-8") as f:
+                f.write(text.replace("OSAI{demo-flag}", "OSAI{report}"))
+            reg = os.path.join(d, "registry.md")
+            with open(reg, "w", encoding="utf-8") as f:
+                f.write("| 编号 | 类型 | 内容 | 来源主机 | 证据片段路径 | 时间戳 | 状态 | 双通道 |\n"
+                        "|---|---|---|---|---|---|---|---|\n"
+                        "| loot-01 | flag | ai_vector | standalone | aia-01.md | t | 已取证 "
+                        "| 面板=OSAI{panel}；截图=shots/aia-01.png |\n")
+            inp = VE.from_loot(reg, d, report_md=report_text())
+            self.assertEqual(inp["panel_flags"]["standalone"], "OSAI{panel}")
+            self.assertEqual(inp["fragments"][0]["flag"], "OSAI{report}")
+            res = VE.verify(inp, require_artifacts=False, tools=FakeTools())
+            self.assertIs(res["checks"]["vrf-04"], False)
+            self.assertTrue(any("面板值" in b for b in res["blocking"]))
+
+    def test_AC22_invalidated_status_is_not_scored(self):
+        """#225 J-2：登记簿状态「失效」不计已取分，按未取分豁免记录不阻断。"""
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "aia-01.md"), "w", encoding="utf-8") as f:
+                f.write(dual_fragment())
+            reg = os.path.join(d, "registry.md")
+            with open(reg, "w", encoding="utf-8") as f:
+                f.write("| 编号 | 类型 | 内容 | 来源主机 | 证据片段路径 | 时间戳 | 状态 | 双通道 |\n"
+                        "|---|---|---|---|---|---|---|---|\n"
+                        "| loot-01 | flag | ai_vector | standalone | aia-01.md | t | 失效 "
+                        "| 面板=OSAI{demo-flag}；截图=shots/aia-01.png |\n")
+            inp = VE.from_loot(reg, d, report_md=report_text())
+            self.assertIs(inp["fragments"][0]["taken"], False)
+            res = VE.verify(inp, require_artifacts=False, tools=FakeTools())
+            self.assertIs(res["checks"]["vrf-04"], True)
+            self.assertTrue(res["passed"], str(res["blocking"]))
+            self.assertTrue(any("无 flag 双通道证据" in m for m in res["missing"]))
+
     def test_AC01g_fragments_dir_cli_entry_passes(self):
         """SKILL 文档入口 `python tools/verify_evidence.py --fragments-dir` 真跑可过。"""
         import subprocess

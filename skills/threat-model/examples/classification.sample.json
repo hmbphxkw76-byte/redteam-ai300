@@ -1,0 +1,8 @@
+{
+  "ai-llm-a-01": {"score_class": "AI向量机", "attack_surface": "D3", "trust_zone": "内网", "reachable": true, "depends_on": ["trad-d-01"]},
+  "ai-rag-b-01": {"score_class": "独立机", "attack_surface": "D5", "trust_zone": "独立可达", "reachable": true},
+  "vec-c-01": {"score_class": "AI向量机", "attack_surface": "D6", "trust_zone": "内网", "reachable": true, "depends_on": ["trad-d-01"]},
+  "trad-d-01": {"score_class": "传统向量机", "attack_surface": "D1", "trust_zone": "公网入口", "reachable": true},
+  "dc-e-01": {"score_class": "域控", "attack_surface": "D1", "trust_zone": "内网", "reachable": true},
+  "decoy-f-01": {"score_class": "诱饵机", "decoy": true, "decoy_dims": {"behavior": true, "vuln_absent": true, "no_value": true}, "decoy_elapsed_minutes": 12, "decoy_reason": "无 AI 面、无高价值服务、枚举反馈过干净"}
+}

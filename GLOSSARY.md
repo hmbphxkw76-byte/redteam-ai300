@@ -62,6 +62,19 @@ _Avoid_: 时间限制
 **RAG (Retrieval-Augmented Generation)**:
 检索增强生成流水线，可被知识库投毒与检索层操纵。
 
+**知识库投毒 (knowledge-base poisoning)**:
+向 RAG 语料注入恶意文档，使目标查询的 top-k 检索结果包含攻击者可控内容；PoisonedRAG 的双条件（检索条件 + 生成条件）是其理论内核（`attack-rag` 路径 A）。
+_Avoid_: 知识投毒、投毒RAG
+
+**检索层操纵 (retrieval manipulation)**:
+以语料注入或 embedding 碰撞改变检索返回集合与排序（OWASP LLM08 向量与嵌入弱点），须用投毒前后 top-k 对照取证（`attack-rag` 路径 B）。
+
+**间接注入 (indirect injection)**:
+经检索片段或外部数据源注入指令，使下游 agent 消费上下文时执行非预期动作（OWASP LLM01 / ASI06）；RAG 场景由 `XPIATestWorkflow` 承载，非 `*Attack`。
+
+**下游决策影响 (downstream decision impact)**:
+检索层操纵因果改变下游 agent 输出或动作的证明，须以 baseline vs manipulated 双次捕获做差异对照（`attack-rag` 路径 C）。
+
 **MCP (Model Context Protocol)**:
 模型上下文协议与工具集成面，可被滥用以提权或执行非预期动作。
 

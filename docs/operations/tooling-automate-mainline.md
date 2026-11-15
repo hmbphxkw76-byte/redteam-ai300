@@ -21,7 +21,7 @@
 | 8 | implement-spec | PASS（B1/B2/B3/B4/B5/B7/B8，0 不符合项） | `docs/operations/tooling-automate-gate-stage8.md` |
 | 9 | tdd | PASS（B3/B4/B6/B8，0 不符合项） | `docs/operations/tooling-automate-gate-stage9.md` |
 | 10 | code-review | PASS（B1/B2/B3/B4/B5/B6/B7/B8，硬违规 3 清零） | `docs/operations/tooling-automate-gate-stage10.md` |
-| 11 | pr-push-review | PASS（#230 已合并、rebase 取并集、CI 待确认） | `docs/operations/tooling-automate-gate-stage11.md` |
+| 11 | pr-push-review | PASS（PR #255 已合并，CI S1–S4 全绿） | `docs/operations/tooling-automate-gate-stage11.md` |
 
 - 阶段 1 交付物：`docs/research/tooling-automate-canonical.md`（16 条条款映射、VG-1…VG-4 核实闸、已排除清单）。
 - 阶段 2 交付物：v1 = `docs/specs/tooling-automate-spec-v1.md`（7993B，七节 / 30 US）；规格 issue = #240（`ready-for-agent`）；seam 结论 = 1 处（用户 2026-11-15 确认）。
@@ -33,5 +33,5 @@
 - 阶段 8 交付物：`tools/tooling_automate/` 7 模块（S-1 唯一 seam、injectable runner、零第三方）+ 6 测试文件（27 例全绿）+ `measure_coverage.py` 注册目标（覆盖 89.6%）。
 - 阶段 9 交付物：`test_tooling_tdd_contract.py` 6 例（红→绿→重构留痕，AC-08 补注入点）；全量 650 OK；覆盖 91.8%；AC→测试 20/20。
 - 阶段 10 交付物：`docs/operations/tooling-automate-code-review.md`（双轴并列，硬违规 3 / 判断项 6）。硬违规修复：GLOSSARY 语义反转还原（16492/16500）、AC-06 补 `coverage` 校验器、阶段 4–7 门禁记录 C4 回填真实值（1129/919/1229/1751）；判断项 P-6（AC-02 逐项理由）转跟进。
-- 阶段 11：已按用户裁定合并 PR #230（attack-infra，`e528801`）→ rebase 取并集（GLOSSARY 双节 17239/17500 + measure_coverage 双 target）→ 修复 #230 合并带入的陈旧断言（`test_attack_infra_units` 对齐 collect_evidence F3）→ 推送开 PR。
+- 阶段 11：合并 PR #230（attack-infra）→ rebase 取并集（GLOSSARY 双节 17239/17500 + measure_coverage 双 target）→ 修复 markdownlint（MD031/MD026/MD050）→ 推送开 PR #255 → 合并；CI S1–S4 全绿，issue #240/#242–#248 已关闭。
 - 门禁摘要：阶段 1 / 2 / 3 / 4 / 5 / 6 / 7 已按 T5 补登于 issue #240 评论区。

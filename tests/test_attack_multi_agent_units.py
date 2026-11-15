@@ -55,6 +55,16 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(empty["agent_count"], 0)
         self.assertFalse(empty["bus_present"])
 
+    def test_parse_topology_ignores_prose(self):
+        # F1 回归：SPA 文案「The AI agent you're supposed to break」不得被误判为 agent
+        prose = "The AI agent you're supposed to break"
+        self.assertEqual(parse_topology(prose)["agent_count"], 0)
+        # 驼峰词 targetAgent 不得被当独立 agent 关键字（负向后顾）
+        camel = '"targetAgent":"helperbot","name":"HelperBot"'
+        self.assertEqual(parse_topology(camel)["agent_count"], 0)
+        # 冒号分隔的显式声明仍须命中
+        self.assertEqual(parse_topology("agent: securebot")["agents"], ("securebot",))
+
     def test_message_accepted_and_diff(self):
         self.assertTrue(message_accepted("accepted"))
         self.assertTrue(message_accepted("已接收"))

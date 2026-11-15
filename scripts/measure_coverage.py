@@ -128,6 +128,13 @@ def threat_model_targets():
                   "tests.test_threat_model_evidence_contract")
 
 
+def verify_evidence_targets():
+    """verify-evidence 业务代码集合（阶段 9 / v2 AC-19 覆盖率目标）。"""
+    import importlib
+    mod = importlib.import_module("tools.verify_evidence")
+    return (mod,), ("tests.test_verify_evidence",)
+
+
 def attack_rag_targets():
     """attack-rag 业务代码集合（阶段 9 / v2 US10 覆盖率目标）。"""
     import importlib
@@ -166,6 +173,9 @@ def resolve_target(mode):
     if mode == "report-exam":
         mods, tests = report_exam_targets()
         return list(mods), list(tests)
+    if mode == "verify-evidence":
+        mods, tests = verify_evidence_targets()
+        return list(mods), list(tests)
     if mode == "recon-ai":
         return list(recon_ai_targets()[0]), list(recon_ai_targets()[1])
     if mode == "attack-mcp-tool":
@@ -181,14 +191,15 @@ def resolve_target(mode):
         em_mods, em_tests = attack_embeddings_targets()
         tm_mods, tm_tests = threat_model_targets()
         rg_mods, rg_tests = attack_rag_targets()
+        ve_mods, ve_tests = verify_evidence_targets()
         return (list(AA_MODULES) + list(mods) + list(ra_mods) + list(am_mods)
                 + list(sc_mods) + list(dd_mods) + list(lm_mods)
                 + list(ma_mods) + list(em_mods) + list(tm_mods)
-                + list(rg_mods),
+                + list(rg_mods) + list(ve_mods),
                 list(AA_TESTS) + list(tests) + list(ra_tests) + list(am_tests)
                 + list(sc_tests) + list(dd_tests) + list(lm_tests)
                 + list(ma_tests) + list(em_tests) + list(tm_tests)
-                + list(rg_tests))
+                + list(rg_tests) + list(ve_tests))
     raise ValueError("未知 --target：%s" % mode)
 
 
@@ -264,7 +275,7 @@ def main(argv=None):
                              "attack-mcp-tool", "attack-supply-chain",
                              "decoy-detect", "loot-manage", "attack-multi-agent",
                              "attack-embeddings", "threat-model", "attack-rag",
-                             "all"),
+                             "verify-evidence", "all"),
                     help="被测业务代码集合（默认 attack-ai-agent，兼容既有 CI）")
     args = ap.parse_args(argv)
 

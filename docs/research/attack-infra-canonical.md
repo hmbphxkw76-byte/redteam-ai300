@@ -45,7 +45,6 @@
 | F-20 | 演练目标 `8081` 为 **flannel**（K8s CNI 守护进程）健康检查：`GET /` 与 `/health`、`/api/v1/models`、`/v1/models` 均 `404 page not found`，`GET /healthz` → `200 text/plain` 体为 `flanneld is running` | `curl -s -i http://192.168.40.189:8081/`；`curl -s http://192.168.40.189:8081/healthz` | `404 page not found`；`flanneld is running` |
 | F-21 | `192.168.40.183` 为 **DVAA**（OpenA2A 多智能体靶场，端口 `9000`），非本技能目标；`/health`、`/docs`、`/agents`、`/v1/models` 均 `200`（SPA 回退），由 `attack-multi-agent` 处理 | `curl -s http://192.168.40.183:9000/`；`/health` `/docs` `/agents` 各 `200` | 首页 `DVAA - The AI agent you're supposed to break` |
 
-
 ---
 
 ## 2. 攻击路径 ↔ 实现映射

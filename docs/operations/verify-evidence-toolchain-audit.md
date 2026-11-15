@@ -8,7 +8,7 @@
 | SKILL 条款 | 点名的 tool / 命令 | 实现位置（单一事实源） | 实测 | 判定 |
 |---|---|---|---|---|
 | 执行入口 | `tools/verify_evidence.py --payload` | `main()` → `load_payload` | CLI exit 0 / `passed=true` | 已实现 |
-| 执行入口 | `--from-loot loot/registry.md` | `from_loot` → `registry.parse_registry` / `parse_dual` | 登记簿夹具实跑 exit 0 | 已实现 |
+| 执行入口 | `--from-loot loot/registry.md` | `from_loot` → `registry.parse_registry` / `parse_dual`；报告侧取片段双通道表；状态列参与已取分判定 | 登记簿夹具实跑 exit 0 | 已实现（#225 收口） |
 | 执行入口 | `--fragments-dir <dir>` | `from_fragments` → `registry.fragment_pieces` + `_fragment_dual` | `test_AC01g` CLI 真跑 exit 0 | 已实现（本次修复） |
 | vrf-01 | `python scripts/validate_skill.py` | `Toolchain.validate_skills` | PASS 16 技能 | 已实现 |
 | vrf-02 | §4.3 / ADR-0002 评分杠杆 | `check_vrf02` → `Toolchain.skill_meta` + 分值多重集 | 16 技能 0 失配；缺目标即阻断 | 已实现 |
@@ -31,10 +31,11 @@
 
 ## 2. 本次终检发现并修复的真实缺口
 
-`--fragments-dir` 未读片段自带双通道明细表 → 含 flag 片段必触发 `vrf-04` 阻断。修复见 PR #241：面板值归一进 `panel_flags`、报告侧取「截图/正文中的值」、缺通道仍阻断、显式注入优先。新增 5 条回归用例，含 CLI 真跑。
+1. `--fragments-dir` 未读片段自带双通道明细表 → 含 flag 片段必触发 `vrf-04` 阻断。修复：面板值归一进 `panel_flags`、报告侧取「截图/正文中的值」、缺通道仍阻断、显式注入优先。
+2. 跟进 issue **#225**（阶段 10 判断项 J-1/J-2）原为 OPEN，本次一并收口：J-1 `from_loot` 面板值自比 → 报告侧改取片段双通道表（无表时回退取证节 / 面板值）；J-2 已取分判定未消费登记簿「状态」列 → 新增 `taken`（状态「失效」不计已取分），并使主机级「未达成」记录与 `_scored` 同源。新增 `test_AC21` / `test_AC22` 两条验收用例，满足 #225 的「登记簿与报告 flag 不一致 → 阻断」。
 
 ## 3. 判定
 
 - SKILL 25 条规范条款：**20 已实现 / 5 部分实现 / 0 未实现**。5 条部分实现均为 SKILL 已显式声明的人机边界（三处人工判据 + proof 口径修订 + 由此产生的「非全部机读」），非功能缺失；`NOTE-6/7/9/10` 均有回归用例锁定。
-- 三入口实跑：payload / from-loot 通过；fragments-dir 修复后通过。全量 622 tests OK，覆盖率 92.3%。
+- 三入口实跑：payload / from-loot / fragments-dir 全通过。全量 **624 tests OK**，覆盖率 **92.6%（511/552）**，`tests.test_verify_evidence` **39 用例**。
 - 未做范围外事项：截图 OCR、报告结构解析（SKILL「校验标准」显式排除）。

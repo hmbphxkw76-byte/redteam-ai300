@@ -50,9 +50,27 @@ tools/attack_multi_agent/
 ├── pyrit_attack.py  # 缝：PyRIT HTTPTarget 深度补位（懒导入，仅 --pyrit 触发）
 ├── evidence.py      # 缝：委托 collect_evidence.py；RecordingWriter 测试替身
 ├── shot.py          # 缝：截图（HeadlessCapture / NullCapture / FakeCapture）
+├── poc.py           # 示意脚本共享薄壳：退出码/输出格式（逻辑全部委托 a2a.py）
 ├── runner.py        # _Session + _HANDLERS(a2a-01…08) + run_attack + _emit（每步 1:1 落盘）
 └── cli.py           # 薄壳命令行
 ```
+
+### 2.0 SKILL.md 点名示意脚本（顶层薄壳）
+
+SKILL.md 攻击路径 A/B/C 中列出的 5 个「示意脚本」以顶层薄壳落地，命令字面可执行
+（对齐 SKILL「校验标准」的 copy/paste 可复现要求）：
+
+| SKILL.md 命令 | 薄壳 | 委托 |
+| --- | --- | --- |
+| `python tools/msg_inject.py --bus --from --to --payload` | `tools/msg_inject.py` | `A2ABusClient.inject_message` |
+| `python tools/agent_impersonate.py --bus --spoof --cmd` | `tools/agent_impersonate.py` | `A2ABusClient.impersonate` |
+| `python tools/memory_poison.py --store --key --value` | `tools/memory_poison.py` | `MemoryStoreClient.poison_memory` |
+| `python tools/context_poison.py --endpoint --inject` | `tools/context_poison.py` | `MemoryStoreClient.poison_context` |
+| `python tools/workflow_disrupt.py --orchestrator --task` | `tools/workflow_disrupt.py` | `OrchestratorClient.disrupt_workflow` |
+
+薄壳不写证据（证据仍由 `runner` 经 `collect_evidence.py` 统一落盘，C1）；
+`--dry-run` 经 `DryRunClient` 只渲染命令不发请求，URL/请求体仍由 `a2a.py` 构造，
+故 dry-run 输出与真实执行同源。`memory_poison --before` 先读原值，直接形成前后对照。
 
 ### 2.1 三缝注入点（Runtime）
 

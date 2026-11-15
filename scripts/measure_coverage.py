@@ -97,11 +97,16 @@ def attack_multi_agent_targets():
     """attack-multi-agent 业务代码集合（覆盖率目标；排除 pyrit_attack 重依赖）。"""
     import importlib
     names = ("model", "a2a", "scanner", "steps", "grade", "evidence",
-             "shot", "transport", "runner", "cli")
+             "shot", "transport", "runner", "cli", "poc")
     mods = tuple(importlib.import_module("tools.attack_multi_agent." + n) for n in names)
+    # SKILL.md 点名的示意脚本（顶层薄壳）：纳入覆盖率，约束「命令字面可执行」不腐化
+    scripts = ("msg_inject", "agent_impersonate", "memory_poison",
+               "context_poison", "workflow_disrupt")
+    mods += tuple(importlib.import_module("tools." + n) for n in scripts)
     return mods, ("tests.test_attack_multi_agent_units",
                   "tests.test_attack_multi_agent_runner",
-                  "tests.test_attack_multi_agent_evidence_contract")
+                  "tests.test_attack_multi_agent_evidence_contract",
+                  "tests.test_attack_multi_agent_tools")
 
 
 def attack_embeddings_targets():

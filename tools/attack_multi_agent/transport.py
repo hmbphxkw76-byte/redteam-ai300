@@ -57,6 +57,24 @@ class UrllibHttpClient(HttpClient):
             return Response(0, "", "", error=str(exc))
 
 
+class DryRunClient(HttpClient):
+    """只渲染命令、不发请求（示意脚本 `--dry-run`，离线可用）。
+
+    与生产实现共用同一调用路径：URL/请求体仍由 `a2a.py` 构造，
+    因此 `--dry-run` 输出的命令与真实执行完全一致（单一事实源 C1）。
+    """
+
+    def __init__(self):
+        self.calls = []
+
+    def request(self, method, url, body=None, timeout=15, headers=None):
+        self.calls.append({"method": method, "url": url, "body": body})
+        return Response(0, "", "", error="")
+
+    def describe(self):
+        return "dry-run"
+
+
 class FakeHttpClient(HttpClient):
     """测试替身：按 URL 前缀脚本化返回，并记录调用（用于断言证据契约）。"""
 

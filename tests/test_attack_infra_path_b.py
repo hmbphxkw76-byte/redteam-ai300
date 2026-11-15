@@ -116,3 +116,43 @@ class GatewayTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class GatewayLegalIdentityTests(unittest.TestCase):
+    """SKILL.md infra-05：以合法身份调用推理；凭据明文不得入片段。"""
+
+    SECRET = "sk-LEGALIDENTITY1234567890abcdef"
+
+    def test_credential_driven_inference_is_exploited_without_plaintext(self):
+        import tempfile
+        import shutil
+        from tools.attack_infra.transport import HttpResponse
+        tmp = tempfile.mkdtemp(prefix="attack-infra-gw-")
+        cfg = os.path.join(tmp, "config.yaml")
+        with open(cfg, "w", encoding="utf-8") as handle:
+            handle.write("api_key: %s\n" % self.SECRET)
+        body = '{"choices":[{"text":"OK"}]}' 
+        fake = FakeTransport({}, default=HttpResponse(
+            status=200, content_type="application/json", body=body))
+        ctx = RunContext(
+            target="h", transport=fake, command=FakeCommand({}), timeout=5,
+            gateway_configs=(cfg,), gateway_credential=self.SECRET,
+            gateway_verify_endpoint="http://h:4000/chat/completions",
+            allow_inference=True)
+        verdict = path_b.gateway(ctx)
+        self.assertIs(verdict.outcome, Outcome.EXPLOITED)
+        self.assertIn("$GATEWAY_TOKEN", verdict.command)
+        self.assertNotIn(self.SECRET, verdict.command)
+        self.assertNotIn(self.SECRET, verdict.output)
+        self.assertEqual(fake.requests[0][2].get("Authorization"),
+                         "Bearer %s" % self.SECRET)
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_no_inference_switch_means_no_call(self):
+        fake = FakeTransport({})
+        ctx = RunContext(
+            target="h", transport=fake, command=FakeCommand({}), timeout=5,
+            gateway_configs=("config.yaml",), gateway_credential=self.SECRET,
+            gateway_verify_endpoint="http://h:4000/chat/completions")
+        path_b.gateway(ctx)
+        self.assertEqual(fake.calls, [])

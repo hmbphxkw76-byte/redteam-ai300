@@ -214,3 +214,37 @@ class CliTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SkillGateTests(unittest.TestCase):
+    """SKILL.md 执行体/质量门：脚本来源、截图标识、门禁阻断、独立机隔离。"""
+
+    def test_five_steps_emit_script_source(self):
+        ctx = _full_ctx()
+        runner.run(ctx)
+        records = {r["step_id"]: r for r in ctx.evidence.records}
+        for sid in ("infra-02", "infra-03", "infra-04", "infra-05", "infra-06"):
+            with self.subTest(step=sid):
+                self.assertTrue(records[sid].get("script_src", "").startswith("https://"))
+                self.assertTrue(records[sid].get("script_note"))
+        self.assertNotIn("script_src", records["infra-01"])
+
+    def test_shot_hook_has_target_and_timestamp(self):
+        ctx = _full_ctx()
+        runner.run(ctx)
+        for record in ctx.evidence.records:
+            self.assertIn("--target", record["shot_cmd"])
+            self.assertIn("--timestamp", record["shot_cmd"])
+
+    def test_evidence_failure_stops_following_steps(self):
+        ctx = _full_ctx(evidence=FakeEvidence(exit_code=1, error="bad"))
+        result = runner.run(ctx)
+        self.assertEqual(len(result.steps), 1, "质量门未过不得进入下一步")
+        self.assertIn("质量门未过", " ".join(result.notes))
+
+    def test_secondary_target_writes_to_separate_dir(self):
+        ctx = _full_ctx(secondary_targets=("192.0.2.9",))
+        runs = runner.run_targets(ctx)
+        self.assertEqual(len(runs), 2)
+        self.assertEqual(runs[1].role, "独立机")
+        self.assertEqual(runs[1].report.target, "192.0.2.9")

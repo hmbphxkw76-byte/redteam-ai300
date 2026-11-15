@@ -392,3 +392,31 @@ class BeforeAfterReportTests(unittest.TestCase):
                        summary="无入口"),
         ])
         self.assertIn("未取得利用后状态", report.render(rep))
+
+
+class SkillClauseTests(unittest.TestCase):
+    """SKILL.md 条款补齐：脚本来源、截图目标标识与时间戳。"""
+
+    def test_provenance_covers_exactly_five_demo_script_steps(self):
+        from tools.attack_infra import provenance
+        step_ids = {"infra-02", "infra-03", "infra-04", "infra-05", "infra-06"}
+        self.assertEqual(set(provenance.SCRIPT_SOURCES), step_ids)
+        for sid in step_ids:
+            fields = provenance.provenance(sid)
+            self.assertTrue(fields["script_src"].startswith("https://"))
+            self.assertTrue(fields["script_note"].strip())
+        self.assertIsNone(provenance.provenance("infra-01"))
+
+    def test_evidence_argv_carries_script_source(self):
+        writer = EvidenceWriter("loot/x")
+        argv = writer.build_argv("infra-02", "aws s3 ls",
+                                 script_src="https://example.test/ref",
+                                 script_note="adapted")
+        self.assertIn("--script-src", argv)
+        self.assertIn("--script-note", argv)
+
+    def test_shot_hook_carries_target_and_timestamp(self):
+        plan = shot.ShotPlanner("loot/shots").plan(
+            "infra-01", target="192.0.2.5", timestamp="2026-11-15T15:00:00+0800")
+        self.assertIn("--target 192.0.2.5", plan.cmd)
+        self.assertIn("--timestamp 2026-11-15T15:00:00+0800", plan.cmd)

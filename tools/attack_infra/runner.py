@@ -6,12 +6,16 @@
 证据门失败（共享容器退出码非 0）不改变判定，但标记 `evidence_ok=False`，
 由报告与退出码视为阻断项（B4 / AC-15）。
 """
+import os
+import re
 import time
 from dataclasses import dataclass, replace
 from typing import Callable, Dict, List
 
 from . import path_a, path_b, path_c, report as report_mod
+from .evidence import EvidenceWriter
 from .model import Outcome, RunContext, RunReport, StepVerdict
+from .provenance import provenance
 from .shot import ShotPlanner
 
 STEPS: Dict[str, Callable[[RunContext], StepVerdict]] = {
@@ -29,9 +33,15 @@ STEPS: Dict[str, Callable[[RunContext], StepVerdict]] = {
 def _evidence_kwargs(ctx: RunContext, verdict: StepVerdict) -> dict:
     kwargs = dict(verdict.evidence_extra)
     planner = ctx.shot or ShotPlanner()
-    plan = planner.plan(verdict.step_id, url=ctx.target)
+    plan = planner.plan(
+        verdict.step_id, url=ctx.target, target=ctx.target,
+        timestamp=time.strftime("%Y-%m-%dT%H:%M:%S%z"))
     kwargs.setdefault("shot_cmd", plan.cmd)
     kwargs.setdefault("shot_kind", plan.kind)
+    src = provenance(verdict.step_id)
+    if src:
+        for key, value in src.items():
+            kwargs.setdefault(key, value)
     return kwargs
 
 
@@ -73,6 +83,11 @@ def run(ctx: RunContext) -> RunReport:
             break
         verdict = STEPS[step_id](ctx)
         result.steps.append(attach_evidence(ctx, verdict))
+        if not verdict.evidence_ok:
+            result.notes.append(
+                "质量门未过（%s 证据落盘失败）：按 SKILL.md 执行体停止后续步骤"
+                % step_id)
+            break
     if any(v.outcome is Outcome.ABSENT for v in result.steps):
         result.notes.append("存在 ABSENT 结局：按 SKILL.md「失败与豁免」评估转技能")
     return result
@@ -93,9 +108,24 @@ def run_targets(ctx: RunContext) -> List[TargetRun]:
     if ctx.decoy:
         return runs
     for target in ctx.secondary_targets:
-        sub = replace(ctx, target=target, secondary_targets=(), decoy=False)
+        sub = replace(ctx, target=target, secondary_targets=(), decoy=False,
+                      **_scoped_output(ctx, target))
         runs.append(TargetRun(target, "独立机", run(sub)))
     return runs
+
+
+def _scoped_output(ctx: RunContext, target: str) -> dict:
+    """独立机的证据与截图落到独立子目录，避免覆盖主目标片段。"""
+    slug = re.sub(r"[^A-Za-z0-9_.-]", "_", str(target))[:60] or "secondary"
+    out = {"out_dir": os.path.join(ctx.out_dir, slug)}
+    if isinstance(ctx.evidence, EvidenceWriter):
+        out["evidence"] = EvidenceWriter(
+            os.path.join(ctx.evidence.out_dir, slug),
+            manifest=ctx.evidence.manifest, tool_path=ctx.evidence.tool_path,
+            python=ctx.evidence.python, timeout=ctx.evidence.timeout)
+    if isinstance(ctx.shot, ShotPlanner):
+        out["shot"] = ShotPlanner(os.path.join(ctx.shot.out_dir, slug))
+    return out
 
 
 def run_all(ctx: RunContext) -> RunReport:

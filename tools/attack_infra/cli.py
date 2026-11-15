@@ -61,6 +61,12 @@ def _build_parser():
     ap.add_argument("--gateway-config", action="append", default=[],
                     help="待核推理网关配置文件")
     ap.add_argument("--exec-cmd", default="", help="infra-06 代码执行命令（参数列表）")
+    ap.add_argument("--exec-endpoint", default="",
+                    help="infra-06 模型服务 /exec 端点 URL")
+    ap.add_argument("--gateway-verify-endpoint", default="",
+                    help="infra-05 合法身份调用推理的端点 URL")
+    ap.add_argument("--gateway-credential-env", default="",
+                    help="infra-05 凭据所在环境变量名（值不进命令行与片段）")
     ap.add_argument("--namespace", default="", help="infra-04 Kubernetes 命名空间")
     ap.add_argument("--service-account", default="", help="infra-04 服务账号名")
     ap.add_argument("--allow-inference", action="store_true",
@@ -100,6 +106,10 @@ def build_context(args) -> RunContext:
         decoy_timebox_minutes=args.decoy_timebox,
         gateway_configs=tuple(args.gateway_config),
         exec_argv=exec_argv,
+        exec_endpoint=args.exec_endpoint,
+        gateway_verify_endpoint=args.gateway_verify_endpoint,
+        gateway_credential=os.environ.get(args.gateway_credential_env, "")
+        if args.gateway_credential_env else "",
         inference_prompt=args.inference_prompt,
         inference_model=args.inference_model,
         inference_endpoint=args.inference_endpoint,

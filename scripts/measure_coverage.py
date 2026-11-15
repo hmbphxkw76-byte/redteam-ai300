@@ -151,7 +151,7 @@ def attack_infra_targets():
     import importlib
     names = ("model", "transport", "command", "evidence", "shot",
              "fingerprint", "inventory", "path_a", "path_b", "path_c",
-             "report", "runner", "cli")
+             "report", "runner", "cli", "provenance")
     mods = tuple(importlib.import_module("tools.attack_infra." + n) for n in names)
     return mods, ("tests.test_attack_infra_units",
                   "tests.test_attack_infra_path_a",

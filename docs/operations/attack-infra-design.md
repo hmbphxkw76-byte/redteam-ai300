@@ -15,7 +15,7 @@
 
 ## 2. 模块职责与公开接口
 
-| 模块 | 单一职责 | 公开接口（签名级，共 13 模块） | 错误行为 |
+| 模块 | 单一职责 | 公开接口（签名级，共 14 模块） | 错误行为 |
 |---|---|---|---|
 | `model` | 领域类型唯一定义处；不 import 本项目任何模块 | `Outcome`（五值枚举）、`Endpoint`、`Finding`、`StepVerdict`、`RunReport` | 构造非法枚举值 → `ValueError` |
 | `transport` | **seam ①**：HTTP 唯一出口 | `Transport.request(method, url, json_body=None, headers=None, timeout=30) -> HttpResponse`；`HttpResponse(status, body, headers, content_type, error, elapsed_ms)` | 网络层失败返回 `error` 非空、`status=0`，不抛异常 |
@@ -27,6 +27,7 @@
 | `path_a` | infra-01..03：面发现（含 recon 清单端点）、云存储配置错误、模型服务器暴露/推理 | `discover(ctx) -> StepVerdict`（内嵌 `findings`）、`cloud_misconfig(ctx) -> StepVerdict`、`model_server(ctx) -> StepVerdict` | 无候选端口响应 → `ABSENT(reason=network)` |
 | `path_b` | infra-04..05：容器越权、网关凭据线索 | `container(ctx) -> StepVerdict`、`gateway(ctx) -> StepVerdict` | 命令不存在 → `ABSENT(reason=no_tool)` |
 | `path_c` | infra-06..08：提权回显归属、影响对照、flag 双通道 | `privesc(ctx) -> StepVerdict`、`impact(ctx) -> StepVerdict`、`flag(ctx) -> StepVerdict` | 缺 AI 日志/flag 通道 → `BLOCKED(reason=evidence_incomplete)` |
+| `provenance` | SKILL.md「示意脚本，须记录来源」唯一事实源（infra-02..06 官方 URL + 适配说明） | `SCRIPT_SOURCES`、`provenance(step_id)` | 非示意脚本步骤返回 `None` |
 | `report` | 报告渲染（摘要 + 逐步骤表 + 转技能建议 + 复现命令） | `render(report: RunReport) -> str`、`summary(report) -> str` | 空报告 → 输出「无步骤结果」，不抛异常 |
 | `runner` | 编排：步骤 → 判定 → 证据 → 汇总 | `run(request: RunRequest) -> RunReport` | 未知 step_id → `ValueError`（CLI 转退出码 2） |
 | `cli` | 参数解析与退出码语义 | `main(argv) -> int` | 0 全绿；1 存在非 `EXPLOITED`/`ABSENT` 的阻断项或证据门失败；2 用法错误 |
@@ -91,7 +92,7 @@ path_a ──> inventory ──> model
 | B7 | 无旧版 PyRIT 对象 | §2.1 | 本文对象图段声明「无 PyRIT 对象」；`grep -n "Orchestrator\|pyrit.orchestrator\|AzureOpenAIChatTarget"` 仅命中 §6 否决理由与 ADR-0004 引用 | 符合 | PASS |
 | B8 | 可追溯性 | §2.1 | 每个模块接口对齐 AC 编号；canonical F/P 编号在 §2/§5 引用 | 符合 | PASS |
 | AC-① | seam 数量与位置明确且与阶段 2 一致 | §3.6 验收① | §4 四 seam，与规格 v1「已核对」结论一致 | 符合 | PASS |
-| AC-② | 每个公开接口有职责/输入/输出/错误行为 | 验收② | §2 表四列齐全（12 模块） | 符合 | PASS |
+| AC-② | 每个公开接口有职责/输入/输出/错误行为 | 验收② | §2 表四列齐全（14 模块） | 符合 | PASS |
 | AC-③ | 依赖方向单向 | 验收③ | §3 图无回边；`# 依赖方向` 断言由 `validate_skill` 之外的 review 复核 | 符合 | PASS |
 | AC-④ | 测试替身可替换外部依赖 | 验收④ | §4 四替身 + 单一注入点 `RunContext` | 符合 | PASS |
 | AC-⑤ | 与 ADR 冲突已标注 | 验收⑤ | §7 三条 ADR 逐条标注 | 符合 | PASS |

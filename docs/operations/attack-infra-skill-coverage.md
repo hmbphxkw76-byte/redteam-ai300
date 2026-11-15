@@ -1,7 +1,7 @@
 # attack-infra SKILL.md 逐条核对与推送留痕
 
 > 版本 v1.0 · 输入 `skills/attack-infra/SKILL.md`、规格 #213 v2、`docs/operations/attack-infra-verification.md`
-> 性质：阶段 8/11 完整性证据。核对结论：声明项 29 条，全部有实现位置与验证方式，遗漏 0。
+> 性质：阶段 8/11 完整性证据。核对结论：声明项 39 条，全部有实现位置与验证方式，遗漏 0。
 
 ## 1. SKILL.md 逐条核对（实现完整性）
 
@@ -39,7 +39,18 @@
 | 豁免 3：被 RBAC/护栏拦截 → 记录不重试 | `privesc`/`container` 单次执行 + `BLOCKED(guardrail)` | `test_guardrail_block_is_blocked` | 已实现 |
 | 豁免 4：疑似诱饵机 → ≤30 分钟结束 | `--decoy` 短路 + `--decoy-timebox`（默认 30） | `test_decoy_sends_zero_requests`、`test_decoy_timebox_stops_remaining_steps` | 已实现 |
 
-**核对结论**：SKILL.md 声明项 29 条，全部有实现位置与验证方式，遗漏 0。
+| infra-02 示意脚本来源记录 | `provenance.SCRIPT_SOURCES["infra-02"]` → `--script-src` | `SkillClauseTests.test_provenance_covers_exactly_five_demo_script_steps`；infra-02 片段「脚本 / PoC」节含 AWS CLI 官方 URL | 已实现 |
+| infra-03 示意脚本来源记录 | `provenance.SCRIPT_SOURCES["infra-03"]` | 同上；infra-03 片段含 vLLM 官方 URL | 已实现 |
+| infra-04 示意脚本来源记录 | `provenance.SCRIPT_SOURCES["infra-04"]` | 同上；infra-04 片段含 kubectl 官方 URL | 已实现 |
+| infra-05 示意脚本来源记录 | `provenance.SCRIPT_SOURCES["infra-05"]` | 同上；infra-05 片段含 LiteLLM 官方 URL | 已实现 |
+| infra-06 示意脚本来源记录 | `provenance.SCRIPT_SOURCES["infra-06"]` | 同上；infra-06 片段含 kubelet 官方 URL | 已实现 |
+| infra-05 以合法身份调用推理 | `path_b.gateway` + `--gateway-verify-endpoint` / `--gateway-credential-env` / `--allow-inference` | `GatewayLegalIdentityTests` 2 例；命令仅引用 `$GATEWAY_TOKEN`，凭据明文不入片段 | 已实现 |
+| infra-06 模型服务 `/exec` 端点 | `path_c._exec_via_endpoint` + `--exec-endpoint` | `ExecEndpointTests` 3 例（成功 / 本机回显 / 被拒） | 已实现 |
+| 质量门：截图含目标标识与时间戳 | `shot.ShotPlanner.plan(target=, timestamp=)` | `SkillClauseTests.test_shot_hook_carries_target_and_timestamp`；实测片段钩子含 `--target` 与 `--timestamp` | 已实现 |
+| 执行体「未过质量门不得进入下一步」 | `runner.run` 在 `evidence_ok=False` 时 `break` 并留注记 | `SkillGateTests.test_evidence_failure_stops_following_steps` | 已实现 |
+| 独立机证据不覆盖主目标 | `runner._scoped_output` 按目标建证据/截图子目录 | `SkillGateTests.test_secondary_target_writes_to_separate_dir` | 已实现 |
+
+**核对结论**：SKILL.md 声明项 39 条，全部有实现位置与验证方式，遗漏 0。
 
 ## 2. 三层隔离与推送留痕（阶段 11）
 

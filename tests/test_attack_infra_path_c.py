@@ -136,3 +136,29 @@ class FlagTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExecEndpointTests(unittest.TestCase):
+    """SKILL.md infra-06：MODEL_SVC /exec 端点路径。"""
+
+    def test_exec_endpoint_remote_echo_is_exploited(self):
+        fake = FakeTransport({}, default=HttpResponse(
+            status=200, content_type="text/plain",
+            body="uid=0(root) gid=0(root) host=srv-ai-vector"))
+        verdict = path_c.privesc(_ctx(transport=fake,
+                                      exec_endpoint="http://h:9000/exec"))
+        self.assertIs(verdict.outcome, Outcome.EXPLOITED)
+        self.assertIn("/exec", verdict.command)
+
+    def test_exec_endpoint_local_echo_is_blocked(self):
+        fake = FakeTransport({}, default=HttpResponse(
+            status=200, content_type="text/plain", body=socket.gethostname()))
+        verdict = path_c.privesc(_ctx(transport=fake,
+                                      exec_endpoint="http://h:9000/exec"))
+        self.assertEqual(verdict.reason, "local_echo")
+
+    def test_exec_endpoint_denied_is_guardrail(self):
+        fake = FakeTransport({}, default=HttpResponse(status=403, body="forbidden"))
+        verdict = path_c.privesc(_ctx(transport=fake,
+                                      exec_endpoint="http://h:9000/exec"))
+        self.assertEqual(verdict.reason, "guardrail")

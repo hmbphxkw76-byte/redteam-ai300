@@ -7,6 +7,7 @@ AC-19 要求测试全程离线，故此处只计算「应当怎么截、落在�
 `collect_evidence.py --screenshot/--shot-cmd` 在证据容器侧完成。
 """
 import os
+import shlex
 from dataclasses import dataclass
 from typing import Optional
 
@@ -32,11 +33,16 @@ class ShotPlanner:
     def describe(self) -> str:
         return "shot-planner(%s)" % self.out_dir
 
-    def plan(self, step_id, url="", region="") -> ShotPlan:
+    def plan(self, step_id, url="", region="", target="", timestamp="") -> ShotPlan:
+        """计划一张截图（SKILL.md 质量门：访问证明须含目标标识与时间戳）。"""
         region = region or step_id
         kind = "url" if _looks_like_url(url) else "transcript"
         path = os.path.join(self.out_dir, "%s.png" % step_id)
         cmd = 'screenshot --region %s --out "%s"' % (region, path)
+        if target:
+            cmd += " --target %s" % shlex.quote(str(target))
+        if timestamp:
+            cmd += " --timestamp %s" % shlex.quote(str(timestamp))
         return ShotPlan(step_id=step_id, kind=kind, path=path, cmd=cmd,
                         url=url, region=region)
 

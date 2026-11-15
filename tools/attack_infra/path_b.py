@@ -10,7 +10,7 @@ import os
 import re
 from typing import List
 
-from .command import argv_to_text
+from .command import argv_to_text, curl_json
 from .model import CredentialHint, Outcome, RunContext, StepVerdict
 
 # 凭据模式：算法前缀 + 长度，仅用于定位；命中值不进入任何输出
@@ -110,10 +110,34 @@ def gateway(ctx: RunContext) -> StepVerdict:
     command = "grep -rEn 'sk-|AKIA|Bearer ' %s" % " ".join(ctx.gateway_configs)
     output = "\n".join("%s" % h.as_text() for h in hints) or "（无命中）"
     if hints:
-        return StepVerdict("infra-05", Outcome.EXPOSED_NO_AUTH, "",
-                           summary="检出 %d 条凭据指纹（未验证可用性）" % len(hints),
-                           command=command, output=output,
-                           evidence_extra={"note": "凭据仅记指纹，未做可用性验证"})
+        extra = {"note": "凭据仅记指纹；合法身份调用仅在显式开关下执行"}
+        result = Outcome.EXPOSED_NO_AUTH
+        summary = "检出 %d 条凭据指纹（未验证可用性）" % len(hints)
+        if ctx.gateway_credential and ctx.gateway_verify_endpoint:
+            if ctx.allow_inference:
+                body = {"model": ctx.inference_model or "default",
+                        "prompt": ctx.inference_prompt, "max_tokens": 8}
+                # 命令只引用环境变量名，绝不写入凭据值（AC-09 / AC-18）
+                verify_cmd = (curl_json(ctx.gateway_verify_endpoint, body)
+                              + ' -H "Authorization: Bearer $GATEWAY_TOKEN"')
+                resp = ctx.transport.request(
+                    "POST", ctx.gateway_verify_endpoint, json_body=body,
+                    headers={"Authorization": "Bearer %s" % ctx.gateway_credential},
+                    timeout=ctx.timeout)
+                safe_body = (resp.body or "").replace(ctx.gateway_credential,
+                                                      "（已脱敏）")[:400]
+                output += "\n\n$ %s\n(status=%d)\n%s" % (
+                    verify_cmd, resp.status, safe_body or resp.error or "-")
+                command = command + " ; " + verify_cmd
+                if resp.ok:
+                    result = Outcome.EXPLOITED
+                    summary = "以合法身份调用推理成功（凭据仅记指纹）"
+                else:
+                    extra["note"] = "合法身份调用被拒绝（%d），凭据可用性未证实" % resp.status
+            else:
+                extra["note"] = "未开启 --allow-inference，未执行合法身份调用"
+        return StepVerdict("infra-05", result, "", summary=summary,
+                           command=command, output=output, evidence_extra=extra)
     return StepVerdict("infra-05", Outcome.ABSENT, reason="none_found",
                        summary="配置文件未命中凭据模式", command=command,
                        output=output)

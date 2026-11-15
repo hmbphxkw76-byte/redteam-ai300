@@ -161,6 +161,9 @@ class RunContext:
     buckets: Tuple[str, ...] = ()
     gateway_configs: Tuple[str, ...] = ()
     exec_argv: Tuple[str, ...] = ()
+    exec_endpoint: str = ""
+    gateway_credential: str = ""
+    gateway_verify_endpoint: str = ""
     inference_prompt: str = "Reply with exactly: PWNED"
     inference_model: str = ""
     inference_endpoint: str = ""

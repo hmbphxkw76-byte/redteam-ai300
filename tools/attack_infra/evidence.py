@@ -34,7 +34,8 @@ class EvidenceWriter:
 
     def build_argv(self, step_id, command, output="", target="", title="",
                    screenshot="", shot_kind="", shot_cmd="", ai_log="",
-                   flag="", flag_panel="", flag_shot="", note="", strict=True):
+                   flag="", flag_panel="", flag_shot="", note="", strict=True,
+                   script="", script_src="", script_note=""):
         path = self.fragment_path(step_id)
         argv = [self.python, self.tool_path,
                 "--step", step_id,
@@ -62,6 +63,12 @@ class EvidenceWriter:
             argv += ["--flag-shot", flag_shot]
         if note:
             argv += ["--note", note]
+        if script:
+            argv += ["--script", script]
+        if script_src:
+            argv += ["--script-src", script_src]
+        if script_note:
+            argv += ["--script-note", script_note]
         if self.manifest:
             argv += ["--manifest", self.manifest]
         if strict:

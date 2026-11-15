@@ -138,6 +138,7 @@ class FakeTransport(Transport):
         self.routes = dict(routes)
         self.default = default or HttpResponse(error="no route")
         self.calls: list = []
+        self.requests: list = []  # (key, json_body, headers) —— 供鉴权头断言
 
     def describe(self) -> str:
         return "fake(%d routes)" % len(self.routes)
@@ -145,6 +146,7 @@ class FakeTransport(Transport):
     def request(self, method, url, json_body=None, headers=None, timeout=None):
         key = "%s %s" % (method.upper(), url)
         self.calls.append((key, json_body))
+        self.requests.append((key, json_body, dict(headers or {})))
         value = self.routes.get(key, self.default)
         if isinstance(value, HttpResponse):
             return value

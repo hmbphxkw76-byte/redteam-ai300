@@ -44,15 +44,24 @@ def default_corpus(size: int = 1200) -> List[str]:
 
 @dataclass(frozen=True)
 class RetrievalHit:
-    """一次 top-k 命中：文档标识 + 相似度 + 原文。"""
+    """一次 top-k 命中：文档标识 + 相似度 + 原文 + 生效权重。
+
+    `score` 恒为余弦相似度（可复现的原始观测）；`weight` 是索引层被直接
+    操纵时施加的相关性权重（默认 1.0），`effective` 才是排序依据。
+    """
 
     doc_id: str
     score: float
     text: str
+    weight: float = 1.0
+
+    @property
+    def effective(self) -> float:
+        return self.score * self.weight
 
     def as_dict(self):
         return {"doc_id": self.doc_id, "score": round(self.score, 6),
-                "text": self.text}
+                "weight": round(self.weight, 6), "text": self.text}
 
 
 class RagHarness:
@@ -68,6 +77,8 @@ class RagHarness:
         self.k = k
         self._docs: List[Tuple[str, str]] = []
         self._vectors: List[List[float]] = []
+        self._weights: dict = {}
+        self._priority: dict = {}
         for text in corpus:
             self._add("doc-%04d" % len(self._docs), text)
         self.index()
@@ -92,6 +103,32 @@ class RagHarness:
         self.index()
         return added
 
+    # -- 索引层直接操纵（路径 A 第 2 步「可直接操纵索引时」）---------------
+    def set_weight(self, doc_id: str, weight: float) -> float:
+        """给单篇文档施加相关性权重乘子（元数据/相关性权重篡改）。"""
+        self.text_of(doc_id)  # 不存在即抛 KeyError，避免静默无效
+        if weight <= 0:
+            raise ValueError("weight 必须为正数")
+        self._weights[doc_id] = float(weight)
+        return float(weight)
+
+    def set_priority(self, doc_ids: Sequence[str]) -> Tuple[str, ...]:
+        """指定元数据排序优先序列（序列内按给定次序排在所有文档之前）。"""
+        ordered = tuple(doc_ids)
+        for doc_id in ordered:
+            self.text_of(doc_id)
+        self._priority = {doc_id: i for i, doc_id in enumerate(ordered)}
+        return ordered
+
+    def clear_tamper(self) -> None:
+        """撤销全部索引层操纵，回到纯余弦排序（对照用）。"""
+        self._weights = {}
+        self._priority = {}
+
+    def tamper_state(self):
+        return {"weights": dict(self._weights),
+                "priority": list(self._priority)}
+
     # -- 读取面 -----------------------------------------------------------
     def __len__(self) -> int:
         return len(self._docs)
@@ -107,15 +144,23 @@ class RagHarness:
         raise KeyError("未知 doc_id：%s" % doc_id)
 
     def retrieve(self, query: str, k: Optional[int] = None) -> List[RetrievalHit]:
-        """返回与查询余弦相似度最高的 k 篇文档（检索条件取证）。
+        """返回生效分最高的 k 篇文档（检索条件取证）。
 
-        并列相似度按 doc_id 升序，保证同一命令重跑结果一致（§6.1）。
+        排序依据是「生效分 = 余弦 × 权重」，元数据优先序列先于分数；
+        无操纵时（权重全 1、无优先序列）等价于纯余弦排序。
+        并列按 doc_id 升序，保证同一命令重跑结果一致（§6.1）。
         """
         qv = self.embedder.embed(query)
-        scored = [(cosine(qv, vec), doc_id, text)
-                  for (doc_id, text), vec in zip(self._docs, self._vectors)]
-        scored.sort(key=lambda x: (-x[0], x[1]))
-        return [RetrievalHit(d, s, t) for s, d, t in scored[:k or self.k]]
+        default_rank = len(self._priority)
+        scored = []
+        for (doc_id, text), vec in zip(self._docs, self._vectors):
+            score = cosine(qv, vec)
+            weight = self._weights.get(doc_id, 1.0)
+            scored.append((self._priority.get(doc_id, default_rank),
+                           -(score * weight), doc_id, text, score, weight))
+        scored.sort()
+        return [RetrievalHit(doc_id, score, text, weight)
+                for _rank, _eff, doc_id, text, score, weight in scored[:k or self.k]]
 
     def snapshot(self, query: str, k: Optional[int] = None) -> Tuple[str, ...]:
         """只取 top-k 的 doc_id 序列（before/after 对照的最简判据）。"""

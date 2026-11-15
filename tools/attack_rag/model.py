@@ -95,6 +95,18 @@ class AttackRequest:
     flag_panel: str = ""
     flag_shot: str = ""
     flag_oracle: str = ""
+    # 前置（SKILL.md「前置：定位 RAG 攻击面」）
+    recon_inventory: str = ""      # recon-ai 资产清单 JSON 路径（缺省用合成面并如实标注）
+    # 路径 A 写入面（SKILL.md 路径 A 第 1 步：摄取通道 / 直写）
+    ingest_url: str = ""           # <RAG_INGEST> 摄取端点；空则用合成/直写通道
+    ingest_doc: str = ""           # 待注入文档正文（缺省用构造载荷）
+    rag_writable: str = "unknown"  # yes | no | unknown（只读判定，驱动豁免分支）
+    # 路径 A-2 第三项（可直接操纵索引时）
+    index_access: bool = False
+    # 路径 C 豁免判定（下游与检索是否解耦）
+    downstream_coupled: str = "unknown"   # yes | no | unknown
+    # 收尾 flag 取证：访问证明须为实测值，不得凭空填写
+    whoami: str = ""
 
 
 @dataclass(frozen=True)

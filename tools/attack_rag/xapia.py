@@ -36,9 +36,18 @@ class XpiaResult:
                 "payload": self.payload, "skipped_reason": self.skipped_reason}
 
 
-def build_payload(instruction: str = DEFAULT_INSTRUCTION) -> str:
-    """构造注入载荷：伪装成检索文档中的「操作说明」段。"""
-    return ("[检索片段 · 操作说明] %s" % (instruction or DEFAULT_INSTRUCTION)).strip()
+def build_payload(instruction: str = DEFAULT_INSTRUCTION, snippet: str = "",
+                  limit: int = 240) -> str:
+    """把指令嵌进**检索片段**：真实片段原文 + 追加「操作说明」段（路径 B 第 2 步）。
+
+    给 `snippet` 时载荷就是检索返回的原文（下游确实会消费的那段上下文），
+    指令藏在其尾部；未给时退化为纯说明段，供离线单测使用。
+    """
+    instruction = (instruction or DEFAULT_INSTRUCTION).strip()
+    body = (snippet or "").strip()
+    if body:
+        return "[检索片段] %s\n[操作说明] %s" % (body[:limit], instruction)
+    return "[检索片段 · 操作说明] %s" % instruction
 
 
 def run_xpia(objective: str, backend, payload: str = "") -> XpiaResult:

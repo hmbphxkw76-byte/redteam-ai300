@@ -20,3 +20,4 @@
 - 交付物：v1 = `docs/specs/verify-evidence-spec-v1.md`；v2 = `docs/specs/verify-evidence-spec-v2.md`；规格 issue = #204。
 - 隔离：worktree `D:/_verify-evidence_wt` · 分支 `feat/verify-evidence`（ADR-0006）。
 - 收口：阶段 11 常规通道被 `checkout_lock.py` 阻断，按钩子例外通道推送（并集已核对），PR #227 合并，main CI `success`。
+- 记录收口（15:40）：stage3/8 压缩、stage9/10/11 压至 C4 ≤2KB 并校正时点数字；SKILL 补「修订记录」与机读边界声明；独立复核 5 条部分实现见 `verify-evidence-skill-coverage.md` §8。行为判据未改动。

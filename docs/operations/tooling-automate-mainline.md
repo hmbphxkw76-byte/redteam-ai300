@@ -18,6 +18,7 @@
 | 5 | triage | PASS（B8，0 不符合项） | `docs/operations/tooling-automate-gate-stage5.md` |
 | 6 | codebase-design | PASS（B2/B7/B8，0 不符合项） | `docs/operations/tooling-automate-gate-stage6.md` |
 | 7 | domain-modeling | PASS（B1/B2/B8，0 不符合项） | `docs/operations/tooling-automate-gate-stage7.md` |
+| 8 | implement-spec | PASS（B1/B2/B3/B4/B5/B7/B8，0 不符合项） | `docs/operations/tooling-automate-gate-stage8.md` |
 
 - 阶段 1 交付物：`docs/research/tooling-automate-canonical.md`（16 条条款映射、VG-1…VG-4 核实闸、已排除清单）。
 - 阶段 2 交付物：v1 = `docs/specs/tooling-automate-spec-v1.md`（7993B，七节 / 30 US）；规格 issue = #240（`ready-for-agent`）；seam 结论 = 1 处（用户 2026-11-15 确认）。
@@ -26,4 +27,5 @@
 - 阶段 5 交付物：7 张工单全标 `ready-for-agent`，每张含 范围/验收/约束/验证 四段 brief；无人工独占项（纯自动化可落地）。
 - 阶段 6 交付物：`docs/operations/tooling-automate-design.md`（单包 `tools/tooling_automate/`，5 模块，S-1 唯一 seam，零 pyrit，FakeRunner 假后端策略）。
 - 阶段 7 交付物：GLOSSARY 新增 2 术语（任务清单/编排层，16489/16500，未抬上限）+ 术语映射表（gate-stage7）；无新增 ADR。
+- 阶段 8 交付物：`tools/tooling_automate/` 7 模块（S-1 唯一 seam、injectable runner、零第三方）+ 6 测试文件（27 例全绿）+ `measure_coverage.py` 注册目标（覆盖 89.6%）。
 - 门禁摘要：阶段 1 / 2 / 3 / 4 / 5 / 6 / 7 已按 T5 补登于 issue #240 评论区。

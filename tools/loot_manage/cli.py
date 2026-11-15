@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""loot-manage 命令行薄封装：init / validate / register。"""
+"""loot-manage 命令行薄封装：init / validate / register / query / set-status / empty-state。"""
 from __future__ import annotations
 
 import argparse
@@ -93,6 +93,50 @@ def cmd_register(args) -> int:
     return 0
 
 
+def cmd_query(args) -> int:
+    """查询登记行（SKILL loot-02.3：横向移动前查存活会话与有效凭据）。"""
+    if not os.path.isfile(args.registry):
+        print("ERROR: 登记簿不存在：%s" % args.registry, file=sys.stderr)
+        return 2
+    parsed = reg.parse_registry(_read(args.registry))
+    if args.reusable:
+        rows = reg.reusable_rows(parsed)
+    else:
+        rows = reg.query_rows(parsed, type_=args.type, status=args.status, host=args.host)
+    if args.json:
+        payload = [{"id": x.id, "type": x.type, "content": x.content,
+                    "host": x.host, "status": x.status, "dual": x.dual} for x in rows]
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    else:
+        if not rows:
+            print("（无匹配登记行）")
+        for x in rows:
+            print("%s\t%s\t%s\t%s\t%s" % (x.id, x.type, x.content, x.host, x.status))
+    return 0
+
+
+def cmd_set_status(args) -> int:
+    """原位更新状态并保留原行（SKILL「失败与豁免」：失效不得删除记录）。"""
+    if not os.path.isfile(args.registry):
+        print("ERROR: 登记簿不存在：%s" % args.registry, file=sys.stderr)
+        return 2
+    new_text, ok, msg = reg.update_status(_read(args.registry), args.id, args.status)
+    if not ok:
+        print("ERROR: %s" % msg, file=sys.stderr)
+        return 1
+    _write(args.registry, new_text)
+    print(msg)
+    return 0
+
+
+def cmd_empty_state(args) -> int:
+    """记录空态与原因（SKILL「失败与豁免」：空态本身即为有效产出）。"""
+    text = _read(args.registry) if os.path.isfile(args.registry) else reg.SKELETON
+    _write(args.registry, reg.mark_empty_state(text, args.reason))
+    print("已记录空态原因：%s" % args.reason)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="loot-manage", description="战利品登记簿工具")
     p.add_argument("--registry", default=None, help="登记簿路径（默认 <root>/loot/registry.md）")
@@ -118,6 +162,21 @@ def build_parser() -> argparse.ArgumentParser:
     pr.add_argument("--id")
     pr.add_argument("--timestamp")
     pr.add_argument("--path", help="攻击路径行（与 --type 互斥）")
+
+    pq = sub.add_parser("query", help="查询登记行（横向复用）")
+    pq.add_argument("--type", choices=sorted(reg.TYPES))
+    pq.add_argument("--status", help="按状态筛选（如 存活 / 有效）")
+    pq.add_argument("--host", help="按来源主机筛选")
+    pq.add_argument("--reusable", action="store_true",
+                    help="仅返回可复用项（凭据=有效 / 会话=存活）")
+    pq.add_argument("--json", action="store_true", help="输出 JSON")
+
+    ps = sub.add_parser("set-status", help="原位更新某行状态（失效时保留原行）")
+    ps.add_argument("--id", required=True, help="登记编号，如 L-3")
+    ps.add_argument("--status", required=True, help="目标状态（须与类型匹配）")
+
+    pe = sub.add_parser("empty-state", help="记录无战利品的空态与原因")
+    pe.add_argument("--reason", required=True, help="空态原因（如 目标不可达）")
     return p
 
 
@@ -131,6 +190,12 @@ def main(argv=None) -> int:
         return cmd_validate(args)
     if args.cmd == "register":
         return cmd_register(args)
+    if args.cmd == "query":
+        return cmd_query(args)
+    if args.cmd == "set-status":
+        return cmd_set_status(args)
+    if args.cmd == "empty-state":
+        return cmd_empty_state(args)
     return 2
 
 

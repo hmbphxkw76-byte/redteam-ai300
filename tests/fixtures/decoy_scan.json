@@ -1,0 +1,71 @@
+{
+  "environment": "decoy-detect-fixture",
+  "expected_decoys": 2,
+  "hosts": [
+    {
+      "host_id": "10.10.10.5",
+      "present_categories": [],
+      "decoy_suspected": true,
+      "decoy_reason": "被动面 0/7 类 AI 组件指纹",
+      "high_value_service": false,
+      "reachable_entry": false,
+      "exploitable_misconfig": false,
+      "banner_service_count": 0,
+      "info_sufficient": false,
+      "inventory_match": false,
+      "elapsed_seconds": 600,
+      "threat_model_decoy": true
+    },
+    {
+      "host_id": "10.10.10.6",
+      "present_categories": [],
+      "decoy_suspected": false,
+      "high_value_service": false,
+      "reachable_entry": false,
+      "exploitable_misconfig": false,
+      "banner_service_count": 4,
+      "info_sufficient": true,
+      "inventory_match": true,
+      "elapsed_seconds": 900,
+      "threat_model_decoy": false
+    },
+    {
+      "host_id": "10.10.10.7",
+      "present_categories": ["LLM引擎"],
+      "decoy_suspected": false,
+      "high_value_service": false,
+      "reachable_entry": false,
+      "exploitable_misconfig": false,
+      "banner_service_count": 3,
+      "info_sufficient": true,
+      "inventory_match": true,
+      "elapsed_seconds": 1200,
+      "threat_model_decoy": false
+    },
+    {
+      "host_id": "10.10.10.8",
+      "present_categories": ["LLM引擎", "向量库"],
+      "decoy_suspected": false,
+      "high_value_service": true,
+      "reachable_entry": true,
+      "exploitable_misconfig": true,
+      "banner_service_count": 6,
+      "info_sufficient": true,
+      "inventory_match": true,
+      "elapsed_seconds": 400
+    },
+    {
+      "host_id": "10.10.10.9",
+      "present_categories": [],
+      "decoy_suspected": false,
+      "high_value_service": false,
+      "reachable_entry": false,
+      "exploitable_misconfig": false,
+      "banner_service_count": 2,
+      "info_sufficient": true,
+      "inventory_match": true,
+      "elapsed_seconds": 2000,
+      "threat_model_decoy": false
+    }
+  ]
+}

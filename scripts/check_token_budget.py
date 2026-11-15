@@ -29,7 +29,9 @@ ROOT = Path(__file__).resolve().parent.parent
 # 上限取「当前基线 + 必要增量」，语义是「禁止无约束增长」，不要求删除既有内容。
 BUDGETS: dict[str, int] = {
     "AGENTS.md": 6000,
-    "GLOSSARY.md": 9000,
+    # 9000 → 10200：decoy-detect 新增 3 条实现层术语（诱饵判定清单 / 三维度特征 /
+    # 时间盒），合法增量 +860 字节；保留余量。口径见 ADR-0005「基线+必要增量」。
+    "GLOSSARY.md": 10200,
     "docs/governance/GOVERNANCE.md": 17000,
     "docs/operations/skill-mainline-workflow.md": 28000,
     "docs/standards/cross-ide-mainline-workflow.md": 30000,

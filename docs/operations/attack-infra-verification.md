@@ -120,54 +120,6 @@
 
 未改 `.github/workflows/ci.yml`（CI 已用 `unittest discover` 与 `--target all`，自动覆盖新模块）。推送前已过 `checkout_lock.py --check`。
 
-## 9. SKILL.md 逐条核对（实现完整性）
+## 9. SKILL.md 逐条核对
 
-> 核对对象：`skills/attack-infra/SKILL.md` 全部声明项（front-matter、执行体 8 步、质量门 7 条、校验标准 3 条、失败与豁免 4 条）。
-
-| SKILL.md 条目 | 实现位置 | 验证方式 | 状态 |
-|---|---|---|---|
-| front-matter `output`：每步命令+输出+截图 | `runner.attach_evidence` → `evidence.EvidenceWriter` | 8 份片段三件套齐备（§2） | 已实现 |
-| front-matter `output`：利用前后对照 | `report._before_after`（基线 vs `EXPLOITED` 步骤） | 报告「利用前后对照」小节；`BeforeAfterReportTests` | 已实现 |
-| front-matter `output`：下游模型服务器/推理滥用取证 | `path_c.impact`（before/after + AI 日志） | `ImpactTests` 5 例 | 已实现 |
-| front-matter `output`：`ai_vector.txt` flag 取证 | `path_c.flag`（双通道一致性） | `FlagTests` 3 例 | 已实现 |
-| 前置 1：复用 recon-ai 资产清单 | `inventory.load_endpoints` + `path_a._probe_pairs` + `--inventory` | `InventoryTests` 3 例、`InventoryDiscoverTests` | 已实现 |
-| 前置 2：记录正常部署基线（端口/鉴权/服务账号） | `path_a.discover` 输出（端口、状态码、鉴权态）+ 报告基线表 | 实测输出 7 端点；`discover` 测试 5 例 | 已实现 |
-| 攻击路径 A · infra-01 发现面 | `path_a.discover` | 活体 3 命中 / 4 未命中 | 已实现 |
-| 攻击路径 A · infra-02 云平台配置错误 | `path_a.cloud_misconfig`（`--no-sign-request`） | `CloudTests` 4 例 | 已实现 |
-| 攻击路径 A · infra-03 模型服务器暴露/滥用 | `path_a.model_server`（列举 + 单次推理） | 活体 `EXPLOITED`；`ModelServerTests` 4 例 | 已实现 |
-| 攻击路径 B · infra-04 容器化负载越权 | `path_b.container`（`auth can-i --list`、`--as=`） | `ContainerTests` 5 例 | 已实现 |
-| 攻击路径 B · infra-05 推理网关凭据泄露 | `path_b.gateway`（仅指纹） | `GatewayTests` 5 例 | 已实现 |
-| 攻击路径 C · infra-06 提权 → 代码执行 | `path_c.privesc`（回显归属校验） | `PrivescTests` 5 例 | 已实现 |
-| 攻击路径 C · infra-07 下游影响取证 | `path_c.impact`（稳定化对照 + AI 日志） | 活体判 `no_difference`；`ImpactTests` 5 例 | 已实现 |
-| 攻击路径 C · infra-08 flag 取证（AI向量机 / 独立机） | `path_c.flag` + `runner.run_targets`（`--secondary-target`） | `TargetScopeTests` 4 例 | 已实现 |
-| 步骤 9：访问证明 `whoami`/`id` + flag 同屏 | `path_c.flag` 命令串含 `whoami; id`；flag 双通道断言 | `FlagTests` | 已实现 |
-| 质量门 1：每步可 copy/paste 命令 | `command.curl_json` / `argv_to_text`；报告复现段 | AC-18 断言 + 人工复跑 | 已实现 |
-| 质量门 2：关键输出原文 | 每步 `output` 字段 | 8 份片段 | 已实现 |
-| 质量门 3：截图（访问证明） | `shot.ShotPlanner`（只产计划，钩子入片段） | 片段「截图捕获钩子」行 | 已实现 |
-| 质量门 4：利用前后对照 | 见上（报告小节） | `BeforeAfterReportTests` | 已实现 |
-| 质量门 5：下游影响 + AI 日志 | `path_c.impact` 的 `ai_log` | `test_impact_records_ai_log_when_proven` | 已实现 |
-| 质量门 6：flag 面板 + 截图双通道 | `path_c.flag` | `FlagTests` | 已实现 |
-| 质量门 7：统一经 `collect_evidence.py` | `evidence.EvidenceWriter` | `EvidenceIntegrationTests`（真实落盘） | 已实现 |
-| 校验标准 1：copy/paste 逐步复现 | 报告「复现命令」段 + `--noproxy '*'` | 人工复跑 infra-03 命令 | 已实现 |
-| 校验标准 2：与 `report-exam` 兼容 | 共享容器格式（未自造格式） | `collect_evidence` 契约夹具 | 已实现 |
-| 校验标准 3：三件套 + 术语规范 | `check_glossary.py` + 片段结构 | 47 废弃术语 0 命中 | 已实现 |
-| 豁免 1：无基础设施面 → 记录依据后转技能 | `report.next_skills` + `ABSENT` 判定 | `test_absent_steps_produce_handoff_suggestion` | 已实现 |
-| 豁免 2：配置错误部分生效 → 如实记录 | `cloud_misconfig` / `model_server` 的 `AUTH_REQUIRED` 分支 | `CloudTests` / `ContainerTests` | 已实现 |
-| 豁免 3：被 RBAC/护栏拦截 → 记录不重试 | `privesc`/`container` 单次执行 + `BLOCKED(guardrail)` | `test_guardrail_block_is_blocked` | 已实现 |
-| 豁免 4：疑似诱饵机 → ≤30 分钟结束 | `--decoy` 短路 + `--decoy-timebox`（默认 30） | `test_decoy_sends_zero_requests`、`test_decoy_timebox_stops_remaining_steps` | 已实现 |
-
-**核对结论**：SKILL.md 声明项 29 条，全部有实现位置与验证方式，遗漏 0。
-
-## 10. 三层隔离与推送留痕（阶段 11）
-
-检出锁（`scripts/checkout_lock.py --check`）在推送前返回非 0：`GLOSSARY.md` / `scripts/measure_coverage.py` / `scripts/check_token_budget.py` / `.github/workflows/ci.yml` 被多个 worktree 同时改动。按 ADR-0006 逐 hunk 核对并集：
-
-| 并发方 | 其共享文件改动 | 与本分支是否重叠 | 结论 |
-|---|---|---|---|
-| `feat/attack-rag-conform` | `measure_coverage.py` 仅改 `attack_rag_targets` 的 `names` 元组；`ci.yml` 新增独立步骤（`inject_kb.py` 编译） | **不重叠**（本分支不触碰 `attack_rag_targets`，且未改 `ci.yml`） | 可自动合并 |
-| `feat/attack-supply-chain-tools` | 相对 `origin/main` 呈删除态（基线落后，未 rebase） | 不涉及本分支改动区域 | 其自身需先 rebase |
-| `docs/verify-evidence-gate11` | 无共享文件差异 | 不涉及 | — |
-
-结论：本分支已含 `origin/main` 最新并集（含 `attack-rag` 术语块与覆盖率目标），其余并发改动与本分支区域不相交。据此按 `pre-push` 钩子文档所列唯一例外（`--no-verify`，前提为逐 hunk 确认并集无误）完成推送，并将本表留痕于本文件与 PR 正文。
-
-**推送通道**：SSH（`origin`）为首选，失败再试 HTTPS（`origin-https`），各一次即停（用户硬约定）。
+SKILL.md 全部声明项（front-matter、前置 2 条、8 步、质量门 7 条、校验标准 3 条、豁免 4 条）的逐条对照表，以及三层隔离/推送留痕，见 `docs/operations/attack-infra-skill-coverage.md`（29 条，遗漏 0）。

@@ -14,6 +14,6 @@
 | 8 | implement-spec | PASS（B1-B5/B7-B9） | `docs/operations/attack-supply-chain-gate-stage8.md` |
 | 9 | tdd | PASS（B3/B4/B6/B8，覆盖 91.7%） | `docs/operations/attack-supply-chain-gate-stage9.md` |
 | 10 | code-review | PASS（B1-B9，硬违规 0） | `docs/operations/attack-supply-chain-gate-stage10.md` |
-| 11 | pr-push-review | **BLOCKED**（预存工作树 WIP，未推送） | `docs/operations/attack-supply-chain-gate-stage11.md` |
+| 11 | pr-push-review | PASS（PR #193，clean worktree） | `docs/operations/attack-supply-chain-gate-stage11.md` |
 
 - 交付物：v1 = `docs/specs/attack-supply-chain-spec-v1.md`；v2 = `docs/specs/attack-supply-chain-spec-v2.md`；规格 issue = #161。

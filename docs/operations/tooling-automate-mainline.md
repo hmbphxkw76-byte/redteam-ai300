@@ -12,6 +12,8 @@
 | 阶段 | 名称 | 结论 | 门禁记录 |
 |---|---|---|---|
 | 1 | research | PASS（B7/B8，0 不符合项） | `docs/research/tooling-automate-canonical.md` §门禁记录 |
+| 2 | to-spec① v1 | PASS（B1/B2/B8，C4 修正后 0 不符合项） | `docs/operations/tooling-automate-gate-stage2.md` |
 
 - 阶段 1 交付物：`docs/research/tooling-automate-canonical.md`（16 条条款映射、VG-1…VG-4 核实闸、已排除清单）。
-- 阶段 1 issue 摘要：规格 issue 于阶段 2 创建后按 T5 补登（阶段号 / 结论 / 不符合项数 / 复验命令）。
+- 阶段 2 交付物：v1 = `docs/specs/tooling-automate-spec-v1.md`（7993B，七节 / 30 US）；规格 issue = #240（`ready-for-agent`）；seam 结论 = 1 处（用户 2026-11-15 确认）。
+- 门禁摘要：阶段 1 / 2 已按 T5 补登于 issue #240 评论区。

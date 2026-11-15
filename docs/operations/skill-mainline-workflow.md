@@ -27,6 +27,7 @@
 4. **`implement-spec` 与 `tdd` 的顺序**：本流程把实现置于测试驱动之前，属固定顺序。第 8 阶段产出接口完整、可编译、可验证的最小实现切片（tracer bullet）；第 9 阶段以规格为判据补齐红—绿—重构循环并收敛实现。测试暴露规格偏差时，退回第 8 阶段修正并重跑其门禁，再回到第 9 阶段。
 5. **`pr-push-review` 名称映射**：已安装技能中不存在同名单一技能。该阶段是三个动作的复合阶段——`pr`（PR 正文模板）、`pre-push-review`（双轴语义评审与门禁复跑）、双通道推送与 PR 创建；内部次序见 §3.11。
 6. **阶段门禁**：每阶段收尾执行 §2 的 G0；结论为 `PASS` 才进入下一阶段。
+7. **三层隔离前置强制**：每个主线任务必须在独立 worktree + 独立 `feat/*` 分支上落地，用 `python scripts/mainline_worktree.py create <技能名>` 建干净基线；推送前须过 `python scripts/checkout_lock.py --check` 共享检出锁；main 级串行合并由 `ci.yml` `concurrency` + `merge_group` 保障。详见 ADR-0006（`docs/governance/adr/0006-three-layer-isolation.md`）。违反三层隔离（在共享主工作树直接落地、并发改共享文件未取并集、绕过检出锁推送）判定为不符合项。**首次在新环境启用 pre-push 钩子**：`git config core.hooksPath .githooks`（本地配置，不入 repo）。
 
 ---
 
@@ -193,7 +194,7 @@
 - **关键活动**（内部次序固定）：
   1. `pre-push-review`：取远端基线 → 确定 diff 模式 → 识别规格源与标准源 → 并行双轴评审 → 分类发现 → 按人工确认批次修复 → 复跑门禁套件 → 最多 3 轮收敛 → 输出 PR 要素。
   2. `pr`：按模板写 PR 正文，Summary 用最小可视化（树 / diff / 调用链 / Mermaid），Evidence 给出改前改后证据，Merge Danger 标注单向门 / 双向门与影响半径；正文含对齐能力域、优先级、目标计分单元、端到端演示四项。
-  3. 推送与 PR：Conventional Commits → `git push origin main`（SSH）失败则 `git push origin-https main`，各试一次即停 → 受保护 `main` 经 PR 合并 → 确认 CI S1–S4 全绿 → 记录 PR 与 issue 的 `Closes #x` 关联。
+  3. 推送与 PR：Conventional Commits → 推送前先过 `python scripts/checkout_lock.py --check`（共享检出锁，检测到并发改共享文件即阻断，须先在单一 worktree 取并集）→ `git push origin main`（SSH）失败则 `git push origin-https main`，各试一次即停 → 受保护 `main` 经 PR 合并 → 确认 CI S1–S4 全绿 → 记录 PR 与 issue 的 `Closes #x` 关联。
 - **验收标准**：① 双轴报告含每轴发现数与最严重项；② 门禁套件结果行为 `passed` 全绿；③ PR 正文四节齐全且四项纳管字段齐全；④ 推送记录含实际使用的通道与结果；⑤ CI S1–S4 全绿；⑥ 3 轮未收敛时输出未收敛清单并停在本阶段。
 - **阶段门禁**：B1–B8 全项；额外核对固定点、diff 非空、确认批次记录、PR 要素与检查名；推送失败时结论为 `BLOCKED` 并等待下次推送再试一轮。
 - **学习要点**：交付前的最后一道语义闸门；「人工确认批次」与「最多 3 轮」体现可控收敛，而非无限返工。

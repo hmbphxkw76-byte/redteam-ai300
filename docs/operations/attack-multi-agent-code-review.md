@@ -70,3 +70,17 @@
 - **硬违规总数：0** → 本阶段判定 **PASS**（就本技能交付面而言）。
 - 判断项 J1–J4、P1 记录为改进项，不阻断。
 - **外部阻塞（非本技能缺陷，独立于本 PR）**：共享工作树正被并行多技能任务写入，`GLOSSARY.md` 与 `docs/operations/skill-mainline-workflow.md` 触发 token 预算 `BLOCKED`（+6039 / +908 字节，均非本技能改动）；`scripts/measure_coverage.py`、`.github/workflows/ci.yml` 亦被他方未提交修改占用。推送/建 PR 前须与并行任务串行，避免纠缠。
+
+---
+
+## 复审：SKILL.md 逐条对齐（2026-11-15 收尾轮）
+
+按「SKILL.md 所列 tool 与功能逐项核对」重跑比对，发现并修复 2 处规范—实现不一致（其余 8 步、三路径、质量门、失败与豁免均一致）：
+
+| 编号 | 差异 | 修复 |
+|---|---|---|
+| G1 | SKILL.md 攻击路径 A/B/C 点名的 5 个示意脚本（`msg_inject.py` / `agent_impersonate.py` / `memory_poison.py` / `context_poison.py` / `workflow_disrupt.py`）不存在，命令不可字面执行 → 违反「copy/paste 可复现」校验标准 | 新增 5 个顶层薄壳 + 共享 `poc.py`（逻辑全委托 `a2a.py`，C1）；`DryRunClient` 支持离线 `--dry-run` 且命令同源；注册 `ci.yml` py_compile 与覆盖率目标 |
+| G2 | 设计 R5「疑似诱饵机 ≤30 分钟结束」无落地痕迹 | `_step_a2a_01` 无协同面分支补注记（改走 `attack-ai-agent` + 依 `decoy-detect` 判定后 ≤30 分钟结束） |
+
+复审后门禁：`py_compile` 通过；`unittest` **52 通过 / 0 失败**（新增 `test_attack_multi_agent_tools.py` 11 例）；覆盖率 **93.0%**（964/1037，门槛 80%）。
+SKILL.md 20 项规范点（7 前置/8 步骤/2 收尾/3 质量门组/3 校验标准/4 豁免条款）逐条有实现或证据落点，**遗漏 0**。

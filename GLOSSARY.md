@@ -128,6 +128,20 @@ _Avoid_: 证据目录、证据汇总表
 经授权用于演练的目标主机或入口（如 AIVP 实例），非 OSAI 正式考试环境，结论不外推。
 _Avoid_: 靶机、靶标
 
+## 战利品管理
+
+**战利品 (loot)**:
+红队作战全程取得的凭据、会话、flag 与攻击路径的统称；每条以编号 `L-<n>` 登记于战利品登记簿，禁止散落于对话上下文（§5.2）。
+来源：`skills/loot-manage/SKILL.md`。
+
+**战利品登记簿 (loot registry)**:
+`loot/registry.md` 的单一事实源 markdown 表，列结构固定 8 列（编号/类型/内容/来源主机/证据片段路径/时间戳/状态/双通道）；只存证据片段路径指针，不重复存储证据本体。
+来源：`skills/loot-manage/SKILL.md`。
+
+**攻击路径 (attack path)**:
+单技能内「入口 → 主机 → 横向」的路径摘要，登记于战利品登记簿「攻击路径」小节，供报告 High-Level Attack Path 复用；与「攻击链」（跨 3 台主机的计分路径）不同，不可混用。
+来源：`skills/loot-manage/SKILL.md`；`docs/research/loot-manage-canonical.md` §7。
+
 ## AI 供应链 (supply chain)
 
 **AI 供应链 (AI supply chain)**:

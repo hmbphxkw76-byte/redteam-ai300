@@ -29,11 +29,12 @@ ROOT = Path(__file__).resolve().parent.parent
 # 上限取「当前基线 + 必要增量」，语义是「禁止无约束增长」，不要求删除既有内容。
 BUDGETS: dict[str, int] = {
     "AGENTS.md": 6000,
-    # 9000 → 13000：并集合并。attack-supply-chain（8 条供应链术语 +~1420B）、
+    # 9000 → 14000：并集合并。attack-supply-chain（8 条供应链术语 +~1420B）、
     # attack-embeddings（4 条 embedding 术语 +~700B）、decoy-detect（3 条实现层术语
-    # +~860B）叠加后 GLOSSARY 实测 12154B，取 13000 留 ~846B 余量。
+    # +~860B）、loot-manage（3 条战利品术语 +~690B）叠加后 GLOSSARY 实测 13085B，
+    # 取 14000 留 ~915B 余量。
     # 口径见 ADR-0005「基线 + 必要增量」，不删除既有内容。
-    "GLOSSARY.md": 13000,
+    "GLOSSARY.md": 14000,
     "docs/governance/GOVERNANCE.md": 17000,
     "docs/operations/skill-mainline-workflow.md": 28000,
     "docs/standards/cross-ide-mainline-workflow.md": 30000,

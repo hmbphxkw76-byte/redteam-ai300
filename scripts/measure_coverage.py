@@ -84,6 +84,15 @@ def decoy_detect_targets():
                   "tests.test_decoy_detect_evidence_contract")
 
 
+def loot_manage_targets():
+    """loot-manage 业务代码集合（阶段 9 / AC-1..12 覆盖率目标）。"""
+    import importlib
+    names = ("registry", "cli")
+    mods = tuple(importlib.import_module("tools.loot_manage." + n) for n in names)
+    return mods, ("tests.test_loot_manage",
+                  "tests.test_loot_manage_evidence_contract")
+
+
 def resolve_target(mode):
     if mode == "attack-ai-agent":
         return list(AA_MODULES), list(AA_TESTS)
@@ -92,6 +101,9 @@ def resolve_target(mode):
         return list(mods), list(tests)
     if mode == "decoy-detect":
         mods, tests = decoy_detect_targets()
+        return list(mods), list(tests)
+    if mode == "loot-manage":
+        mods, tests = loot_manage_targets()
         return list(mods), list(tests)
     if mode == "report-exam":
         mods, tests = report_exam_targets()
@@ -106,10 +118,11 @@ def resolve_target(mode):
         am_mods, am_tests = attack_mcp_tool_targets()
         sc_mods, sc_tests = attack_supply_chain_targets()
         dd_mods, dd_tests = decoy_detect_targets()
+        lm_mods, lm_tests = loot_manage_targets()
         return (list(AA_MODULES) + list(mods) + list(ra_mods) + list(am_mods)
-                + list(sc_mods) + list(dd_mods),
+                + list(sc_mods) + list(dd_mods) + list(lm_mods),
                 list(AA_TESTS) + list(tests) + list(ra_tests) + list(am_tests)
-                + list(sc_tests) + list(dd_tests))
+                + list(sc_tests) + list(dd_tests) + list(lm_tests))
     raise ValueError("未知 --target：%s" % mode)
 
 
@@ -183,7 +196,7 @@ def main(argv=None):
     ap.add_argument("--target", default="attack-ai-agent",
                     choices=("attack-ai-agent", "report-exam", "recon-ai",
                              "attack-mcp-tool", "attack-supply-chain",
-                             "decoy-detect", "all"),
+                             "decoy-detect", "loot-manage", "all"),
                     help="被测业务代码集合（默认 attack-ai-agent，兼容既有 CI）")
     args = ap.parse_args(argv)
 

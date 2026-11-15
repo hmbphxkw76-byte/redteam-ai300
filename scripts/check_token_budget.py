@@ -33,8 +33,12 @@ BUDGETS: dict[str, int] = {
     # attack-embeddings（4 条 embedding 术语 +~700B）、decoy-detect（3 条实现层术语
     # +~860B）、loot-manage（3 条战利品术语 +~690B）叠加后 GLOSSARY 实测 13085B，
     # 取 14000 留 ~915B 余量。
+    # 14000 → 15000：threat-model（D10/P1）落地新增 4 条威胁建模术语（威胁模型 /
+    # 信任边界 / 最短攻击路径 / 优先级攻击图，+~1100B），GLOSSARY 实测 14166B，
+    # 超 14000 上限。属「基线 + 必要增量」（ADR-0005），术语为 v2 质量门与
+    # check_glossary 必需规范词，不可删减，故上调至 15000 留 ~834B 余量。
     # 口径见 ADR-0005「基线 + 必要增量」，不删除既有内容。
-    "GLOSSARY.md": 14000,
+    "GLOSSARY.md": 15000,
     "docs/governance/GOVERNANCE.md": 17000,
     "docs/operations/skill-mainline-workflow.md": 28000,
     "docs/standards/cross-ide-mainline-workflow.md": 30000,

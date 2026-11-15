@@ -113,6 +113,16 @@ def attack_embeddings_targets():
                   "tests.test_attack_embeddings_evidence_contract")
 
 
+def threat_model_targets():
+    """threat-model 业务代码集合（阶段 9 / v2 TD4 覆盖率目标）。"""
+    import importlib
+    names = ("model", "classify", "score", "boundaries", "decoy", "graph",
+             "render", "cli")
+    mods = tuple(importlib.import_module("tools.threat_model." + n) for n in names)
+    return mods, ("tests.test_threat_model",
+                  "tests.test_threat_model_evidence_contract")
+
+
 def resolve_target(mode):
     if mode == "attack-ai-agent":
         return list(AA_MODULES), list(AA_TESTS)
@@ -131,6 +141,9 @@ def resolve_target(mode):
     if mode == "attack-embeddings":
         mods, tests = attack_embeddings_targets()
         return list(mods), list(tests)
+    if mode == "threat-model":
+        mods, tests = threat_model_targets()
+        return list(mods), list(tests)
     if mode == "report-exam":
         mods, tests = report_exam_targets()
         return list(mods), list(tests)
@@ -147,12 +160,13 @@ def resolve_target(mode):
         lm_mods, lm_tests = loot_manage_targets()
         ma_mods, ma_tests = attack_multi_agent_targets()
         em_mods, em_tests = attack_embeddings_targets()
+        tm_mods, tm_tests = threat_model_targets()
         return (list(AA_MODULES) + list(mods) + list(ra_mods) + list(am_mods)
                 + list(sc_mods) + list(dd_mods) + list(lm_mods)
-                + list(ma_mods) + list(em_mods),
+                + list(ma_mods) + list(em_mods) + list(tm_mods),
                 list(AA_TESTS) + list(tests) + list(ra_tests) + list(am_tests)
                 + list(sc_tests) + list(dd_tests) + list(lm_tests)
-                + list(ma_tests) + list(em_tests))
+                + list(ma_tests) + list(em_tests) + list(tm_tests))
     raise ValueError("未知 --target：%s" % mode)
 
 
@@ -227,7 +241,7 @@ def main(argv=None):
                     choices=("attack-ai-agent", "report-exam", "recon-ai",
                              "attack-mcp-tool", "attack-supply-chain",
                              "decoy-detect", "loot-manage", "attack-multi-agent",
-                             "attack-embeddings", "all"),
+                             "attack-embeddings", "threat-model", "all"),
                     help="被测业务代码集合（默认 attack-ai-agent，兼容既有 CI）")
     args = ap.parse_args(argv)
 

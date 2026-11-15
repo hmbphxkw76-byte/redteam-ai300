@@ -93,6 +93,26 @@ def loot_manage_targets():
                   "tests.test_loot_manage_evidence_contract")
 
 
+def attack_multi_agent_targets():
+    """attack-multi-agent 业务代码集合（覆盖率目标；排除 pyrit_attack 重依赖）。"""
+    import importlib
+    names = ("model", "a2a", "scanner", "steps", "grade", "evidence",
+             "shot", "transport", "runner", "cli")
+    mods = tuple(importlib.import_module("tools.attack_multi_agent." + n) for n in names)
+    return mods, ("tests.test_attack_multi_agent_units",
+                  "tests.test_attack_multi_agent_runner",
+                  "tests.test_attack_multi_agent_evidence_contract")
+
+
+def attack_embeddings_targets():
+    """attack-embeddings 业务代码集合（覆盖率目标）。"""
+    import importlib
+    names = ("model", "attacks", "harness", "runner", "evidence", "cli")
+    mods = tuple(importlib.import_module("tools.attack_embeddings." + n) for n in names)
+    return mods, ("tests.test_attack_embeddings",
+                  "tests.test_attack_embeddings_evidence_contract")
+
+
 def resolve_target(mode):
     if mode == "attack-ai-agent":
         return list(AA_MODULES), list(AA_TESTS)
@@ -104,6 +124,12 @@ def resolve_target(mode):
         return list(mods), list(tests)
     if mode == "loot-manage":
         mods, tests = loot_manage_targets()
+        return list(mods), list(tests)
+    if mode == "attack-multi-agent":
+        mods, tests = attack_multi_agent_targets()
+        return list(mods), list(tests)
+    if mode == "attack-embeddings":
+        mods, tests = attack_embeddings_targets()
         return list(mods), list(tests)
     if mode == "report-exam":
         mods, tests = report_exam_targets()
@@ -119,10 +145,14 @@ def resolve_target(mode):
         sc_mods, sc_tests = attack_supply_chain_targets()
         dd_mods, dd_tests = decoy_detect_targets()
         lm_mods, lm_tests = loot_manage_targets()
+        ma_mods, ma_tests = attack_multi_agent_targets()
+        em_mods, em_tests = attack_embeddings_targets()
         return (list(AA_MODULES) + list(mods) + list(ra_mods) + list(am_mods)
-                + list(sc_mods) + list(dd_mods) + list(lm_mods),
+                + list(sc_mods) + list(dd_mods) + list(lm_mods)
+                + list(ma_mods) + list(em_mods),
                 list(AA_TESTS) + list(tests) + list(ra_tests) + list(am_tests)
-                + list(sc_tests) + list(dd_tests) + list(lm_tests))
+                + list(sc_tests) + list(dd_tests) + list(lm_tests)
+                + list(ma_tests) + list(em_tests))
     raise ValueError("未知 --target：%s" % mode)
 
 
@@ -196,7 +226,8 @@ def main(argv=None):
     ap.add_argument("--target", default="attack-ai-agent",
                     choices=("attack-ai-agent", "report-exam", "recon-ai",
                              "attack-mcp-tool", "attack-supply-chain",
-                             "decoy-detect", "loot-manage", "all"),
+                             "decoy-detect", "loot-manage", "attack-multi-agent",
+                             "attack-embeddings", "all"),
                     help="被测业务代码集合（默认 attack-ai-agent，兼容既有 CI）")
     args = ap.parse_args(argv)
 

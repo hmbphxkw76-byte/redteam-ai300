@@ -75,6 +75,9 @@ _Avoid_: 知识投毒、投毒RAG
 **下游决策影响 (downstream decision impact)**:
 检索层操纵因果改变下游 agent 输出或动作的证明，须以 baseline vs manipulated 双次捕获做差异对照（`attack-rag` 路径 C）。
 
+**护栏基线 (guardrail baseline)**:
+投毒前记录的检索过滤、输出审查与检索内容信任边界，作为投毒效果与「未产生影响」判定的对照（`attack-rag` 前置）。
+
 **MCP (Model Context Protocol)**:
 模型上下文协议与工具集成面，可被滥用以提权或执行非预期动作。
 

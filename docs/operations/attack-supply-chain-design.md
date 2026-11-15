@@ -46,4 +46,3 @@
 | 构建触发 | 自定义注入 | `injector.inject_build` |
 | 下游行为取证 | PyRIT `SQLiteMemory` | `evidence.emit` |
 | flag 取证 | PyRIT `SQLiteMemory` | `evidence.emit` |
-

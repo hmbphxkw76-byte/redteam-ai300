@@ -273,7 +273,8 @@ class EvidenceIntegrationTests(unittest.TestCase):
                 text = handle.read()
             self.assertIn("### 步骤 infra-01", text)
             self.assertIn("确切命令", text)
-            self.assertIn("| 截图 | 是 | 已提供 |", text)
+            # shot_cmd-only（无真实截图文件）在共享工具 F3 语义下应标「待补录」而非「已提供」
+            self.assertIn("| 截图 | 是 | 待补录", text)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 

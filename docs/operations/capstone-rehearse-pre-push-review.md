@@ -54,7 +54,11 @@ python scripts/measure_coverage.py --target all --min 80   总计 91.2% PASS
 
 ## 5. 收口记录（推送 / PR / CI 实测）
 
-（本小节在推送与 PR 创建后回填实际通道、PR 编号与 CI 状态。）
+- **推送通道**：`git push --no-verify origin feat/capstone-rehearse`（SSH）**一次成功**；按双通道约定「各试一次即停」，未使用 `origin-https`。例外依据 ADR-0006 与用户确认批次 2；并集为空（本 PR 30 文件全 `A`、0 `M`/`D`），未触碰共享文件；CI S1/S2 未被绕过。
+- **PR**：#251 `feat(capstone-rehearse): 考前演练走查主线落地（D11 / P2 / 通用验收）`，`feat/capstone-rehearse → main`，`MERGEABLE`。
+- **CI**：PR 阶段 `静态检查 (S1)` = pass、`AC-12 真实 PDF / .7z 冒烟` = pass、`自动化测试 (S2)` 由 PR #251 把关；S3 `build` / S4 `integration` 由 `ci.yml` 在 main 合并后触发，实测结果见 issue #233 收口摘要与工作记忆（阶段 11 门禁记录 §验⑤）。
+- **关联**：`Closes #234, #235, #236, #237, #238, #239`；`Refs #231, #233`（#233 保持 OPEN 待人工最终放行）。
+- **收敛**：pre-push Spec 轴硬违规 1（v1 与 #231 逐字节互链断裂）已按批次 1 清零并复评；判断项 6 记录为改进项；1 轮内收敛（上限 3 轮）。
 
 ## 6. PR 要素交接
 

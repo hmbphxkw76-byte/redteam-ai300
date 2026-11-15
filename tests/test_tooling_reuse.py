@@ -37,8 +37,9 @@ class ReuseTests(unittest.TestCase):
             build_collect_evidence_argv(task(cmd=""))
 
     def test_validator_argv(self):
-        for kind in ("anatomy", "glossary", "budget"):
+        for kind in ("anatomy", "glossary", "budget", "coverage"):
             self.assertIn("python", build_validator_argv(kind)[0])
+        self.assertIn("--min", build_validator_argv("coverage"))
         with self.assertRaises(M.UsageError):
             build_validator_argv("nope")
 

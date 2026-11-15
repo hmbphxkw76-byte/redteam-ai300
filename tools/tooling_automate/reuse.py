@@ -10,6 +10,7 @@ VALIDATORS = {
     "anatomy": ["python", "scripts/validate_skill.py"],
     "glossary": ["python", "scripts/check_glossary.py"],
     "budget": ["python", "scripts/check_token_budget.py", "--check"],
+    "coverage": ["python", "scripts/measure_coverage.py", "--min", "80"],
 }
 
 

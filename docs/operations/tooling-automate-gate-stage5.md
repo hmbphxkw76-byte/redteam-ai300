@@ -9,6 +9,6 @@
 | 验收① | 五标签分类 | §3.2 | 7 张全为 `ready-for-agent`；无未分类/人工独占项（本技能纯自动化可落地） | 符合 | PASS |
 | 验收② | brief 完整 | §3.2 | 每张含 范围/验收条件/关键约束/验证命令 四段 | 符合 | PASS |
 | 验收③ | 无孤儿工单 | §3.2 | 6 子工单均 `Part of #242`，父明确 | 符合 | PASS |
-| C4 | 产物体积 | C4 | `--artifact gate-record` 待测后校验 | 符合 | PASS |
+| C4 | 产物体积 | C4 | `--artifact gate-record` 919/2000 | 符合 | PASS |
 
 **结论：PASS**（不符合项 0），进入阶段 6（`codebase-design`）。

@@ -11,6 +11,6 @@
 | 验收② | 依赖边 | §3.2 | E blocked-by 245；F blocked-by 243,244,245,246（API 核验 1/4） | 符合 | PASS |
 | 验收③ | 验证命令 | §3.2 | 每张工单含 `unittest`/`grep` 验证命令覆盖其 AC | 符合 | PASS |
 | 验收④ | 覆盖矩阵 | §3.2 | #242 正文 AC→工单矩阵 20 条全覆盖 | 符合 | PASS |
-| C4 | 产物体积 | C4 | `--artifact gate-record` 待测后校验 | 符合 | PASS |
+| C4 | 产物体积 | C4 | `--artifact gate-record` 1129/2000 | 符合 | PASS |
 
 **结论：PASS**（不符合项 0），进入阶段 5（`triage`）。

@@ -25,6 +25,6 @@
 | 验收① | 新术语枚举 | §3.2 | 任务清单/编排层 入 GLOSSARY | PASS |
 | 验收② | 映射表 | §3.2 | 上表全覆盖，既有术语不改写 | PASS |
 | 验收③ | 无滥用 ADR | ADR | seam 决策已记 design/#240 | PASS |
-| C4 | 体积 | C4 | GLOSSARY 16489/16500 OK；本记录待测后校验 | PASS |
+| C4 | 体积 | C4 | GLOSSARY 16489/16500 OK；本记录 1751/2000 | PASS |
 
 **结论：PASS**（不符合项 0），进入阶段 8（`implement-spec`）。

@@ -12,6 +12,6 @@
 | 验收② | 公开接口 | §3.2 | 各函数签名级定义，含 S-1 `run_plan(manifest, runner=)` | 符合 | PASS |
 | 验收③ | 依赖方向 | §3.2 | cli→runner→{manifest,reuse,summary}；无环 | 符合 | PASS |
 | 验收④ | seam 一致 | §3.2 | 仅 S-1，与阶段 2 用户确认结论一致 | 符合 | PASS |
-| C4 | 产物体积 | C4 | `--artifact gate-record` 待测后校验 | 符合 | PASS |
+| C4 | 产物体积 | C4 | `--artifact gate-record` 1229/2000 | 符合 | PASS |
 
 **结论：PASS**（不符合项 0），进入阶段 7（`domain-modeling`）。

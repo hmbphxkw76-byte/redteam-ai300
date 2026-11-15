@@ -17,4 +17,6 @@
 
 **变异说明（诚实记录）**：`check_proof_single` 由「flag 值子串匹配」改为「按 `domain-controller` 目标键判定」（AC-14），导致 2 个既有用例夹具失配；按 v2 §1 AC-14 语义修正夹具（`tests/test_verify_evidence.py`、`tests/test_report_exam.py`），断言未放宽。
 
+**阶段 10 追加更正**：B5 一行原述「已执行」过强——本技能不产生 per-step 片段，B5 的实际形式是「判据实现 + 用例断言」，已在阶段 10 记录更正；实现与测试在阶段 10 修复后行数/用例数变化（`tools/verify_evidence.py` 551 行、`tests/test_verify_evidence.py` 29 用例），不影响本阶段判定。
+
 **结论：PASS**（不符合项 0），进入阶段 9。

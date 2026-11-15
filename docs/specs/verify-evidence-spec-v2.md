@@ -10,17 +10,17 @@
 
 | AC | 对应 US | 验收条件（布尔） | 判定方式 |
 |---|---|---|---|
-| AC-01 | US-01/02/03 | 同一夹具下 `--payload <json>` 与 `--from-loot <registry>` 两种入口，`checks` 字典逐键相等 | `unittest` 断言字典相等 |
+| AC-01 | US-01/02/03 | 同一信息集下 `--payload <json>` 与 `--from-loot <registry>`（含 `--report`/`--appendix`）两入口 `checks` 逐键相等；只给登记簿不给报告时报告侧判据必然阻断 | `unittest` 断言字典相等 + 反例 |
 | AC-02 | US-04 | 载荷文件不存在 / JSON 非法 / 登记簿路径不存在 → 退出码 2 且 stdout 无 `passed` 字段 | `python -m unittest tests.test_verify_evidence` |
 | AC-03 | US-05 | 注入的假技能校验器返回错误列表非空 → `vrf-01=false` 且 `blocking` 含 `vrf-01`；返回空 → `vrf-01=true` | 注入替身 + 断言 |
 | AC-04 | US-06 | 8 目标键集齐全且分值合计 == 100（AI 15/传统 10/独立 15/域控 5）→ `vrf-02=true`；缺目标或合计≠100 或单目标分值错 → `false`，`blocking` 指名目标键 | 夹具矩阵逐项断言 |
 | AC-05 | US-07 | 已取分步骤缺三件套任一 → `vrf-03=false` + `blocking`；未取分步骤缺件 → 仅入 `missing`，`passed` 不受影响 | 断言 `checks`/`missing` |
 | AC-06 | US-08 | 面板值 == 报告值（逐字）→ `vrf-04=true`；缺面板值或不等 → `false` + `blocking` | 两组夹具 |
-| AC-07 | US-09 | flag 取证片段的访问证明文本同时含 `whoami`/`id` 与 flag 值 → 该项通过；缺访问证明 → `vrf-04=false` + `blocking` | 夹具含/不含同屏 |
+| AC-07 | US-09 | 访问证明文本取自「截图」节内联记录或显式 `access_proof` 字段（命令块不参与）：含 `whoami`/`id` 且 flag 同屏 → 通过；有无同屏文本但缺 token → 阻断；纯图片无内联文本 → 记 `NOTE-7` 人工判据 | 三类夹具 |
 | AC-08 | US-10 | 片段 AI 日志逐字出现在附录 → `vrf-05=true`；有日志而附录缺 → `false` + `blocking` | 两组夹具 |
 | AC-09 | US-11 | 四章必需品与锚点齐全 → `vrf-06=true`；缺任一 → `false` 且 `blocking` 指明缺失锚点 | 逐锚点删除法 |
-| AC-10 | US-12 | 命名合规 + 无密码 + ≤100MB → `vrf-07=true`；命名错/超 100MB/产物缺失 → `false` + `blocking` | 临时目录夹具 |
-| AC-11 | US-13 | `submit_at - exam_end_at ≤ 24h` → 该项通过；超窗 → `false` + `blocking`（硬性，不降级为警告） | 注入固定时间戳 |
+| AC-10 | US-12 | 命名合规 + 归档无密码 + ≤100MB → `vrf-07=true`；命名错/超 100MB/产物缺失/已加密 → `false` + `blocking`；无 7z 致密码态不可判 → 记 `NOTE-8` | 临时目录夹具 + 注入加密态 |
+| AC-11 | US-13 | `submit_at - exam_end_at ≤ 24h` → 通过；超窗或时间戳非法/倒序 → `false` + `blocking`（硬性）；两者缺失 → 记 `NOTE-5` 人工判据 | 注入固定时间戳 |
 | AC-12 | US-18 | `--no-artifacts` 时 `checks['vrf-07'] is None`、`pending` 含 `VG-3`、`submission_ready=false`，且 `passed` 不受影响 | 断言三值 |
 | AC-13 | US-14 | 废弃术语出现在叙述正文 → `vrf-08=false`；仅出现在证据区间 → `true` | 两组夹具 |
 | AC-14 | US-15 | 域控目标 flag 记录数 ≤1 → `proof-single=true`；≥2 → `false` + `blocking`；判定按目标键（`domain-controller`），非 `flag` 值子串匹配 | 含「flag 值含 proof.txt 子串」反例夹具 |
@@ -80,3 +80,5 @@
 | VG-3 | pandoc/7z 未生成时不可提交 | AC-12 pending 语义，`submission_ready=false` |
 | VG-4 | 真实取分不可本地复现 | 人工考试边界，夹具自证；CI 以 dry-run + 假时间戳覆盖 |
 | R-1 | 既有 10 用例回归被新判据打断 | AC-20 + 保留 `tests/test_verify_evidence.py` 全部用例；不顺从不许放宽判据 |
+
+**NOTE 标记口径**（区别于 VG 核实闸：NOTE 为「机器不可判、须人工确认」的缺口项，只进 `missing`，不阻断 `passed`、也不改变 `submission_ready` 之外的语义）：NOTE-5 提交窗口时间未提供；NOTE-6 目标分值表未提供；NOTE-7 访问证明无内联文本（纯图片）；NOTE-8 归档密码态不可判（无 7z）。VG-3/VG-4 仍按 §6 定义作为 pending 核实闸。

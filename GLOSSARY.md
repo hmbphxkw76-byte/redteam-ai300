@@ -62,6 +62,19 @@ _Avoid_: 时间限制
 **RAG (Retrieval-Augmented Generation)**:
 检索增强生成流水线，可被知识库投毒与检索层操纵。
 
+**知识库投毒 (knowledge-base poisoning)**:
+向 RAG 语料注入恶意文档，使目标查询的 top-k 检索结果包含攻击者可控内容；PoisonedRAG 的双条件（检索条件 + 生成条件）是其理论内核（`attack-rag` 路径 A）。
+_Avoid_: 知识投毒、投毒RAG
+
+**检索层操纵 (retrieval manipulation)**:
+以语料注入或 embedding 碰撞改变检索返回集合与排序（OWASP LLM08 向量与嵌入弱点），须用投毒前后 top-k 对照取证（`attack-rag` 路径 B）。
+
+**间接注入 (indirect injection)**:
+经检索片段或外部数据源注入指令，使下游 agent 消费上下文时执行非预期动作（OWASP LLM01 / ASI06）；RAG 场景由 `XPIATestWorkflow` 承载，非 `*Attack`。
+
+**下游决策影响 (downstream decision impact)**:
+检索层操纵因果改变下游 agent 输出或动作的证明，须以 baseline vs manipulated 双次捕获做差异对照（`attack-rag` 路径 C）。
+
 **MCP (Model Context Protocol)**:
 模型上下文协议与工具集成面，可被滥用以提权或执行非预期动作。
 
@@ -91,6 +104,21 @@ _Avoid_: 答案校验器
 
 **A2A (Agent-to-Agent)**:
 多智能体间的通信协议与信任关系，可被消息操纵、冒充或破坏工作流。
+
+**多智能体拓扑 (multi-agent topology)**:
+目标内各智能体的角色、连接与调用关系；a2a-01 发现阶段产物，决定后续注入与冒充的落点。
+
+**消息操纵 (message manipulation)**:
+在 A2A 总线注入或篡改智能体间消息，改变下游智能体行为；a2a-02 攻击原语。
+
+**智能体冒充 (agent impersonation)**:
+伪造 AgentCard 或身份，使目标将其视为可信对端；a2a-03 攻击原语。
+
+**共享记忆投毒 (shared memory poisoning)**:
+改写多智能体共享记忆存储中的条目，使后续回合沿用被污染内容；a2a-04 攻击原语。
+
+**上下文投毒 (context poisoning)**:
+污染智能体共享上下文与全局 prompt，影响同会话内全部参与者的决策；a2a-05 攻击原语。
 
 **Embedding**:
 嵌入向量，可经反演/信息提取泄露敏感数据。
@@ -264,18 +292,15 @@ _Avoid_: 五节格式
 
 ## 提交前校验（verify-evidence）
 
-**提交前置 (submission gate)**:
-`verify-evidence` 的「通过」结论是提交的前置；未通过不得提交（§7.3）。
-
 **访问证明 (access proof)**:
-flag 取证截图中同一画面同时含 `whoami`/`id` 与 flag 值，用于排除他人截图与猜测填写（§6.2.2）。
+flag 取证截图同屏含 `whoami`/`id` 与 flag 值，排除他人截图与猜测（§6.2.2）。
 _Avoid_: 权限截图
 
 **判定分级 (verdict tier)**:
-校验结论三类互斥档位——阻断项（违反「必须」，禁止提交）、缺失项（未取分的预期缺失，不阻断）、核实闸（产物未生成，不阻断但不可提交）。
+阻断项（违反「必须」，禁提交）、缺失项（未取分预期缺失）、核实闸（不阻断但不可提交）三档互斥（§7.3）。
 
-**机读校验结果 (machine-readable verification result)**:
-带 `schema_version` 的固定键 JSON（九项 checks + 分级列表 + passed/submission_ready），供 CI 与报告组装直接消费；人读版称「校验报告」。
+**机读校验结果 (machine-readable result)**:
+`schema_version` 化的固定键 JSON（九项 checks + 分级列表 + 结论），供 CI 与组装侧消费。
 
 ## CI/CD 治理
 

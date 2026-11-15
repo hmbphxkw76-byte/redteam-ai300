@@ -69,6 +69,28 @@ python -m tools.loot_manage --registry "$T/loot/registry.md" --root "$T" registe
 |---|---|
 | 表结构 8 列齐全 | `checks.columns`（列名集合） |
 | 每行可追溯（证据路径存在） | `checks.evidence` |
+| 每行可追溯（来源主机非空） | `checks.hosts` |
 | 每个 flag 双通道 | `checks.dual_channel` + `flags[].consistent` |
 | 无战利品散落对话 | 工具规范：编号 `L-<n>` 唯一；`--json` 为唯一引用源 |
 | 登记即时 | `register` 即时追加 |
+
+## 8. 复用查询与失效更新（loot-02.3 / 校验标准 / 失败与豁免）
+
+```bash
+python -m tools.loot_manage --registry "$T/loot/registry.md" query --reusable
+python -m tools.loot_manage --registry "$T/loot/registry.md" set-status --id L-2 --status 失效
+```
+
+- `query --reusable` 仅返回「凭据=有效 / 会话=存活」；`--type` / `--status` / `--host` / `--json` 可组合，供横向移动前复用判定。
+- `set-status` 原位改状态：行数不变、其余单元格不变、原行保留。实测 `L-2` 由「存活」→「失效」后，`query --reusable` 立即不再返回该行。
+- 状态与类型不匹配时退出码 `1`：`ERROR: 状态「存活」不适用于类型「凭据」`；编号不存在时退出码 `1` 并指明编号。
+
+## 9. 空态记录与模板容错（失败与豁免 / loot-04 模板）
+
+```bash
+python -m tools.loot_manage --registry "$E" empty-state --reason "目标不可达"
+```
+
+- `validate --json` 新增 `empty_state.reason`；空态属有效产出（`passed=true`），`--require-loot` 仍作缺口信号并回显原因。
+- 「攻击路径」小节接受 `##` 与 `###` 两种层级：按 SKILL.md loot-04 模板（`### 攻击路径`）手写可通过校验，追加路径不会新建标题。
+- 来源主机为空或占位 `—` 时 `checks.hosts=false` 并阻断（质量门「可追溯」）。

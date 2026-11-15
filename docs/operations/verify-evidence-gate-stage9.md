@@ -16,8 +16,10 @@
 | 验收① | 每条 AC 有测试 | §3.9 | AC-01…AC-18 各有 `test_ACxx_*`；AC-19 由覆盖率命令判定；AC-20 由全量套件判定 | 符合 | — | — | — | PASS |
 | 验收② | 红阶段有失败输出 | §3.9 | 红 1/红 2 摘录见上（含具体断言消息） | 符合 | — | — | — | PASS |
 | 验收③ | 全量通过 | §3.9 | 458 tests OK | 符合 | — | — | — | PASS |
-| 验收④ | 覆盖率 ≥80% | §3.9 | 96.5% | 符合 | — | — | — | PASS |
+| 验收④ | 覆盖率 ≥80% | §3.9 | 96.5%（阶段 10 修复后 92.3%，仍达标） | 符合 | — | — | — | PASS |
 | 验收⑤ | 只测外部行为 | §3.9 | 断言对象为 checks/blocking/missing/pending/退出码；AC-17 替身计数为规格要求的例外 | 符合 | — | — | — | PASS |
 | 验收⑥ | 本地与 CI 一致 | §3.9 | CI S2 使用同一 `measure_coverage.py --target all`，已并入 verify-evidence 目标 | 符合 | — | — | — | PASS |
+
+**阶段 10 追加数据**：审查修复后 `unittest discover` → `Ran 521 tests, OK (skipped=2)`；`--target verify-evidence` → 420/455 = 92.3%。
 
 **结论：PASS**（不符合项 0），进入阶段 10。

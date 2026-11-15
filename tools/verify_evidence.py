@@ -25,6 +25,8 @@ import io
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -39,18 +41,15 @@ REQUIRED_ANCHORS = (
     "# Attack Walkthrough", "# Appendix", "Offsec AI Red Teamer Report",
 )
 COPYRIGHT_LINE = "Copyright © 2026 OffSec Ltd. All rights reserved."
-INVENTORY_ANCHOR = "Target Inventory & Point Allocation"
 
-# 8 个计分目标（§2.2）：主机键集与 report_exam/_types.py SCORED_HOSTS 一致
-DC_KEY = "domain-controller"
-SCORED_TARGETS = (
-    "chain1-host1", "chain1-host2", "chain1-host3",
-    "chain2-host1", "chain2-host2", "chain2-host3",
-    "standalone", DC_KEY,
+# 计分目标键集与分值口径的唯一事实源（C1），见 tools/scored_targets.py
+from tools.scored_targets import (  # noqa: E402  (常量随模块加载)
+    DOMAIN_CONTROLLER_KEY as DC_KEY,
+    POINT_PATTERN,
+    SCORED_HOSTS as SCORED_TARGETS,
+    TOTAL_POINTS,
 )
-# 分值多重集：4 台 AI向量机 15 + 独立机 15 + 2 台传统向量机 10 + 域控 5 = 100（§2.2.1/2.2.2）
-POINT_PATTERN = {15: 5, 10: 2, 5: 1}
-TOTAL_POINTS = 100
+
 CHECKS = ("vrf-01", "vrf-02", "vrf-03", "vrf-04",
           "vrf-05", "vrf-06", "vrf-07", "vrf-08", "proof-single")
 ACCESS_PROOF_TOKENS = ("whoami", "id")
@@ -105,10 +104,11 @@ class Toolchain:
         return [] if code == 0 else [buf.getvalue().strip() or "技能校验器返回非零"]
 
     def avoid_terms(self, glossary_path=DEFAULT_GLOSSARY):
+        """废弃术语表；读取失败返回 None（判据层据此判「无法判定」而非放行）。"""
         try:
             return load_avoid_terms(glossary_path)
         except (OSError, AttributeError):
-            return []
+            return None
 
     def stat(self, path):
         """返回 (exists, size_bytes)。"""
@@ -116,8 +116,20 @@ class Toolchain:
             return True, os.path.getsize(path)
         return False, 0
 
-    def now(self):
-        return datetime.datetime.now(datetime.timezone.utc)
+    def archive_encrypted(self, path):
+        """归档是否设密码（§6.4.2）：True / False / None（无 7z 工具，无法判定）。"""
+        exe = shutil.which("7z") or shutil.which("7za")
+        if not exe or not path or not os.path.isfile(path):
+            return None
+        try:
+            proc = subprocess.run([exe, "l", "-slt", path], capture_output=True,
+                                  text=True, timeout=60)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        if proc.returncode != 0:
+            return None
+        m = re.search(r"^Encrypted\s*=\s*(\S+)\s*$", proc.stdout, re.M)
+        return None if not m else m.group(1).strip() != "-"
 
 
 # ---------------------------------------------------------------- S-1 输入归一
@@ -134,8 +146,11 @@ def _parse_points(raw):
     return out
 
 
-def _parse_time(value):
-    """接受 datetime / ISO 8601 字符串 / epoch 秒；无法解析返回 None。"""
+def _parse_time(value, field=""):
+    """接受 datetime / ISO 8601 字符串 / epoch 秒。
+
+    缺失返回 None；**格式非法抛 ValueError**（判定层据此阻断，不静默放行）。
+    """
     if value in (None, ""):
         return None
     if isinstance(value, datetime.datetime):
@@ -145,7 +160,7 @@ def _parse_time(value):
     try:
         dt = datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except ValueError:
-        return None
+        raise ValueError("%s 时间戳格式非法：%r（须 ISO 8601 或 epoch 秒）" % (field, value))
     return dt if dt.tzinfo else dt.replace(tzinfo=datetime.timezone.utc)
 
 
@@ -161,8 +176,8 @@ def normalize_payload(raw):
         "pdf_path": raw.get("pdf_path"),
         "zip_path": raw.get("zip_path"),
         "glossary_path": raw.get("glossary_path", DEFAULT_GLOSSARY),
-        "exam_end_at": _parse_time(raw.get("exam_end_at")),
-        "submit_at": _parse_time(raw.get("submit_at")),
+        "exam_end_at": _parse_time(raw.get("exam_end_at"), "exam_end_at"),
+        "submit_at": _parse_time(raw.get("submit_at"), "submit_at"),
     }
 
 
@@ -183,11 +198,13 @@ def _osid_from_name(path):
     return m.group(1) if m else "XXXXX"
 
 
-def from_loot(registry_path, evidence_dir=None):
-    """由战利品登记簿（+ 可选片段目录）构造输入（S-1 第二入口）。
+def from_loot(registry_path, evidence_dir=None, report_md="", appendix_md="",
+              target_points=None):
+    """由战利品登记簿（+ 可选片段目录 + 报告正文）构造输入（S-1 第二入口）。
 
     只消费登记簿既有判据（`parse_registry` / `parse_dual` / `fragment_pieces`），
-    不另写三件套或双通道判定（C1）。
+    不另写三件套或双通道判定（C1）。报告正文与分值表由调用方给出（通常为
+    `report-exam` 产物）——单凭登记簿无法判定 vrf-01/02/06，缺省为空则如实阻断。
     """
     reg_mod = _loot_registry()
     try:
@@ -223,18 +240,27 @@ def from_loot(registry_path, evidence_dir=None):
                        for k in ("command", "output", "screenshot")},
         })
     return normalize_payload({"fragments": fragments, "panel_flags": panel_flags,
-                              "osid": _osid_from_name(registry_path)})
+                              "osid": _osid_from_name(registry_path),
+                              "report_md": report_md,
+                              "appendix_md": appendix_md,
+                              "target_points": target_points or {}})
 
 
 # ---------------------------------------------------------------- S-2 判据
 
 
-def _result(ok=None):
-    return {"ok": ok, "blocking": [], "missing": [], "pending": []}
+def _result():
+    return {"ok": None, "blocking": [], "missing": [], "pending": []}
 
 
 def _scored(fragments):
     return [f for f in fragments if (f.get("flag") or "").strip()]
+
+
+def _screenshot_section(raw):
+    """取片段中的「截图」节原文（访问证明判定的唯一文本来源）。"""
+    m = re.search(r"####\s*截图[^\n]*\n(.*?)(?=\n####\s|\Z)", raw or "", re.S)
+    return (m.group(1) if m else "").strip()
 
 
 def check_vrf01(inp, tools):
@@ -260,14 +286,16 @@ def check_vrf02(inp):
     r = _result()
     report = inp["report_md"]
     keys = [k for k in SCORED_TARGETS if k in report]
-    if INVENTORY_ANCHOR not in report and len(keys) < len(SCORED_TARGETS):
-        r["ok"] = False
-        r["blocking"].append("vrf-02：目标计分清单缺失（§2.2）")
-        return r
     points = inp.get("target_points") or {}
     if not points:
+        # 无分值表时以「8 个主机键全部出现在报告中」为判据，不依赖章节标题（VG-1）
+        absent = [k for k in SCORED_TARGETS if k not in report]
+        if absent:
+            r["ok"] = False
+            r["blocking"].append("vrf-02：目标计分清单缺目标 %s（§2.2）" % "、".join(absent))
+            return r
         r["ok"] = True
-        r["missing"].append("VG-6：未提供目标分值表，分值合计待人工核对（§2.2.1）")
+        r["missing"].append("NOTE-6：未提供目标分值表，分值合计待人工核对（§2.2.1）")
         return r
     absent = [k for k in SCORED_TARGETS if k not in points]
     if absent:
@@ -278,12 +306,16 @@ def check_vrf02(inp):
     for v in points.values():
         counts[v] = counts.get(v, 0) + 1
     total = sum(points.values())
-    if total != TOTAL_POINTS or counts != POINT_PATTERN or points.get(DC_KEY) != 5:
+    bad_keys = [k for k, v in points.items()
+                if v not in POINT_PATTERN or (k == DC_KEY and v != 5)]
+    if total != TOTAL_POINTS or counts != POINT_PATTERN or bad_keys:
         r["ok"] = False
         r["blocking"].append(
-            "vrf-02：分值口径不符（合计 %d，期望 100；15 分 %d 个、10 分 %d 个、5 分 %d 个）"
-            "（§2.2.1 / ADR-0002）"
-            % (total, counts.get(15, 0), counts.get(10, 0), counts.get(5, 0)))
+            "vrf-02：分值口径不符（合计 %d，期望 %d；15 分 %d 个、10 分 %d 个、5 分 %d 个；"
+            "越界目标 %s）（§2.2.1 / ADR-0002）"
+            % (total, TOTAL_POINTS, counts.get(15, 0), counts.get(10, 0),
+               counts.get(5, 0),
+               "、".join(bad_keys) or "无"))
         return r
     r["ok"] = True
     return r
@@ -322,14 +354,23 @@ def check_vrf03(inp):
 
 
 def _access_proof(frag):
-    """访问证明（§6.2.2）：同一画面含 whoami/id 与 flag 值。返回 (ok|None, 原因)。"""
+    """访问证明（§6.2.2）：同一画面含 whoami/id 与 flag 值。
+
+    判定文本只取「访问证明」原文：显式 `access_proof` 字段优先，其次片段截图中
+    的 `#### 截图` 节（`--shot-kind transcript` 的内联记录）；命令块不参与判定，
+    避免「命令里写了 whoami」被误判为同屏证据。
+    """
     flag = (frag.get("flag") or "").strip()
-    text = frag.get("access_proof") or frag.get("raw") or ""
+    text = frag.get("access_proof") or _screenshot_section(frag.get("raw") or "")
     if not text:
-        return None, "未提供原文"
-    if not any(re.search(r"\b%s\b" % t, text) for t in ACCESS_PROOF_TOKENS):
+        return None, "未提供访问证明文本"
+    body = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text).strip()
+    if not body:
+        # 纯图片截图（无内联文字记录）：机器无法判定同屏性 → 人工判据
+        return None, "截图为图片、无内联访问证明文本"
+    if not any(re.search(r"\b%s\b" % t, body) for t in ACCESS_PROOF_TOKENS):
         return False, "截图中无 whoami/id"
-    if flag and flag not in text:
+    if flag and flag not in body:
         return False, "flag 未与访问证明同屏"
     return True, ""
 
@@ -356,8 +397,8 @@ def check_vrf04(inp):
             r["blocking"].append("vrf-04：%s 访问证明不足 —— %s（§6.2.2）"
                                  % (f.get("step_id", "?"), reason))
         elif proof is None:
-            r["missing"].append("VG-7：%s 未提供访问证明原文，同屏性待人工核对（§6.2.2）"
-                                % f.get("step_id", "?"))
+            r["missing"].append("NOTE-7：%s 访问证明无法机判（%s），同屏性待人工核对（§6.2.2）"
+                                % (f.get("step_id", "?"), reason))
     for h in {f.get("host", "") for f in fragments}:
         if not any(f.get("flag") for f in fragments if f.get("host") == h):
             r["missing"].append("vrf-04：%s 无 flag 双通道证据（未达成，待补录）" % h)
@@ -392,28 +433,28 @@ def check_vrf06(inp):
 def check_naming_and_size(pdf_path, zip_path, osid, tools=None):
     """§6.4：命名、产物存在、≤100MB（无密码由打包侧 `7z a` 不传 `-p` 保证）。"""
     tools = tools or Toolchain()
-    missing = []
+    problems = []
     exp_pdf = "OSAI-OS-%s-Exam-Report.pdf" % osid
     exp_zip = "OSAI-OS-%s-Exam-Report.7z" % osid
     if os.path.basename(pdf_path or "") != exp_pdf:
-        missing.append("PDF 命名不符：期望 %s" % exp_pdf)
+        problems.append("PDF 命名不符：期望 %s" % exp_pdf)
     if os.path.basename(zip_path or "") != exp_zip:
-        missing.append("归档命名不符：期望 %s" % exp_zip)
+        problems.append("归档命名不符：期望 %s" % exp_zip)
     pdf_ok, _ = tools.stat(pdf_path)
     zip_ok, zip_size = tools.stat(zip_path)
     if not pdf_ok:
-        missing.append("PDF 产物缺失（§6.4）")
+        problems.append("PDF 产物缺失（§6.4）")
     if not zip_ok:
-        missing.append(".7z 归档产物缺失（§6.4）")
+        problems.append(".7z 归档产物缺失（§6.4）")
     elif zip_size > MAX_ARCHIVE_BYTES:
-        missing.append("归档超过 100MB（§6.4）")
-    return (len(missing) == 0), missing
+        problems.append("归档超过 100MB（§6.4）")
+    return (len(problems) == 0), problems
 
 
 def _check_window(exam_end, submit):
     """24h 提交窗口（§6.4.3 / S3 快照 L74）。返回 (ok|None, 说明)。"""
     if exam_end is None or submit is None:
-        return None, "VG-5：未提供考试结束/提交时间，24h 窗口待人工确认（§6.4）"
+        return None, "NOTE-5：未提供考试结束/提交时间，24h 窗口待人工确认（§6.4）"
     delta = submit - exam_end
     if delta.total_seconds() < 0:
         return False, "提交时间早于考试结束时间，时间戳异常（§6.4.3）"
@@ -440,6 +481,12 @@ def check_vrf07(inp, require_artifacts, tools):
         r["blocking"].append("vrf-07：%s（§6.4.3）" % why)
     elif win is None:
         r["missing"].append(why)
+    encrypted = tools.archive_encrypted(inp["zip_path"])
+    if encrypted is True:
+        ok = False
+        r["blocking"].append("vrf-07：归档设置了密码（§6.4.2 禁止）")
+    elif encrypted is None:
+        r["missing"].append("NOTE-8：无 7z 工具或归档不可读，密码态待人工确认（§6.4.2）")
     r["ok"] = ok
     return r
 
@@ -448,6 +495,10 @@ def check_vrf08(inp, tools):
     """术语合规（§1.3）：动态取自 GLOSSARY.md；证据区间逐字原文豁免。"""
     r = _result()
     avoid = tools.avoid_terms(inp.get("glossary_path"))
+    if avoid is None:
+        r["ok"] = False
+        r["blocking"].append("vrf-08：术语表不可读，废弃术语无法判定（§1.3）")
+        return r
     scan = re.sub(r"<!-- EVIDENCE-FRAGMENT-START -->.*?<!-- EVIDENCE-FRAGMENT-END -->",
                   "", inp["report_md"], flags=re.S)
     hits = [t for t in avoid if t in scan]
@@ -460,11 +511,10 @@ def check_vrf08(inp, tools):
 def check_proof_single(inp):
     """域控 proof.txt 单次提交（§2.2.3）：按目标键判定，不做 flag 值子串匹配。"""
     r = _result()
-    records = [f for f in inp["fragments"]
-               if f.get("host") == DC_KEY and (f.get("flag") or "").strip()]
+    records = [f for f in _scored(inp["fragments"]) if f.get("host") == DC_KEY]
     r["ok"] = len(records) <= 1
     if len(records) > 1:
-        r["blocking"].append("proof.txt 提交记录 %d 次，违反 §2.2 单次约束"
+        r["blocking"].append("proof-single：proof.txt 提交记录 %d 次，违反 §2.2 单次约束"
                              % len(records))
     if not records:
         r["missing"].append("VG-4：域控 proof.txt 尚未取分，单次提交约束待真实取分后闭环（预期）")
@@ -477,10 +527,19 @@ def check_proof_single(inp):
 def verify(payload, require_artifacts=True, tools=None):
     """执行八项检查单 + 单次约束，返回 schema 版本化的机读结果。
 
-    兼容既有调用：`payload` 可为原始字典（此处自动归一）。
+    兼容既有调用：`payload` 可为原始字典（此处自动归一）。输入非法（时间戳格式
+    等）不抛异常：归一化失败按「阻断 + 用法提示」返回，避免调用方拿到半真结果。
     """
     tools = tools or Toolchain()
-    inp = normalize_payload(payload or {})
+    try:
+        inp = normalize_payload(payload or {})
+    except ValueError as exc:
+        return {"schema_version": SCHEMA_VERSION,
+                "checks": {k: False for k in CHECKS},
+                "passed": False,
+                "blocking": ["输入非法：%s" % exc],
+                "missing": [], "pending": [],
+                "failed_checks": list(CHECKS), "submission_ready": False}
     runners = {
         "vrf-01": lambda: check_vrf01(inp, tools),
         "vrf-02": lambda: check_vrf02(inp),
@@ -530,14 +589,26 @@ def main(argv=None):
     src.add_argument("--payload", help="JSON 载荷文件路径")
     src.add_argument("--from-loot", help="战利品登记簿路径（registry.md）")
     ap.add_argument("--evidence-dir", help="登记簿片段路径的解析根目录")
+    ap.add_argument("--report", help="报告 markdown（--from-loot 时用于 vrf-01/02/06）")
+    ap.add_argument("--appendix", help="附录 markdown（--from-loot 时用于 vrf-05）")
     ap.add_argument("--no-artifacts", action="store_true",
                     help="dry-run：不要求 PDF/.7z 产物（结果不可提交）")
     ap.add_argument("--summary", action="store_true", help="额外输出人读摘要")
     args = ap.parse_args(argv)
+
+    def _read(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+
     try:
-        payload = (load_payload(args.payload) if args.payload
-                   else from_loot(args.from_loot, args.evidence_dir))
-    except ValueError as exc:
+        if args.payload:
+            payload = load_payload(args.payload)
+        else:
+            payload = from_loot(
+                args.from_loot, args.evidence_dir,
+                report_md=_read(args.report) if args.report else "",
+                appendix_md=_read(args.appendix) if args.appendix else "")
+    except (OSError, ValueError) as exc:
         print("ERROR: %s" % exc, file=sys.stderr)
         return 2
     result = verify(payload, require_artifacts=not args.no_artifacts)

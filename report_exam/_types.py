@@ -5,13 +5,15 @@
 from dataclasses import dataclass, field
 from typing import Dict, List
 
-# 8 个计分目标（GOVERNANCE §2.1/§2.2）：报告主机小节的唯一规范键集
-SCORED_HOSTS = (
-    "chain1-host1", "chain1-host2", "chain1-host3",
-    "chain2-host1", "chain2-host2", "chain2-host3",
-    "standalone", "domain-controller",
+# 8 个计分目标（GOVERNANCE §2.1/§2.2）：键集唯一事实源在 tools/scored_targets.py，
+# 此处仅再导出以保持既有引用名（AGENTS.md C1）。
+from tools.scored_targets import (  # noqa: F401  (re-export)
+    DOMAIN_CONTROLLER_KEY,
+    POINT_PATTERN,
+    SCORED_HOSTS,
+    STANDALONE_KEY,
+    TOTAL_POINTS,
 )
-STANDALONE_KEY = "standalone"
 
 
 @dataclass

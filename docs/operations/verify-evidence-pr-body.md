@@ -25,11 +25,12 @@ tools/verify_evidence.py   S-1 输入归一 → S-2 九项判据 → S-3 可注�
 | vrf-02 | 章节标题存在性 | 8 目标键集 + 分值多重集 + 合计 100 | §2.2 / ADR-0002 |
 | vrf-03 | payload 布尔字段 | 有原文时委托登记簿 `fragment_pieces` | §6.1 / C1 |
 | vrf-04 | 仅面板值比对 | 追加访问证明同屏（`whoami`/`id` + flag） | §6.2.2 |
-| vrf-07 | 命名/体积 | 追加 24h 提交窗口（硬阻断） | §6.4.3 |
+| vrf-07 | 命名/体积 | 追加 24h 窗口（硬阻断）与归档加密判定 | §6.4.2 / §6.4.3 |
 | proof-single | flag 值子串匹配 | 按 `domain-controller` 目标键 | §2.2.3 |
+| 键集 | 两侧各写一份 | `tools/scored_targets.py` 唯一事实源 | C1 |
 
-- 测试：`tests/test_verify_evidence.py` 10 → 28 用例（AC-01…AC-18 逐条覆盖）；全量 `Ran 458 tests, OK`
-- 覆盖率：`measure_coverage.py --target verify-evidence` → 96.3%（门槛 80）
+- 测试：`tests/test_verify_evidence.py` 10 → 29 用例（AC-01…AC-18 逐条覆盖 + 键集单一事实源）；全量 `Ran 521 tests, OK`
+- 覆盖率：`measure_coverage.py --target verify-evidence` → 92.3%（门槛 80）
 - 文档：规格 v1/v2、调研、设计、9 份阶段门禁记录、术语表 4 条
 
 ## Merge Danger
@@ -37,5 +38,7 @@ tools/verify_evidence.py   S-1 输入归一 → S-2 九项判据 → S-3 可注�
 - **单向门**：`proof-single` 判定口径变更后不可回退——回退会让「flag 值含 `proof.txt` 子串」重新误计。影响半径：`tests/test_report_exam.py::test_AC09`（夹具已对齐）、任何引用 `verify_evidence.verify()` 返回结构的外部脚本（新增 `schema_version` 键为向后兼容扩增）。
 - **双向门**：其余判据均为收紧/补齐，回滚安全。
 - 共享文件改动：`scripts/measure_coverage.py`（新增 `verify-evidence` 目标）与 `GLOSSARY.md`（4 条术语，14995/15000 字节，余量极小，后续新增术语须先压缩）。
+
+跟进：J-1/J-2 → #225。
 
 Closes #204, #205, #206, #207, #208, #209, #210, #212

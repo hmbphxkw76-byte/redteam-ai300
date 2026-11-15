@@ -23,12 +23,13 @@ ANCHORS = VE.REQUIRED_ANCHORS
 
 
 def report_text():
+    inventory = " / ".join(VE.SCORED_TARGETS)  # 8 个计分目标键（§2.2）
     return "\n\n".join([
         "# OSID: 12345", COPYRIGHT, "# Offsec AI Red Teamer Report",
         "## Introduction", "## Objective", "## Requirements",
         "# Executive Summary", "## High-Level Attack Path",
-        "## Target Inventory & Point Allocation", "# Attack Walkthrough",
-        "# Appendix",
+        "## Target Inventory & Point Allocation", inventory,
+        "# Attack Walkthrough", "# Appendix",
     ])
 
 
@@ -176,10 +177,14 @@ class VerifyEvidenceTests(unittest.TestCase):
 class FakeTools(VE.Toolchain):
     """S-3 替身：技能校验结论 / 术语表 / 文件 stat 可编程。"""
 
-    def __init__(self, skill_errors=None, avoid=None, sizes=None):
+    def __init__(self, skill_errors=None, avoid=None, sizes=None,
+                 absent=(), encrypted=None, avoid_none=False):
         self.skill_errors = list(skill_errors or [])
         self._avoid = ["旧称"] if avoid is None else list(avoid)
+        self._avoid_none = avoid_none
         self._sizes = dict(sizes or {})
+        self._absent = set(absent or ())
+        self._encrypted = encrypted
         self.skill_calls = 0
 
     def validate_skills(self, skills_dir=None):
@@ -187,12 +192,17 @@ class FakeTools(VE.Toolchain):
         return list(self.skill_errors)
 
     def avoid_terms(self, glossary_path=VE.DEFAULT_GLOSSARY):
-        return list(self._avoid)
+        return None if self._avoid_none else list(self._avoid)
 
     def stat(self, path):
+        if path in self._absent:
+            return False, 0
         if path in self._sizes:
             return True, self._sizes[path]
         return True, 1024
+
+    def archive_encrypted(self, path):
+        return self._encrypted
 
 
 def good_points():
@@ -208,19 +218,25 @@ FRAGMENT_MD = """### 步骤 aia-01：读取 flag
 #### 确切命令
 
 ```bash
-whoami && cat /root/ai_vector.txt
+cat /root/ai_vector.txt
 ```
 
 #### 关键输出
 
 ```text
-root
 OSAI{demo-flag}
 ```
 
 #### 截图（访问证明）
 
 ![aia-01](shots/aia-01.png)
+
+```text
+root@target:~# id
+uid=0(root) gid=0(root) groups=0(root)
+root@target:~# cat /root/ai_vector.txt
+OSAI{demo-flag}
+```
 """
 
 
@@ -242,17 +258,23 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
                     "| 面板=OSAI{demo-flag}；截图=shots/aia-01.png |\n\n"
                     "## 攻击路径\n\n- chain1: demo\n")
             tools = FakeTools()
-            from_loot_res = VE.verify(VE.from_loot(reg, d), tools=tools)
+            from_loot_res = VE.verify(VE.from_loot(
+                reg, d, report_md=report_text(), appendix_md="prompt: p",
+                target_points=good_points()), tools=tools)
             manual = VE.verify(payload(
-                report="",
+                appendix="prompt: p", target_points=good_points(),
                 frags=[dict(frag("aia-01", host="standalone",
                                  flag="OSAI{demo-flag}", raw=FRAGMENT_MD),
-                            command="aia-01.md", output="aia-01.md",
-                            screenshot="shots/aia-01.png")],
+                            pieces={"command": True, "output": True,
+                                    "screenshot": True})],
                 panel={"standalone": "OSAI{demo-flag}"}), tools=FakeTools())
             self.assertEqual(from_loot_res["checks"], manual["checks"])
             self.assertEqual(from_loot_res["submission_ready"],
                              manual["submission_ready"])
+            # 只给登记簿、不给报告 → 报告侧判据必然阻断（入口不缺省放行）
+            bare = VE.verify(VE.from_loot(reg, d), tools=FakeTools())
+            self.assertIs(bare["checks"]["vrf-06"], False)
+            self.assertFalse(bare["passed"])
 
     # --- AC-02 用法错误 ----------------------------------------------------
     def test_AC02_usage_errors_exit_2(self):
@@ -291,7 +313,11 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
         self.assertTrue(any("分值口径" in b for b in r2["blocking"]))
         r3 = VE.verify(base, tools=FakeTools())
         self.assertIs(r3["checks"]["vrf-02"], True)
-        self.assertTrue(any("VG-6" in m for m in r3["missing"]))
+        self.assertTrue(any("NOTE-6" in m for m in r3["missing"]))
+        no_keys = report_text().replace("chain1-host1", "")
+        r4 = VE.verify(payload(report=no_keys), tools=FakeTools())
+        self.assertIs(r4["checks"]["vrf-02"], False)
+        self.assertTrue(any("chain1-host1" in b for b in r4["blocking"]))
 
     # --- AC-05 已取分三件套 ------------------------------------------------
     def test_AC05_scored_fragment_gap_blocks(self):
@@ -315,15 +341,23 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
             frags=[frag(flag="OSAI{demo-flag}", raw=FRAGMENT_MD)],
             panel={"standalone": "OSAI{demo-flag}"}), tools=FakeTools())
         self.assertIs(good["checks"]["vrf-04"], True)
-        no_token = FRAGMENT_MD.replace("whoami && ", "")
+        no_token = FRAGMENT_MD.replace("root@target:~# id\n", "")
         bad = VE.verify(payload(
             frags=[frag(flag="OSAI{demo-flag}", raw=no_token)],
             panel={"standalone": "OSAI{demo-flag}"}), tools=FakeTools())
         self.assertIs(bad["checks"]["vrf-04"], False)
         self.assertTrue(any("访问证明" in b for b in bad["blocking"]))
+        # 命令块写了 whoami/id 但截图节无内联文本 → 不构成同屏证据
+        cmd_only = FRAGMENT_MD.replace("cat /root/ai_vector.txt", "id && cat /root/ai_vector.txt")
+        cmd_only = cmd_only[:cmd_only.index("#### 截图（访问证明）")] + \
+            "#### 截图（访问证明）\n\n![aia-01](shots/aia-01.png)\n"
+        image_only = VE.verify(payload(
+            frags=[frag(flag="OSAI{demo-flag}", raw=cmd_only)],
+            panel={"standalone": "OSAI{demo-flag}"}), tools=FakeTools())
+        self.assertTrue(any("NOTE-7" in m for m in image_only["missing"]))
         legacy = VE.verify(payload(frags=[frag(flag="OSAI{x}")],
                                    panel={"standalone": "OSAI{x}"}), tools=FakeTools())
-        self.assertTrue(any("VG-7" in m for m in legacy["missing"]))
+        self.assertTrue(any("NOTE-7" in m for m in legacy["missing"]))
 
     # --- AC-08 AI 日志 -----------------------------------------------------
     def test_AC08_ai_log_verbatim(self):
@@ -352,6 +386,16 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
             bad = VE.verify(payload(pdf=os.path.join(d, "wrong.pdf"),
                                     zip_path=arc), tools=FakeTools())
             self.assertIs(bad["checks"]["vrf-07"], False)
+            gone = VE.verify(payload(pdf=pdf, zip_path=arc),
+                             tools=FakeTools(absent={pdf}))
+            self.assertIs(gone["checks"]["vrf-07"], False)
+            enc = VE.verify(payload(pdf=pdf, zip_path=arc),
+                            tools=FakeTools(encrypted=True))
+            self.assertIs(enc["checks"]["vrf-07"], False)
+            self.assertTrue(any("密码" in b for b in enc["blocking"]))
+            unknown = VE.verify(payload(pdf=pdf, zip_path=arc),
+                                tools=FakeTools(encrypted=None))
+            self.assertTrue(any("NOTE-8" in m for m in unknown["missing"]))
             huge = VE.verify(payload(pdf=pdf, zip_path=arc),
                              tools=FakeTools(sizes={arc: VE.MAX_ARCHIVE_BYTES + 1}))
             self.assertIs(huge["checks"]["vrf-07"], False)
@@ -380,7 +424,7 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
             self.assertIs(late["checks"]["vrf-07"], False)
             self.assertTrue(any("24h" in b for b in late["blocking"]))
             unknown = VE.verify(payload(pdf=pdf, zip_path=arc), tools=FakeTools())
-            self.assertTrue(any("VG-5" in m for m in unknown["missing"]))
+            self.assertTrue(any("NOTE-5" in m for m in unknown["missing"]))
 
     # --- AC-12 dry-run ----------------------------------------------------
     def test_AC12_dry_run_semantics(self):
@@ -439,6 +483,14 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
         finally:
             reg.fragment_pieces = original
         self.assertTrue(calls, "未复用登记簿 fragment_pieces（C1 单一事实源）")
+
+    def test_AC17_scored_keys_have_single_source(self):
+        """键集只定义一次：report_exam 与校验器引用同一常量（C1）。"""
+        import tools.scored_targets as st
+        from report_exam import _types
+        self.assertEqual(tuple(_types.SCORED_HOSTS), tuple(st.SCORED_HOSTS))
+        self.assertEqual(tuple(VE.SCORED_TARGETS), tuple(st.SCORED_HOSTS))
+        self.assertEqual(_types.STANDALONE_KEY, st.STANDALONE_KEY)
 
     # --- AC-18 下游委托不破 -----------------------------------------------
     def test_AC18_downstream_delegation_intact(self):

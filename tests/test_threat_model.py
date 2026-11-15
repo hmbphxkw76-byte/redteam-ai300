@@ -147,6 +147,14 @@ class BoundaryPathTests(unittest.TestCase):
         path = next(p for p in tm.paths if p.target_asset == "ai-llm-a-01")
         self.assertEqual(path.status, "待补")
 
+    def test_ai_vector_subskill_coverage(self):
+        # SKILL 第 13/28 行：AI 向量机路径须拉动 D6(embeddings)/D9(infra) 等链式子技能
+        tm = _tm()
+        path = next(p for p in tm.paths if p.target_asset == "ai-llm-a-01")
+        for sk in ("attack-ai-agent", "attack-multi-agent", "attack-rag",
+                   "attack-embeddings", "attack-mcp-tool", "attack-infra"):
+            self.assertIn(sk, path.depends_on)
+
 
 class DecoyTests(unittest.TestCase):
     """AC3 诱饵时间盒：三维度 + ≤30min 硬约束。"""

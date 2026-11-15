@@ -47,8 +47,11 @@ STAGE_TEMPLATE = {
 }
 
 # 计分分类 → 依赖前置子技能（SKILL 执行体 §2 / 矩阵映射）
+# AI向量机 覆盖 D3(agent)/D4(multi-agent)/D5(RAG)/D6(embeddings)/D7(MCP)/D9(infra)，
+# 对应 SKILL 第 13 行「拉动 attack-rag / attack-embeddings / attack-infra 等链式子技能」。
 SUBSKILL = {
-    "AI向量机": ["attack-ai-agent", "attack-rag", "attack-mcp-tool"],
+    "AI向量机": ["attack-ai-agent", "attack-multi-agent", "attack-rag",
+                 "attack-embeddings", "attack-mcp-tool", "attack-infra"],
     "独立机": ["attack-mcp-tool"],
     "传统向量机": ["foothold-traditional"],
     "域控": ["foothold-traditional"],

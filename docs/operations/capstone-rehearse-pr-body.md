@@ -1,14 +1,13 @@
 ## 变更摘要
 
-`capstone-rehearse`（D11 / P2 / 通用验收）按主线 11 阶段落地：把 §4.5 九阶段流水线走查、§5.4 24h 节奏、缺口分级固化为可机读、可复跑的考前硬门禁。规格 v1/v2 见 #231，父工单 #233，子工单 #234–#239。
+`capstone-rehearse`（D11 / P2 / 通用验收）按主线 11 阶段落地：把 §4.5 九阶段走查、§5.4 24h 节奏、缺口分级固化为可机读的考前硬门禁。规格 #231，工单 #233–#239。
 
 ```text
-cli.py → rehearse(inventory, clock, evidence_source) → RehearsalResult（唯一构造点）
-  ├─ S-1 StageInventory（新）  Repo / Memory
-  ├─ S-2 Clock（新）           Fixed / System
-  └─ EvidenceSource（复用）    → registry.fragment_pieces（既有三件套判据）
-  ├─ report.py   覆盖度矩阵 / 24h 时间线 / 缺口清单 / 演练结论
-  └─ evidence.py 6 份 collect_evidence.py --step cr-NN --strict
+cli.py → rehearse(inventory, clock, evidence_source) → RehearsalResult
+  ├─ S-1 StageInventory（新） / S-2 Clock（新）
+  ├─ EvidenceSource（复用）→ registry.fragment_pieces（既有判据）
+  ├─ report.py  四件产出
+  └─ evidence.py  6 份 --step cr-NN --strict
 ```
 
 零 PyRIT 依赖、纯标准库；演练片段与正式提交隔离（`-real` 过滤 + 演练标注）。
@@ -17,7 +16,7 @@ cli.py → rehearse(inventory, clock, evidence_source) → RehearsalResult（唯
 
 - **组件类型**：`skill` 实现 + `文档` + `测试`（SKILL.md 已登记于 §4.4）
 - **对齐能力域**：`D11` · **优先级**：`P2` · **目标计分单元**：`通用（验收）`
-- **端到端演示**：`python -m tools.capstone_rehearse --stdout` → 版本化 JSON；`--emit-evidence evidence/capstone-rehearse-drill` → 6 份 `--strict` 片段；`--out r.json --report r.md` → 四件产出。默认 `ready_for_exam=false` 为如实结论，不假称全覆盖。
+- **端到端演示**：`python -m tools.capstone_rehearse --stdout` → JSON；`--emit-evidence evidence/capstone-rehearse-drill` → 6 份 `--strict` 片段；`--out r.json --report r.md` → 四件产出。默认 `ready_for_exam=false` 为如实结论。
 
 ## Evidence
 

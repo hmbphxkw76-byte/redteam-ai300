@@ -139,3 +139,7 @@ SKILL.md 全部声明项（front-matter、前置 2 条、8 步、质量门 7 条
 | C2 | 增强 | infra-06 k8s 越权语义 | 目标无 `/exec`，真实提权面是 6443（匿名 403） | `path_c.py privesc` + `_k8s_surface` | 活体 `AUTH_REQUIRED`；`PrivescTests` 1 例 |
 
 **适配结论**：8 项全部落地，SKILL.md 硬要求（转技能精准、滥用证明不误判、截图命令可执行）与目标实际暴露面（Ollama/kube-apiserver/kubelet/GitLab/flannel）完全对齐。
+
+## 11. 推送留痕（8 项适配提交）
+
+本提交 8 项适配仅触碰 `tools/attack_infra/` 与 attack-infra 文档/测试，**不含任何共享文件**（`GLOSSARY.md` / `check_token_budget.py` / `measure_coverage.py` / `ci.yml` 与 `origin/main` 零差异，已 `git diff --stat origin/main..HEAD -- <共享文件>` 复核为空）。检出锁列出的 7 个 worktree 共享文件改动均为其它并行任务（capstone-rehearse / sc_tools / tooling-automate / ve_records / verify-evidence-225 / verify-evidence-dual / framework-docs-recovery），与本分支区域不相交。据此按 pre-push 钩子文档所列例外 `--no-verify` 推送（并集为空，无冲突可解）。

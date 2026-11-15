@@ -16,7 +16,7 @@
 | S4 | `python scripts/check_glossary.py`（本技能文件） | 无废弃术语（涉事两处已按 GLOSSARY 规范词改写） | — |
 | S5 | 依赖方向单向、无第三方 HTTP 库 | `transport` 抽象 + `urllib`；`pyrit` 懒导入 | — |
 
-**Standards 判断项（不阻断）**
+### Standards 判断项（不阻断）
 - **J1** `pyrit_attack.py` 行覆盖率 44%：仅测「未安装即显式报错」分支；成功路径依赖真实 `pyrit` 环境，按设计（B7 懒导入，CI 不装）留作带取证方式的核实路径。
 - **J2** `shot.py` 覆盖率 79.3%（近门槛）：`HeadlessCapture` 真实浏览器分支仅以 mock 子进程验证成功写盘，未测超时/失败分支。
 - **J3** `scanner.py` 变量名 `_UNEXPECTED_Egress` 命名不规范（功能正确），保留以免扰动调用面，登记为改进项。
@@ -47,7 +47,7 @@
 | AC-14 覆盖率 ≥80% | — | `measure_coverage.py --target attack-multi-agent`：**91.7%** |
 | AC-15 单 agent 回退 | `_step_a2a_01` capability_missing 分支 | `test_capability_missing_single_agent`（已跳过 + 建议 attack-ai-agent） |
 
-**Spec 判断项**
+### Spec 判断项
 - **P1** AC-07 的「AI 交互日志」在离线路径恒为 `prompted=True` 生成的构造串；真实目标的 AI 日志需在演练环境以实测响应替换（非缺陷，属取证环境约束）。
 - **Spec 硬违规：0**。规格覆盖矩阵无空格。
 

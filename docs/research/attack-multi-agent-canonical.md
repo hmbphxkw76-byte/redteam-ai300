@@ -83,18 +83,18 @@
 
 ## 7. 已核实 / 待核实 / 已排除
 
-**已核实**
+### 已核实
 - R1 A2A 用 JSON-RPC 2.0 over HTTP(S)、AgentCard、Task 生命周期、SSE、push（§2）。
 - R2 A2ASecBench 六类攻击与仓库（§3）；a2a-scanner 五分析器（§4）。
 - R3 PyRIT 1.1.0 对象图与禁用名（§5、权威索引）。
 - R4 本技能 8 步均可映射到上述对象（§6）。
 
-**待核实（实现前取证，不阻塞其余路径）**
+### 待核实（实现前取证，不阻塞其余路径）
 - T-A2A-1：目标 A2A 实现属 0.x 还是 1.0（方法名 `message/send` vs `SendMessage`、part 结构差异）——取证：拉 `/.well-known/agent-card.json` 的 `protocolVersion`。
 - T-A2A-2：目标消息总线是 Kafka/RabbitMQ/自定义（决定 `/topics` 或 `redis-cli` 探测路径）——取证：port scan + 产品指纹。
 - T-A2A-3：a2a-scanner 在考试内网的 LLM 分析器是否禁用（数据外发风险）——取证：自托管 provider 配置验证。
 
-**已排除**
+### 已排除
 - E1 单靠 PyRIT 覆盖 MA：已排除（v1.1.0 无原生策略）。
 - E2 用 promptfoo 主导 MA：矩阵 §⑩ 指定 A2ASecBench/a2a-scanner 主导；promptfoo 非本技能层。
 - E3 二手博客「AI 助手禁用」：与官方 S3 冲突，已排除（决策文档 §2）。

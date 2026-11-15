@@ -76,6 +76,7 @@ OBJECT_GRAPH = {
   "notes": "PyRIT 无原生 MA 策略；矩阵 §⑩ 规定 MA 由 A2ASecBench/a2a-scanner 主导"
 }
 ```
+
 PyRIT 仅在 `pyrit_attack.run_pyrit_multiturn()` 内**懒导入**（模块顶层不 import pyrit，满足 B7 不强制依赖），仅对可达 A2A 端点做多轮深度利用时用。
 
 ### 2.3 路径顺序（`steps_for_paths`）

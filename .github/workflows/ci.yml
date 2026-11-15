@@ -56,6 +56,9 @@ jobs:
       - name: attack-multi-agent 示意脚本语法编译 (S1)
         # SKILL.md 攻击路径 A/B/C 点名的 5 个顶层薄壳（独立步骤，避免与并发会话共用长行）
         run: python -m py_compile tools/msg_inject.py tools/agent_impersonate.py tools/memory_poison.py tools/context_poison.py tools/workflow_disrupt.py
+      - name: attack-rag 注入脚本语法编译 (S1)
+        # SKILL.md 路径 A 点名的 inject_kb.py（独立步骤，避免与并发会话共用长行）
+        run: python -m py_compile tools/inject_kb.py
 
   tests:
     name: 自动化测试 (S2)

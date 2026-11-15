@@ -139,8 +139,8 @@ def attack_rag_targets():
     """attack-rag 业务代码集合（阶段 9 / v2 US10 覆盖率目标）。"""
     import importlib
     names = ("model", "embedder", "harness", "poisoned_rag", "retrieval_probe",
-             "decision_diff", "xapia", "backends", "evidence", "steps",
-             "runner", "cli")
+             "decision_diff", "xapia", "backends", "evidence", "surface",
+             "ingest", "index_tamper", "steps", "runner", "cli")
     mods = tuple(importlib.import_module("tools.attack_rag." + n) for n in names)
     return mods, ("tests.test_attack_rag",
                   "tests.test_attack_rag_evidence_contract")

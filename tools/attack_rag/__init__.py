@@ -10,6 +10,9 @@
 from .backends import FakeBackend, RealPyRITBackend
 from .decision_diff import DecisionDiff, DiffResult
 from .harness import MALICIOUS_MARKER, RagHarness, RetrievalHit, default_corpus
+from .index_tamper import IndexTamper
+from .ingest import (FakeIngestChannel, FileIngestChannel, HttpIngestChannel,
+                     IngestResult, ReadOnlyChannel, channel_for)
 from .model import (LEVELS, AttackReport, AttackRequest, FlagProof, StepVerdict,
                     XpiaOutcome)
 from .poisoned_rag import PoisonedRAGInjector
@@ -17,6 +20,8 @@ from .retrieval_probe import (BeforeAfter, EmbeddingCollisionCraft, RetrievalPro
                               TopKTable)
 from .runner import DEFAULT_EVIDENCE_DIR, OBJECT_GRAPH, Runtime, run_attack
 from .steps import STEP_IDS, STEP_SPECS, steps_for_paths
+from .surface import (RagSurface, from_inventory, surface_from_file, synthetic,
+                      validate_flags)
 from .xapia import XpiaResult, build_payload, run_xpia
 
 __all__ = [
@@ -25,7 +30,10 @@ __all__ = [
     "LEVELS", "STEP_IDS", "STEP_SPECS", "steps_for_paths",
     "RagHarness", "RetrievalHit", "default_corpus", "MALICIOUS_MARKER",
     "PoisonedRAGInjector", "RetrievalProbe", "BeforeAfter", "TopKTable",
-    "EmbeddingCollisionCraft", "DecisionDiff", "DiffResult",
+    "EmbeddingCollisionCraft", "DecisionDiff", "DiffResult", "IndexTamper",
+    "RagSurface", "surface_from_file", "from_inventory", "synthetic", "validate_flags",
+    "IngestResult", "HttpIngestChannel", "FileIngestChannel",
+    "FakeIngestChannel", "ReadOnlyChannel", "channel_for",
     "run_xpia", "build_payload", "XpiaResult",
     "FakeBackend", "RealPyRITBackend",
 ]

@@ -16,7 +16,7 @@ python scripts/measure_coverage.py --target attack-rag --min 80
 ```
 
 结果：编译无错；`Ran 89 tests ... OK`；行覆盖率 1139/1238 = **92.0%**（门槛 80%，exit 0）；`--target all` 为
-7312/8021 = **91.2%**（CI S2 口径）。
+7799/8550 = **91.2%**（CI S2 口径，全量 617 测试）。
 最低两模块为 `backends.py` 72.4%（真实 PyRIT 后端不可离线执行，按失败与豁免计）与
 `cli.py` 78.2%（参数分支），其余均 ≥87%。
 

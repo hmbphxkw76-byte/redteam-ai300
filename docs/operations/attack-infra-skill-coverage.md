@@ -58,10 +58,8 @@
 
 | 并发方 | 其共享文件改动 | 与本分支是否重叠 | 结论 |
 |---|---|---|---|
-| `feat/attack-rag-conform` | `measure_coverage.py` 仅改 `attack_rag_targets` 的 `names` 元组；`ci.yml` 新增独立步骤（`inject_kb.py` 编译） | **不重叠**（本分支不触碰 `attack_rag_targets`，且未改 `ci.yml`） | 可自动合并 |
-| `feat/attack-supply-chain-tools` | 相对 `origin/main` 呈删除态（基线落后，未 rebase） | 不涉及本分支改动区域 | 其自身需先 rebase |
-| `docs/verify-evidence-gate11` | 无共享文件差异 | 不涉及 | — |
+| `feat/attack-supply-chain-tools`（`D:/_sc_tools_wt`，HEAD `7b6aa02`） | 三个共享文件相对 `main` 共 6 插入 / 70 删除，逐 hunk 全为**删除态**（缺 RAG 术语块、预算上调注释、覆盖率目标）——`merge-base --is-ancestor main HEAD` 为假，基线落后 | **无新增内容需并集**；本分支已 `merge origin/main` 含全部内容 | 检出锁为保守误报，并发方需自行 rebase |
 
-结论：本分支已含 `origin/main` 最新并集（含 `attack-rag` 术语块与覆盖率目标），其余并发改动与本分支区域不相交。据此按 `pre-push` 钩子文档所列唯一例外（`--no-verify`，前提为逐 hunk 确认并集无误）完成推送，并将本表留痕于本文件与 PR 正文。
+结论：本分支以 `git merge origin/main --no-ff` 取并集后，`git diff --name-status origin/main..HEAD` **无删除文件**，攻击面文件（含 `tools/attack_rag/`、`tools/inject_kb.py`）完整存在。并发方仅剩 `feat/attack-supply-chain-tools` 一个，且其差异全为落后基线的删除态，无任何待并入的新增内容。据此按 `pre-push` 钩子文档所列例外（`--no-verify`，前提为逐 hunk 确认并集无误）完成推送；本表为逐 hunk 核对留痕。
 
 **推送通道**：SSH（`origin`）为首选，失败再试 HTTPS（`origin-https`），各一次即停（用户硬约定）。

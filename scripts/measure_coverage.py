@@ -168,7 +168,8 @@ def tooling_automate_targets():
     mods = tuple(importlib.import_module("tools.tooling_automate." + n) for n in names)
     return mods, ("tests.test_tooling_manifest", "tests.test_tooling_runner",
                   "tests.test_tooling_reuse", "tests.test_tooling_summary",
-                  "tests.test_tooling_evidence_contract")
+                  "tests.test_tooling_evidence_contract",
+                  "tests.test_tooling_tdd_contract")
 
 
 def resolve_target(mode):

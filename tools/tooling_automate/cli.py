@@ -10,7 +10,8 @@ from .runner import run_plan
 from .summary import render_markdown
 
 
-def main(argv=None) -> int:
+def main(argv=None, runner=None) -> int:
+    """S-1 统一编排入口：CLI 与库调用共用；runner 可注入以替换真实脚本调用。"""
     ap = argparse.ArgumentParser(prog="tooling-automate", description="红队演练编排层")
     ap.add_argument("--manifest", required=True, help="任务清单 JSON 路径")
     ap.add_argument("--out", default="-", help="汇总 markdown 路径；- 表示 stdout")
@@ -26,7 +27,7 @@ def main(argv=None) -> int:
     except ManifestError as exc:
         print("清单错误: %s" % exc, file=sys.stderr)
         return 2
-    result = run_plan(manifest, strict=args.strict, dry_run=args.dry_run)
+    result = run_plan(manifest, runner=runner, strict=args.strict, dry_run=args.dry_run)
     text = render_markdown(result, args.out, manifest)
     if args.out == "-":
         sys.stdout.write(text)

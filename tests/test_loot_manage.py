@@ -192,5 +192,120 @@ class CliTests(unittest.TestCase):
             self.assertTrue(data["passed"])
 
 
+class SkillParityTests(unittest.TestCase):
+    """覆盖 SKILL.md「失败与豁免」「loot-02.3 复用」「质量门·来源主机」条款。"""
+
+    def test_attack_path_h3_template_parsed(self):
+        text = "\n".join([HEADER, SEP,
+                          "| L-1 | 凭据 | c | h | — | t | 有效 | — |",
+                          "", "### 攻击路径", "- 入口 A → B"])
+        r = make(text)
+        self.assertEqual(r.attack_paths, ["入口 A → B"])
+        self.assertTrue(reg.validate(r, root=".")["checks"]["attack_path"])
+
+    def test_append_attack_path_keeps_section(self):
+        text = "\n".join([HEADER, SEP,
+                          "| L-1 | 凭据 | c | h | — | t | 有效 | — |",
+                          "", "### 攻击路径", "- 入口 A → B", "",
+                          "## 空态", "- 原因：x"])
+        out = reg.append_attack_path(text, "入口 B → C")
+        self.assertEqual(out.count("攻击路径"), 1)
+        self.assertIn("- 入口 A → B", out)
+        self.assertIn("- 入口 B → C", out)
+
+    def test_empty_state_recorded_and_passes(self):
+        text = reg.mark_empty_state(reg.SKELETON, "目标不可达")
+        r = make(text)
+        self.assertEqual(r.empty_state["reason"], "目标不可达")
+        res = reg.validate(r, root=".")
+        self.assertTrue(res["passed"])
+        self.assertEqual(res["empty_state"]["reason"], "目标不可达")
+
+    def test_empty_state_require_loot_still_blocks(self):
+        text = reg.mark_empty_state(reg.SKELETON, "目标不可达")
+        res = reg.validate(make(text), root=".", require_loot=True)
+        self.assertFalse(res["passed"])
+        self.assertIn("目标不可达", " ".join(res["blocking"]))
+
+    def test_mark_empty_state_idempotent(self):
+        t1 = reg.mark_empty_state(reg.SKELETON, "原因A")
+        t2 = reg.mark_empty_state(t1, "原因B")
+        self.assertEqual(t2.count("原因："), 1)
+        self.assertIn("原因B", t2)
+
+    def test_empty_host_blocked(self):
+        text = "\n".join([HEADER, SEP,
+                          "| L-1 | 凭据 | c |  | — | t | 有效 | — |",
+                          "", "## 攻击路径", "- x"])
+        res = reg.validate(make(text), root=".")
+        self.assertFalse(res["checks"]["hosts"])
+        self.assertFalse(res["passed"])
+
+    def test_update_status_in_place(self):
+        text = "\n".join([HEADER, SEP,
+                          "| L-1 | 凭据 | c | h1 | — | t | 有效 | — |",
+                          "| L-2 | 会话 | ssh | h2 | — | t | 存活 | — |",
+                          "", "## 攻击路径", "- x"])
+        out, ok, msg = reg.update_status(text, "L-2", "失效")
+        self.assertTrue(ok, msg)
+        rows = make(out).rows
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[1].status, "失效")
+        self.assertEqual(rows[1].content, "ssh")
+        self.assertEqual(rows[0].status, "有效")
+
+    def test_update_status_type_mismatch_and_missing(self):
+        text = "\n".join([HEADER, SEP,
+                          "| L-1 | 凭据 | c | h | — | t | 有效 | — |",
+                          "", "## 攻击路径", "- x"])
+        out, ok, _ = reg.update_status(text, "L-1", "存活")
+        self.assertFalse(ok)
+        self.assertEqual(out, text)
+        _, ok2, msg2 = reg.update_status(text, "L-9", "失效")
+        self.assertFalse(ok2)
+        self.assertIn("L-9", msg2)
+
+    def test_query_and_reusable(self):
+        text = "\n".join([HEADER, SEP,
+                          "| L-1 | 凭据 | c1 | h1 | — | t | 有效 | — |",
+                          "| L-2 | 会话 | c2 | h2 | — | t | 失效 | — |",
+                          "| L-3 | flag | f | h1 | — | t | 已取证 | 面板=F；截图=s |",
+                          "", "## 攻击路径", "- x"])
+        r = make(text)
+        self.assertEqual([x.id for x in reg.query_rows(r, type_="凭据")], ["L-1"])
+        self.assertEqual([x.id for x in reg.query_rows(r, status="失效")], ["L-2"])
+        self.assertEqual([x.id for x in reg.query_rows(r, host="h1")], ["L-1", "L-3"])
+        self.assertEqual([x.id for x in reg.reusable_rows(r)], ["L-1"])
+
+
+class CliParityTests(unittest.TestCase):
+    def test_set_status_cli_in_place(self):
+        with tempfile.TemporaryDirectory() as t:
+            p = os.path.join(t, "loot", "registry.md")
+            os.makedirs(os.path.join(t, "loot"))
+            open(os.path.join(t, "loot", "d.md"), "w").close()
+            cli.main(["--registry", p, "--root", t, "init"])
+            cli.main(["--registry", p, "--root", t, "register", "--type", "会话",
+                      "--content", "ssh", "--host", "h", "--evidence", "loot/d.md"])
+            self.assertEqual(cli.main(["--registry", p, "--root", t, "set-status",
+                                       "--id", "L-1", "--status", "失效"]), 0)
+            rows = make(open(p, encoding="utf-8").read()).rows
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0].status, "失效")
+            self.assertEqual(cli.main(["--registry", p, "--root", t, "set-status",
+                                       "--id", "L-1", "--status", "存活"]), 0)
+
+    def test_query_json_and_empty_state_cli(self):
+        with tempfile.TemporaryDirectory() as t:
+            p = os.path.join(t, "loot", "registry.md")
+            cli.main(["--registry", p, "--root", t, "init"])
+            self.assertEqual(cli.main(["--registry", p, "--root", t,
+                                       "empty-state", "--reason", "目标不可达"]), 0)
+            res = reg.validate(make(open(p, encoding="utf-8").read()), root=t)
+            self.assertEqual(res["empty_state"]["reason"], "目标不可达")
+            self.assertEqual(cli.main(["--registry", p, "--root", t,
+                                       "query", "--json"]), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

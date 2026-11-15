@@ -228,16 +228,37 @@ def _flag_of(raw):
     return hit.group(0) if hit else ""
 
 
+# 双通道明细表由 `tools/collect_evidence.py` 写出（该脚本为格式唯一定义处）。
+_DUAL_TABLE = re.compile(r"\|\s*控制面板提交值\s*\|")
+_DUAL_PANEL = re.compile(r"\|\s*控制面板提交值\s*\|\s*`([^`]+)`\s*\|")
+_DUAL_SHOT = re.compile(r"\|\s*截图/正文中的值\s*\|\s*`([^`]+)`\s*\|")
+
+
+def _fragment_dual(raw):
+    """读片段双通道表，返回 (panel, shot, has_table)。
+
+    通道缺失时返回空串，由下游 `vrf-04` 按 §2.4 失分条款阻断；本层只做归一，
+    不另立一致性判据（C1）。
+    """
+    panel = _DUAL_PANEL.search(raw or "")
+    shot = _DUAL_SHOT.search(raw or "")
+    return ((panel.group(1).strip() if panel else ""),
+            (shot.group(1).strip() if shot else ""),
+            bool(_DUAL_TABLE.search(raw or "")))
+
+
 def from_fragments(fragment_dir, report_md="", appendix_md="", target_points=None,
                    panel_flags=None):
     """由一批 `collect_evidence` 片段文件构造输入（S-1 第三入口，US-03）。
 
     主机归属按片段 `**目标**` 字段，缺省用文件名主干；三件套判据仍委托登记簿实现（C1）。
+    flag 双通道取自片段自带明细表：面板值进 `panel_flags`，报告侧取「截图/正文中的值」；
+    旧式片段（无明细表）沿用取证节首 token，缺面板值时由 `vrf-04` 阻断。
     """
     reg_mod = _loot_registry()
     if not os.path.isdir(fragment_dir):
         raise ValueError("片段目录不存在：%s" % fragment_dir)
-    fragments, hosts = [], []
+    fragments, derived_panel = [], {}
     for name in sorted(os.listdir(fragment_dir)):
         if not name.endswith(".md"):
             continue
@@ -247,6 +268,11 @@ def from_fragments(fragment_dir, report_md="", appendix_md="", target_points=Non
         m = _TARGET_FIELD.search(raw)
         host = (m.group(1).strip() if m else os.path.splitext(name)[0])
         pieces = reg_mod.fragment_pieces(raw)
+        panel, shot, has_table = _fragment_dual(raw)
+        flag = _flag_of(raw)
+        if has_table and panel and shot:
+            derived_panel[host] = panel
+            flag = shot
         fragments.append({
             "step_id": os.path.splitext(name)[0],
             "host": host,
@@ -254,15 +280,16 @@ def from_fragments(fragment_dir, report_md="", appendix_md="", target_points=Non
             "output": "",
             "screenshot": "",
             "ai_log": "",
-            "flag": _flag_of(raw),
+            "flag": flag,
             "raw": raw,
             "pieces": {k: bool(pieces.get(k))
                        for k in ("command", "output", "screenshot")},
         })
-        hosts.append(host)
+    merged = dict(derived_panel)
+    merged.update(panel_flags or {})  # 显式注入优先于片段归一结果
     payload = {"fragments": fragments, "report_md": report_md,
                "appendix_md": appendix_md, "target_points": target_points or {},
-               "panel_flags": dict(panel_flags or {}),
+               "panel_flags": merged,
                "osid": _osid_from_name(fragment_dir)}
     return normalize_payload(payload)
 

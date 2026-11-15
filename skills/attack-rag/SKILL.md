@@ -5,10 +5,10 @@ domain: D5
 scoring_unit: AI向量机
 trigger: recon-ai 已确认目标存在 RAG 流水线（可访问知识库/向量库检索接口或内容摄取通道），且已取得可达 AI 向量机的内网立足点
 input: recon-ai 资产清单（RAG 库/向量库类型与暴露面、检索/摄取入口）、已获取上下文与身份
-output: 每攻击步骤「命令 + 输出 + 截图」证据、检索操纵前后对照、下游 agent 决策影响取证、ai_vector.txt flag 取证
+output: 每攻击步骤「命令 + 输出 + 截图」证据、检索层操纵前后对照、下游 agent 决策影响取证、ai_vector.txt flag 取证
 ---
 
-# attack-rag — RAG 投毒与检索操纵
+# attack-rag — RAG 投毒与检索层操纵
 
 针对 RAG（检索增强生成）流水线实施知识库投毒与检索层操纵，覆盖三大攻击面：**知识库投毒**、**检索相关性篡改**、**下游 agent 决策操纵**。技术分类对齐 OWASP 相关 AI 威胁（如经检索内容的 Indirect Prompt Injection、RAG 数据投毒）。目标计分单元为 AI向量机（15 分），flag 文件为 `ai_vector.txt`。
 
@@ -37,7 +37,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、检索操纵前后
 ### 攻击路径 C — 验证下游 agent 决策影响
 
 1. 触发下游 agent 处理目标查询，捕获 **基线决策**（投毒前）与 **投毒后决策** 两次结果。
-2. 做差异对照，证明检索操纵因果改变了 agent 输出/动作（泄露、误路由、工具误用、错误结论）。
+2. 做差异对照，证明检索层操纵因果改变了 agent 输出/动作（泄露、误路由、工具误用、错误结论）。
 3. **取证**：记录两次决策差异及 agent 响应原文；若 agent 基于 LLM，记录 AI 交互日志（prompt、模型、输出、采纳/修改，对齐 §6.3）。
 
 ### 收尾：flag 取证
@@ -52,7 +52,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、检索操纵前后
 - 每攻击步骤的**确切命令**（可直接 copy/paste）。
 - 每步骤的**关键输出**（含投毒生效或检索排名变化的响应原文）。
 - 每步骤的**截图**（访问证明，含目标标识与时间戳）。
-- **检索操纵前后对照**证据（top-k before/after）。
+- **检索层操纵前后对照**证据（top-k before/after）。
 - **下游决策影响取证**（baseline vs manipulated，含 AI 交互日志 §6.3）。
 - `ai_vector.txt` flag 的「面板提交 + 截图」双通道一致。
 - 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 GOVERNANCE §质量门），保证五件套/三件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。

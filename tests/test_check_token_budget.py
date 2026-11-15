@@ -29,8 +29,15 @@ class EstimateTokensTests(unittest.TestCase):
 
 class BudgetRulesTests(unittest.TestCase):
     def test_explicit_path_takes_precedence_over_glob(self):
+        # 断言「显式路径优先于通配」这一规则本身，数值取 BUDGETS 现值，
+        # 避免每次合法增量（如 v1.2 §1.4 扩到 30000）都要同步改测试。
         self.assertEqual(
-            ctb.budget_for("docs/operations/skill-mainline-workflow.md"), 28000
+            ctb.budget_for("docs/operations/skill-mainline-workflow.md"),
+            ctb.BUDGETS["docs/operations/skill-mainline-workflow.md"],
+        )
+        self.assertNotEqual(
+            ctb.budget_for("docs/operations/skill-mainline-workflow.md"),
+            ctb.BUDGETS["docs/operations/*.md"],
         )
         self.assertEqual(ctb.budget_for("docs/operations/domain.md"), 17000)
 

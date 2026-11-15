@@ -29,9 +29,16 @@ ROOT = Path(__file__).resolve().parent.parent
 # 上限取「当前基线 + 必要增量」，语义是「禁止无约束增长」，不要求删除既有内容。
 BUDGETS: dict[str, int] = {
     "AGENTS.md": 6000,
-    "GLOSSARY.md": 9000,
+    # 9000 → 10200 → 17000 → 18000：P0/P1 技能并行落地，术语表按「基线 + 必要增量」逐批增长。
+    # 10200 段为 decoy-detect（诱饵判定清单 / 三维度特征 / 时间盒）；
+    # 17000 段为 attack-rag、attack-multi-agent、attack-supply-chain 的术语增量；
+    # 18000 段为 threat-model（威胁模型 / 计分分类 / 信任边界 / 最短攻击路径 / 优先级攻击图），
+    # 实测 17,530 字节，保留约 470 字节余量。口径见 ADR-0005。
+    "GLOSSARY.md": 18000,
     "docs/governance/GOVERNANCE.md": 17000,
-    "docs/operations/skill-mainline-workflow.md": 28000,
+    # 28000 → 30000：v1.2 新增 §1.4「固定阅读要求（框架选型前置）」与门禁 B9，
+    # 属已记录的合法增量；压缩后实测 28,908 字节，保留约 1KB 余量。
+    "docs/operations/skill-mainline-workflow.md": 30000,
     "docs/standards/cross-ide-mainline-workflow.md": 30000,
     # 11000 → 12000：S1 由 4 项扩为 6 项、S4 增加契约复核，均为已记录的合法增量；
     # 压缩后实测 10,971 字节，保留约 1KB 余量以容纳后续门禁条目。

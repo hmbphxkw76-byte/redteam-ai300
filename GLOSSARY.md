@@ -36,6 +36,18 @@ _Avoid_: AI 攻击向量
 「故意不设漏洞」的主机（0 分），用于增加真实性；共 2 台。
 _Avoid_: rabbit hole、蜜罐
 
+**诱饵判定清单 (decoy judgment list)**:
+`decoy-detect` 产出的结构化判定结果，每条含主机标识 / 命中维度 / 具体依据 / 放弃理由 / 时间戳五字段，标注「诱饵」或「不确定-已放弃」，可被 `threat-model` 排除、`report-exam` 引用。
+_Avoid_: 诱饵清单
+
+**三维度特征 (three-dimension decoy signal)**:
+判定诱饵机的三类信号：行为特征（无 AI 基础设施面）、漏洞缺失（无高价值服务/无可达入口）、无价值特征（枚举过干净/信息缺失/与资产清单严重不符）；任一类命中记为疑似诱饵。
+_Avoid_: 三维特征
+
+**时间盒 (time-box)**:
+对单台疑似诱饵主机的判定硬性时长上限（`decoy-detect` 取 ≤30min）；超时即记录「不确定-已放弃」并主动放弃，不在 0 分主机空耗。
+_Avoid_: 时间限制
+
 **计分目标 (scored target)**:
 8 个计分主机之一（6 台链式 + 1 独立 + 1 域控）。
 
@@ -49,6 +61,26 @@ _Avoid_: rabbit hole、蜜罐
 
 **RAG (Retrieval-Augmented Generation)**:
 检索增强生成流水线，可被知识库投毒与检索层操纵。
+
+**知识库投毒 (knowledge base poisoning)**:
+向 RAG 知识库注入恶意/伪造文档，使检索返回攻击者选定内容；`attack-rag` 路径 A 的攻击面，权威方法为 PoisonedRAG（USENIX Security 2025）。
+_Avoid_: 知识投毒、投毒RAG（词序错）
+
+**检索层操纵 (retrieval manipulation)**:
+篡改检索相关性或排名，使目标查询的 top-k 包含恶意文档（OWASP LLM08 向量与嵌入弱点）；`attack-rag` 路径 B 的取证对象。
+_Avoid_: 检索操纵（缩写，首现须用全称）
+
+**PoisonedRAG**:
+首个 RAG 知识腐败攻击（Zou et al., USENIX Security 2025, arXiv:2402.07867）；其「两条件」结构为 `attack-rag` 路径 A 的理论内核。
+_Avoid_: 投毒 RAG（词序错）
+
+**检索条件 / 生成条件 (retrieval/generation condition)**:
+PoisonedRAG 两条件结构——恶意文本须落入目标问题 top-k（检索条件）+ 进入上下文后须说服 LLM 采纳目标答案（生成条件）。
+_Avoid_: 两条件（须注明是 PoisonedRAG 两条件）
+
+**间接注入 (indirect prompt injection)**:
+经检索内容或外部数据源注入指令，使下游 agent 消费上下文时代理执行非预期动作（OWASP LLM01 / Agentic ASI06）；RAG 场景由 PyRIT `XPIATestWorkflow` 承载，非 `*Attack`。
+_Avoid_: 跨域注入、XPIA 攻击策略（XPIA 仅 workflow 名，非策略）
 
 **MCP (Model Context Protocol)**:
 模型上下文协议与工具集成面，可被滥用以提权或执行非预期动作。
@@ -80,8 +112,82 @@ _Avoid_: 答案校验器
 **A2A (Agent-to-Agent)**:
 多智能体间的通信协议与信任关系，可被消息操纵、冒充或破坏工作流。
 
+**多智能体拓扑 (multi-agent topology)**:
+目标环境中 agent 的数量、角色、消息总线（Kafka/RabbitMQ/自定义）与共享状态/记忆后端（Redis/DuckDB）的拓扑结构；是 `attack-multi-agent` 的前置发现对象（`recon-ai` 资产清单的交付物之一）。
+_Avoid_: agent 图谱、协同拓扑
+
+**消息操纵 (message manipulation)**:
+篡改或注入 agent 间传递的消息，使协同链执行非预期动作（OWASP Agentic 2026 消息信任缺失类）。
+_Avoid_: 消息篡改、报文操纵
+
+**智能体冒充 (agent impersonation)**:
+伪造某 agent 的身份（如伪造签名/sender）向其他 agent 注入指令或结果。
+_Avoid_: 身份伪造、agent 伪装
+
+**共享记忆投毒 (shared memory poisoning)**:
+向多 agent 共享的记忆/状态后端（如 Redis `conv:agentB`）写入伪造记忆，跨会话影响后续 agent 决策（与 MCP 工具投毒同属「投毒」家族但作用面不同）。
+_Avoid_: 记忆污染
+
+**上下文投毒 (context poisoning)**:
+污染共享上下文或全局 prompt，使多 agent 协同偏离既定任务（属 orchestrator/全局 prompt 面，区别于单 agent 的提示注入）。
+_Avoid_: 上下文污染
+
+## AI 供应链 (supply chain)
+
+**AI 供应链 (AI supply chain)**:
+由模型仓库、依赖源、数据管道与信任边界构成的 AI 产物供应链，可被投毒污染间接影响下游模型；对齐 OWASP Agentic ASI04 / LLM03 / LLM05。
+
+**AI向量机 (AI vector machine)**:
+计 15 分的 AI 向量主机（链内或独立机），flag 文件为 `ai_vector.txt`；是 `attack-supply-chain` 等 AI 技能的目标计分单元。与「AI 向量（攻击路径）」区分：前者指主机，后者指路径。
+
+**数据集投毒 (dataset poisoning)**:
+污染训练/检索数据，使模型或 RAG 产物偏向攻击者（OWASP LLM03）。
+
+**模型投毒 (model poisoning)**:
+植入后门权重或恶意适配器，使模型在触发条件下输出攻击者期望结果。
+
+**适配器投毒 (adapter poisoning)**:
+以恶意 LoRA/适配器文件污染基座模型的推理行为（如恶意 safetensors 适配器）。
+
+**数据管道投毒 (data pipeline poisoning)**:
+在 ETL/预处理环节注入恶意变换，污染下游数据集。
+
+**依赖投毒 (dependency poisoning)**:
+在包索引/镜像/requirements 注入恶意依赖（typosquat 或替换），构建或安装时执行非预期代码（OWASP LLM05）。仅指依赖面，区别于数据集/模型投毒。
+
+**构建触发 (build trigger)**:
+使投毒在构建或推理时执行非预期代码的触发机制（setup 钩子 / 反序列化）。
+
+**工作流破坏 (workflow disruption)**:
+偏离既定编排任务或触发误动作，使编排器执行非预期工作流（OWASP Agentic 编排层破坏）。
+_Avoid_: 流程破坏
+
+**下游决策影响取证 (downstream impact forensics)**:
+对比操纵前后协同结果，证明下游 agent 决策被影响，须含 AI 交互日志（§6.3）。
+_Avoid_: 下游影响取证
+
+**Agent Card**:
+A2A 协议中描述 agent 能力/身份的元数据卡片；`a2a-scanner` 等工具据此分析恶意 Agent Card（权限声明夸大/隐藏指令）。
+_Avoid_: agent 名片
+
 **Embedding**:
 嵌入向量，可经反演/信息提取泄露敏感数据。
+
+**embedding 反演 (embedding inversion)**:
+从 dense embedding 还原源文本的攻击（vec2text 等多步受控生成），属 OWASP LLM08 敏感信息泄露面；`attack-embeddings` 的 emb-03 攻击原语。
+_Avoid_: 向量逆推
+
+**成员推断 (membership inference)**:
+判定某样本是否属于训练/检索集的攻击；以 embedding 空间噪声邻居（Noisy Neighbors）的困惑度差为判据；emb-04 攻击原语。
+_Avoid_: 成员判定
+
+**对抗样本 (adversarial example)**:
+经细微扰动使 embedding 或检索/分类结果偏离基线的输入（HotFlip / 连续空间扰动）；emb-05 攻击原语。
+_Avoid_: 对抗扰动样本
+
+**向量库反查 (vector store lookup)**:
+直接查询向量库、从嵌入空间反查知识库文档块（越权/数据外泄面，与 `attack-rag` 共享向量面）；emb-06 攻击原语。
+_Avoid_: 向量检索提取
 
 **AI 资产 (AI asset)**:
 目标环境中承担推理/检索/编排/工具调用的可识别组件实例（LLM 引擎、模型服务、RAG、向量库、agent、MCP 工具面、护栏），是 `recon-ai` 的输出单元。
@@ -98,6 +204,42 @@ _Avoid_: 证据目录、证据汇总表
 **演练目标 (drill target)**:
 经授权用于演练的目标主机或入口（如 AIVP 实例），非 OSAI 正式考试环境，结论不外推。
 _Avoid_: 靶机、靶标
+
+## 战利品管理
+
+**战利品 (loot)**:
+红队作战全程取得的凭据、会话、flag 与攻击路径的统称；每条以编号 `L-<n>` 登记于战利品登记簿，禁止散落于对话上下文（§5.2）。
+来源：`skills/loot-manage/SKILL.md`。
+
+**战利品登记簿 (loot registry)**:
+`loot/registry.md` 的单一事实源 markdown 表，列结构固定 8 列（编号/类型/内容/来源主机/证据片段路径/时间戳/状态/双通道）；只存证据片段路径指针，不重复存储证据本体。
+来源：`skills/loot-manage/SKILL.md`。
+
+**攻击路径 (attack path)**:
+单技能内「入口 → 主机 → 横向」的路径摘要，登记于战利品登记簿「攻击路径」小节，供报告 High-Level Attack Path 复用；与「攻击链」（跨 3 台主机的计分路径）不同，不可混用。
+来源：`skills/loot-manage/SKILL.md`；`docs/research/loot-manage-canonical.md` §7。
+
+## 威胁建模
+
+**威胁模型 (threat model)**:
+`threat-model` 从资产清单产出的规划文档，含高价值资产清单、信任边界与最短路径、诱饵判定、优先级攻击图四节及质量门；驱动 §4.5 编排顺序。
+来源：`skills/threat-model/SKILL.md`。
+
+**计分分类 (score class)**:
+资产的计分归类（AI向量机 / 独立机 / 传统向量机 / 域控 / 链式入口 / 诱饵机）；分析师据 §2.2/§2.3 判定，信号不足记「不可判定」。
+来源：`docs/research/threat-model-canonical.md` §3。
+
+**信任边界 (trust boundary)**:
+资产可达性三层：同网段/域内、需先取得立足点可达、直接可达；是推导最短攻击路径的输入。
+来源：`skills/threat-model/SKILL.md` 执行体 §2。
+
+**最短攻击路径 (shortest attack path)**:
+top-N 资产从入口经横向/提权/AI 利用到 flag 的必经阶段序列，标注起止、阶段、耗时、依赖子技能；区别于单技能「攻击路径」。
+来源：`skills/threat-model/SKILL.md` 执行体 §2。
+
+**优先级攻击图 (prioritized attack graph)**:
+以最高杠杆资产为根、最短攻击路径为边、排除诱饵机的有向图，其节点顺序即 §4.5 编排顺序。
+来源：`skills/threat-model/SKILL.md` 执行体 §4。
 
 ## PyRIT 实现层
 

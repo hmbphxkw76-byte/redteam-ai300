@@ -74,11 +74,24 @@ def attack_supply_chain_targets():
                   "tests.test_attack_supply_chain_evidence_contract")
 
 
+def decoy_detect_targets():
+    """decoy-detect 业务代码集合（阶段 9 / v2 AC12 覆盖率目标）。"""
+    import importlib
+    names = ("model", "features", "timebox", "policy", "listgen",
+             "validate", "evidence", "runner", "cli")
+    mods = tuple(importlib.import_module("tools.decoy_detect." + n) for n in names)
+    return mods, ("tests.test_decoy_detect_units",
+                  "tests.test_decoy_detect_evidence_contract")
+
+
 def resolve_target(mode):
     if mode == "attack-ai-agent":
         return list(AA_MODULES), list(AA_TESTS)
     if mode == "attack-supply-chain":
         mods, tests = attack_supply_chain_targets()
+        return list(mods), list(tests)
+    if mode == "decoy-detect":
+        mods, tests = decoy_detect_targets()
         return list(mods), list(tests)
     if mode == "report-exam":
         mods, tests = report_exam_targets()
@@ -92,8 +105,11 @@ def resolve_target(mode):
         ra_mods, ra_tests = recon_ai_targets()
         am_mods, am_tests = attack_mcp_tool_targets()
         sc_mods, sc_tests = attack_supply_chain_targets()
-        return (list(AA_MODULES) + list(mods) + list(ra_mods) + list(am_mods) + list(sc_mods),
-                list(AA_TESTS) + list(tests) + list(ra_tests) + list(am_tests) + list(sc_tests))
+        dd_mods, dd_tests = decoy_detect_targets()
+        return (list(AA_MODULES) + list(mods) + list(ra_mods) + list(am_mods)
+                + list(sc_mods) + list(dd_mods),
+                list(AA_TESTS) + list(tests) + list(ra_tests) + list(am_tests)
+                + list(sc_tests) + list(dd_tests))
     raise ValueError("未知 --target：%s" % mode)
 
 
@@ -166,7 +182,8 @@ def main(argv=None):
     ap.add_argument("--min", type=float, default=0.0, help="覆盖率门槛（百分比）")
     ap.add_argument("--target", default="attack-ai-agent",
                     choices=("attack-ai-agent", "report-exam", "recon-ai",
-                             "attack-mcp-tool", "attack-supply-chain", "all"),
+                             "attack-mcp-tool", "attack-supply-chain",
+                             "decoy-detect", "all"),
                     help="被测业务代码集合（默认 attack-ai-agent，兼容既有 CI）")
     args = ap.parse_args(argv)
 

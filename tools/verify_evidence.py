@@ -30,6 +30,11 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 以脚本方式运行（`python tools/verify_evidence.py`，SKILL 执行入口的写法）时
+# sys.path[0] 是 tools/ 而非仓库根，`tools.scored_targets` 会导入失败；此处补根目录。
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
 DEFAULT_GLOSSARY = os.path.join(ROOT, "GLOSSARY.md")
 MAX_ARCHIVE_BYTES = 100 * 1024 * 1024  # §6.4
 SUBMIT_WINDOW_HOURS = 24  # §6.4.3 / S3 快照 L74
@@ -109,6 +114,21 @@ class Toolchain:
             return load_avoid_terms(glossary_path)
         except (OSError, AttributeError):
             return None
+
+    def skill_meta(self, skills_dir=None):
+        """已纳管技能的 (name, priority, scoring_unit) 三元组（vrf-02 数据源）。
+
+        复用 `scripts/validate_skill.py` 的 front-matter 解析，避免第二套解析（C1）。
+        """
+        mod = _load_module("_validate_skill_meta",
+                           os.path.join(ROOT, "scripts", "validate_skill.py"))
+        base = skills_dir or mod.DEFAULT_SKILLS_DIR
+        out = []
+        for dirname, path in mod.iter_skills(base):
+            meta, _body = mod.parse_frontmatter(mod.read(path))
+            out.append((meta.get("name", dirname), meta.get("priority", ""),
+                        meta.get("scoring_unit", "")))
+        return out
 
     def stat(self, path):
         """返回 (exists, size_bytes)。"""
@@ -191,6 +211,60 @@ def load_payload(path):
     if not isinstance(raw, dict):
         raise ValueError("载荷须为 JSON 对象")
     return normalize_payload(raw)
+
+
+_FLAG_SECTION = re.compile(
+    r"####\s*flag\s*取证[^\n]*\n(.*?)(?=\n####\s|\Z)", re.S)
+_FLAG_TOKEN = re.compile(r"OSAI\{[^}]*\}|OS[A-Z0-9-]+")
+_TARGET_FIELD = re.compile(r"\*\*目标\*\*\s*[：:]\s*`([^`]+)`")
+
+
+def _flag_of(raw):
+    """片段内的 flag 值（取证节首个 token）；仅作输入归一，不参与一致性判定。"""
+    m = _FLAG_SECTION.search(raw or "")
+    if not m:
+        return ""
+    hit = _FLAG_TOKEN.search(m.group(1))
+    return hit.group(0) if hit else ""
+
+
+def from_fragments(fragment_dir, report_md="", appendix_md="", target_points=None,
+                   panel_flags=None):
+    """由一批 `collect_evidence` 片段文件构造输入（S-1 第三入口，US-03）。
+
+    主机归属按片段 `**目标**` 字段，缺省用文件名主干；三件套判据仍委托登记簿实现（C1）。
+    """
+    reg_mod = _loot_registry()
+    if not os.path.isdir(fragment_dir):
+        raise ValueError("片段目录不存在：%s" % fragment_dir)
+    fragments, hosts = [], []
+    for name in sorted(os.listdir(fragment_dir)):
+        if not name.endswith(".md"):
+            continue
+        path = os.path.join(fragment_dir, name)
+        with open(path, "r", encoding="utf-8") as f:
+            raw = f.read()
+        m = _TARGET_FIELD.search(raw)
+        host = (m.group(1).strip() if m else os.path.splitext(name)[0])
+        pieces = reg_mod.fragment_pieces(raw)
+        fragments.append({
+            "step_id": os.path.splitext(name)[0],
+            "host": host,
+            "command": "",
+            "output": "",
+            "screenshot": "",
+            "ai_log": "",
+            "flag": _flag_of(raw),
+            "raw": raw,
+            "pieces": {k: bool(pieces.get(k))
+                       for k in ("command", "output", "screenshot")},
+        })
+        hosts.append(host)
+    payload = {"fragments": fragments, "report_md": report_md,
+               "appendix_md": appendix_md, "target_points": target_points or {},
+               "panel_flags": dict(panel_flags or {}),
+               "osid": _osid_from_name(fragment_dir)}
+    return normalize_payload(payload)
 
 
 def _osid_from_name(path):
@@ -281,9 +355,25 @@ def check_vrf01(inp, tools):
     return r
 
 
-def check_vrf02(inp):
-    """目标计分清单（§2.2 / §4.3 / ADR-0002）：8 目标键集 + 分值多重集 + 合计 100。"""
+LEVERAGE_UNITS = ("AI向量机", "独立机")
+
+
+def check_vrf02(inp, tools=None):
+    """优先级与评分杠杆一致（§4.3/ADR-0002）+ 目标计分清单（§2.2）。
+
+    ADR-0002：AI 向量是最高杠杆能力，故其技能优先级不得低于 P1（P2 即失配）；
+    计分清单侧要求 8 目标键集齐全、分值多重集与合计 100 一致。
+    """
     r = _result()
+    if tools is not None:
+        mismatched = [name for name, prio, unit in tools.skill_meta()
+                      if prio == "P2" and any(u in (unit or "") for u in LEVERAGE_UNITS)]
+        if mismatched:
+            r["ok"] = False
+            r["blocking"].append(
+                "vrf-02：高杠杆技能优先级失配（%s 为 P2，ADR-0002 要求 P0/P1）（§4.3）"
+                % "、".join(mismatched))
+            return r
     report = inp["report_md"]
     keys = [k for k in SCORED_TARGETS if k in report]
     points = inp.get("target_points") or {}
@@ -417,6 +507,8 @@ def check_vrf05(inp):
         r["blocking"].append("vrf-05：AI 交互日志未全量入 Appendix D（§6.3）")
     if not with_ai and inp["fragments"]:
         r["missing"].append("vrf-05：本次输入无 AI 交互日志（须回溯对应技能按 §6.3 补录）")
+    elif with_ai:
+        r["missing"].append("NOTE-9：AI 生成内容入正文的人工校验标注须人工核对（§5.5）")
     return r
 
 
@@ -427,6 +519,10 @@ def check_vrf06(inp):
     r["ok"] = not gap
     for a in gap:
         r["blocking"].append("vrf-06：报告缺锚点 %s（§7.1）" % a)
+    if inp["fragments"]:
+        r["missing"].append(
+            "NOTE-10：每主机五段式（枚举/利用/提权/flag 取证/证据归属）与 copy/paste 可复现性"
+            "须人工核对（§7.2，中英双语标题不固定）")
     return r
 
 
@@ -542,7 +638,7 @@ def verify(payload, require_artifacts=True, tools=None):
                 "failed_checks": list(CHECKS), "submission_ready": False}
     runners = {
         "vrf-01": lambda: check_vrf01(inp, tools),
-        "vrf-02": lambda: check_vrf02(inp),
+        "vrf-02": lambda: check_vrf02(inp, tools),
         "vrf-03": lambda: check_vrf03(inp),
         "vrf-04": lambda: check_vrf04(inp),
         "vrf-05": lambda: check_vrf05(inp),
@@ -588,6 +684,7 @@ def main(argv=None):
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument("--payload", help="JSON 载荷文件路径")
     src.add_argument("--from-loot", help="战利品登记簿路径（registry.md）")
+    src.add_argument("--fragments-dir", help="一批 collect_evidence 片段所在目录")
     ap.add_argument("--evidence-dir", help="登记簿片段路径的解析根目录")
     ap.add_argument("--report", help="报告 markdown（--from-loot 时用于 vrf-01/02/06）")
     ap.add_argument("--appendix", help="附录 markdown（--from-loot 时用于 vrf-05）")
@@ -603,6 +700,11 @@ def main(argv=None):
     try:
         if args.payload:
             payload = load_payload(args.payload)
+        elif args.fragments_dir:
+            payload = from_fragments(
+                args.fragments_dir,
+                report_md=_read(args.report) if args.report else "",
+                appendix_md=_read(args.appendix) if args.appendix else "")
         else:
             payload = from_loot(
                 args.from_loot, args.evidence_dir,

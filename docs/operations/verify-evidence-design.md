@@ -20,9 +20,10 @@
 |---|---|---|---|---|
 | `SCHEMA_VERSION` | 常量 | — | `"1.0"` | — |
 | `SCORED_TARGETS` | 常量 | — | 8 个计分目标 → 分值（AI 15 / 传统 10 / 独立 15 / 域控 5） | — |
-| `Toolchain` | 工具链对象 | 可替换的四类外部能力 | 实例 | 能力缺失时记 `pending`，不抛异常 |
+| `Toolchain` | 工具链对象 | 技能校验/技能元信息/术语表/文件 stat/归档加密 | 实例 | 能力缺失时记 `missing` 注记，不抛异常 |
 | `load_payload` | 读 JSON 载荷 | 路径 | 输入字典 | 文件缺失/JSON 非法 → `ValueError`（CLI 转退出码 2） |
-| `from_loot` | 由登记簿与片段目录构造输入 | 登记簿路径、可选片段目录 | 输入字典（与 `load_payload` 同形） | 登记簿缺失 → `ValueError` |
+| `from_loot` | 由登记簿构造输入 | 登记簿路径、片段目录、报告/附录/分值表 | 输入字典（与 `load_payload` 同形） | 登记簿缺失 → `ValueError` |
+| `from_fragments` | 由一批片段文件构造输入（US-03） | 片段目录、报告/附录/分值表/面板值 | 输入字典 | 目录不存在 → `ValueError` |
 | `verify` | 执行九项判定 | 输入字典 + `require_artifacts` + 可选 `Toolchain` | 结果字典（9 checks + 分级列表 + 结论三元组） | 不抛异常，全部落到 `blocking`/`missing`/`pending` |
 | `render_summary` | 人读摘要 | 结果字典 | 文本（阻断数/缺失数/核实闸数 + 逐条） | 空输入返回空串 |
 | `main` | CLI | argv | 退出码 0/1/2 | 用法错误 2 |

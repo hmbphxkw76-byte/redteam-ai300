@@ -10,10 +10,10 @@
 
 | AC | 对应 US | 验收条件（布尔） | 判定方式 |
 |---|---|---|---|
-| AC-01 | US-01/02/03 | 同一信息集下 `--payload <json>` 与 `--from-loot <registry>`（含 `--report`/`--appendix`）两入口 `checks` 逐键相等；只给登记簿不给报告时报告侧判据必然阻断 | `unittest` 断言字典相等 + 反例 |
+| AC-01 | US-01/02/03 | 同一信息集下 `--payload`、`--from-loot`（含 `--report`/`--appendix`）、`--fragments-dir` 三入口 `checks` 逐键相等；只给证据不给报告时报告侧判据必然阻断 | `unittest` 断言字典相等 + 反例 |
 | AC-02 | US-04 | 载荷文件不存在 / JSON 非法 / 登记簿路径不存在 → 退出码 2 且 stdout 无 `passed` 字段 | `python -m unittest tests.test_verify_evidence` |
 | AC-03 | US-05 | 注入的假技能校验器返回错误列表非空 → `vrf-01=false` 且 `blocking` 含 `vrf-01`；返回空 → `vrf-01=true` | 注入替身 + 断言 |
-| AC-04 | US-06 | 8 目标键集齐全且分值合计 == 100（AI 15/传统 10/独立 15/域控 5）→ `vrf-02=true`；缺目标或合计≠100 或单目标分值错 → `false`，`blocking` 指名目标键 | 夹具矩阵逐项断言 |
+| AC-04 | US-06 | ① 高杠杆技能（AI向量机/独立机）优先级不得为 P2（ADR-0002）② 8 目标键集齐全且分值合计 == 100 → `vrf-02=true`；任一条不符 → `false`，`blocking` 指名技能或目标键 | 夹具矩阵逐项断言 |
 | AC-05 | US-07 | 已取分步骤缺三件套任一 → `vrf-03=false` + `blocking`；未取分步骤缺件 → 仅入 `missing`，`passed` 不受影响 | 断言 `checks`/`missing` |
 | AC-06 | US-08 | 面板值 == 报告值（逐字）→ `vrf-04=true`；缺面板值或不等 → `false` + `blocking` | 两组夹具 |
 | AC-07 | US-09 | 访问证明文本取自「截图」节内联记录或显式 `access_proof` 字段（命令块不参与）：含 `whoami`/`id` 且 flag 同屏 → 通过；有无同屏文本但缺 token → 阻断；纯图片无内联文本 → 记 `NOTE-7` 人工判据 | 三类夹具 |
@@ -81,4 +81,4 @@
 | VG-4 | 真实取分不可本地复现 | 人工考试边界，夹具自证；CI 以 dry-run + 假时间戳覆盖 |
 | R-1 | 既有 10 用例回归被新判据打断 | AC-20 + 保留 `tests/test_verify_evidence.py` 全部用例；不顺从不许放宽判据 |
 
-**NOTE 标记口径**（区别于 VG 核实闸：NOTE 为「机器不可判、须人工确认」的缺口项，只进 `missing`，不阻断 `passed`、也不改变 `submission_ready` 之外的语义）：NOTE-5 提交窗口时间未提供；NOTE-6 目标分值表未提供；NOTE-7 访问证明无内联文本（纯图片）；NOTE-8 归档密码态不可判（无 7z）。VG-3/VG-4 仍按 §6 定义作为 pending 核实闸。
+**NOTE 标记口径**（区别于 VG 核实闸：NOTE 为「机器不可判、须人工确认」的缺口项，只进 `missing`，不阻断 `passed`、也不改变 `submission_ready` 之外的语义）：NOTE-5 提交窗口时间未提供；NOTE-6 目标分值表未提供；NOTE-7 访问证明无内联文本（纯图片）；NOTE-8 归档密码态不可判（无 7z）；NOTE-9 AI 生成内容入正文的人工校验标注（§5.5）；NOTE-10 每主机五段式与 copy/paste 可复现性（§7.2）。VG-3/VG-4 仍按 §6 定义作为 pending 核实闸。

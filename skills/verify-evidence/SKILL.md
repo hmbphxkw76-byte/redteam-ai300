@@ -16,7 +16,7 @@ output: 校验报告（通过/阻断 + 缺失项清单）、可机读校验结�
 
 按 §8.2 八项检查单逐项校验，复用 `loot-manage` 登记簿与各 `collect_evidence.py` 片段作为判定输入；任一阻断项不符即判定不通过、不得进入 `report-exam` 提交动作。
 
-**执行入口**（两种入口共用同一判定层；`--from-loot` 需同时给 `--report`/`--appendix` 才能判定 vrf-01/02/05/06，单凭登记簿不足以判定报告侧事项）：`python tools/verify_evidence.py --from-loot loot/registry.md`（直读登记簿双通道与证据片段）或 `--payload <json>`（消费 `report_exam` 产出的载荷）。两者均输出机读 JSON（`schema_version` + 九项 checks + 阻断/缺失/核实闸分级），退出码 0 通过 / 1 阻断 / 2 用法错误；`--no-artifacts` 为 dry-run（记核实闸 VG-3，不可提交），`--summary` 追加人读摘要。
+**执行入口**（两种入口共用同一判定层；`--from-loot` 需同时给 `--report`/`--appendix` 才能判定 vrf-01/02/05/06，单凭登记簿不足以判定报告侧事项）：`python tools/verify_evidence.py --from-loot loot/registry.md`（直读登记簿双通道与证据片段）、`--fragments-dir <dir>`（直读一批 `collect_evidence` 片段）或 `--payload <json>`（消费 `report_exam` 产出的载荷）。两者均输出机读 JSON（`schema_version` + 九项 checks + 阻断/缺失/核实闸分级），退出码 0 通过 / 1 阻断 / 2 用法错误；`--no-artifacts` 为 dry-run（记核实闸 VG-3，不可提交），`--summary` 追加人读摘要。
 
 ### vrf-01 五要素与元信息合规（检查单 1，§4.2）
 

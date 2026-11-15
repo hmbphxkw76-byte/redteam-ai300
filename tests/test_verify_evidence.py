@@ -178,18 +178,23 @@ class FakeTools(VE.Toolchain):
     """S-3 替身：技能校验结论 / 术语表 / 文件 stat 可编程。"""
 
     def __init__(self, skill_errors=None, avoid=None, sizes=None,
-                 absent=(), encrypted=None, avoid_none=False):
+                 absent=(), encrypted=None, avoid_none=False, skills=None):
         self.skill_errors = list(skill_errors or [])
         self._avoid = ["旧称"] if avoid is None else list(avoid)
         self._avoid_none = avoid_none
         self._sizes = dict(sizes or {})
         self._absent = set(absent or ())
         self._encrypted = encrypted
+        self._skills = skills if skills is not None else [
+            ("attack-ai-agent", "P0", "AI向量机"), ("attack-embeddings", "P1", "AI向量机")]
         self.skill_calls = 0
 
     def validate_skills(self, skills_dir=None):
         self.skill_calls += 1
         return list(self.skill_errors)
+
+    def skill_meta(self, skills_dir=None):
+        return list(self._skills)
 
     def avoid_terms(self, glossary_path=VE.DEFAULT_GLOSSARY):
         return None if self._avoid_none else list(self._avoid)
@@ -276,6 +281,23 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
             self.assertIs(bare["checks"]["vrf-06"], False)
             self.assertFalse(bare["passed"])
 
+    def test_AC01b_fragments_dir_entry(self):
+        """US-03：直接读一批 collect_evidence 片段，主机按 `**目标**` 归属。"""
+        with tempfile.TemporaryDirectory() as d:
+            fp = os.path.join(d, "aia-01.md")
+            with open(fp, "w", encoding="utf-8") as f:
+                f.write(FRAGMENT_MD.replace("**目标**：`10.0.0.1`",
+                                            "**目标**：`standalone`")
+                        + "\n#### flag 取证（双通道一致）\n\nOSAI{demo-flag}\n")
+            res = VE.verify(VE.from_fragments(
+                d, report_md=report_text(),
+                panel_flags={"standalone": "OSAI{demo-flag}"}), tools=FakeTools())
+            self.assertIs(res["checks"]["vrf-03"], True)
+            self.assertIs(res["checks"]["vrf-04"], True)
+            self.assertEqual(res["checks"]["vrf-01"], True)
+            with self.assertRaises(ValueError):
+                VE.from_fragments(os.path.join(d, "nope"))
+
     # --- AC-02 用法错误 ----------------------------------------------------
     def test_AC02_usage_errors_exit_2(self):
         with tempfile.TemporaryDirectory() as d:
@@ -314,6 +336,10 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
         r3 = VE.verify(base, tools=FakeTools())
         self.assertIs(r3["checks"]["vrf-02"], True)
         self.assertTrue(any("NOTE-6" in m for m in r3["missing"]))
+        p2 = VE.verify(payload(), tools=FakeTools(
+            skills=[("attack-fake", "P2", "AI向量机")]))
+        self.assertIs(p2["checks"]["vrf-02"], False)
+        self.assertTrue(any("高杠杆" in b for b in p2["blocking"]))
         no_keys = report_text().replace("chain1-host1", "")
         r4 = VE.verify(payload(report=no_keys), tools=FakeTools())
         self.assertIs(r4["checks"]["vrf-02"], False)
@@ -367,6 +393,7 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
         r2 = VE.verify(payload(frags=[frag(ai_log="prompt: p")],
                                appendix_md="prompt: p"), tools=FakeTools())
         self.assertIs(r2["checks"]["vrf-05"], True)
+        self.assertTrue(any("NOTE-9" in m for m in r2["missing"]))
 
     # --- AC-09 结构锚点 ----------------------------------------------------
     def test_AC09_each_anchor_required(self):
@@ -376,6 +403,10 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
                 r = VE.verify(payload(report=text), tools=FakeTools())
                 self.assertIs(r["checks"]["vrf-06"], False)
                 self.assertTrue(any(anchor in b for b in r["blocking"]))
+
+    def test_AC09_host_five_sections_flagged_for_manual_check(self):
+        r = VE.verify(payload(frags=[frag()]), tools=FakeTools())
+        self.assertTrue(any("NOTE-10" in m for m in r["missing"]))
 
     # --- AC-10 命名与体积 --------------------------------------------------
     def test_AC10_naming_size_and_missing_artifacts(self):
@@ -491,6 +522,15 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
         self.assertEqual(tuple(_types.SCORED_HOSTS), tuple(st.SCORED_HOSTS))
         self.assertEqual(tuple(VE.SCORED_TARGETS), tuple(st.SCORED_HOSTS))
         self.assertEqual(_types.STANDALONE_KEY, st.STANDALONE_KEY)
+
+    # --- AC-16 续：脚本直跑入口（SKILL 文档写法）必须可用 -------------------
+    def test_AC16_cli_runnable_as_script(self):
+        """`python tools/verify_evidence.py` 直跑时 sys.path[0]=tools/，须自行补仓库根。"""
+        import subprocess
+        proc = subprocess.run([sys.executable, "tools/verify_evidence.py", "--help"],
+                              cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("--from-loot", proc.stdout)
 
     # --- AC-18 下游委托不破 -----------------------------------------------
     def test_AC18_downstream_delegation_intact(self):

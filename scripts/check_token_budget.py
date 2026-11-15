@@ -38,7 +38,12 @@ BUDGETS: dict[str, int] = {
     # 超 14000 上限。属「基线 + 必要增量」（ADR-0005），术语为 v2 质量门与
     # check_glossary 必需规范词，不可删减，故上调至 15000 留 ~834B 余量。
     # 口径见 ADR-0005「基线 + 必要增量」，不删除既有内容。
-    "GLOSSARY.md": 15000,
+    # 15000 → 16500：attack-rag（D5/P0）新增 4 条 RAG 攻击面术语（知识库投毒 /
+    # 检索层操纵 / 间接注入 / 下游决策影响），并入 #203 的 A2A 术语块后实测
+    # 15895（脚本口径：LF 归一化 + UTF-8）。属「基线 + 必要增量」（ADR-0005），
+    # 术语为阶段 7 质量门与 check_glossary 必需规范词，不可删减，故上调至 16500
+    # 留 ~605B 余量以容纳并行 PR 的术语增量。
+    "GLOSSARY.md": 16500,
     "docs/governance/GOVERNANCE.md": 17000,
     "docs/operations/skill-mainline-workflow.md": 28000,
     "docs/standards/cross-ide-mainline-workflow.md": 30000,

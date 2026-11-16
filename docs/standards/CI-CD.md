@@ -173,3 +173,5 @@ agents/<name>/                  # 智能体代码（纳管对象）
 1. 本规范与 `GOVERNANCE.md` 冲突时，以官方考试事实（S1/S2/S3）与《治理规范》「必须」条款为准。
 2. 流水线变更走与业务代码相同的 S1–S4 流程；`.github/**` 与 `scripts/**` 的变更亦受门禁约束。
 3. 本规范修订须更新版本号，并以 Git diff 为唯一变更记录。
+4. 各阶段前后及三种结束状态的资源/临时/构建产物/缓存清理，见
+   `docs/operations/ci-cleanup-contract.md`（唯一事实源 `scripts/ci_cleanup.py`）。

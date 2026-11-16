@@ -4,6 +4,19 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '仅报告清理范围，不实际删除（true/false）'
+        required: false
+        default: false
+        type: boolean
+
+# 自动触发规则：tag push 触发 S5；每个作业首尾接线清理，post 以
+# if: always() 覆盖 success / failure / cancelled。可用 workflow_dispatch
+# 的 dry_run 做只读审计（仅报告清理范围，不删除）。
+env:
+  CI_CLEANUP_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'dry-run' || 'apply' }}
 
 permissions:
   contents: write
@@ -17,6 +30,11 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+      - name: 阶段前清理 (pre)
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: pre
+          mode: ${{ env.CI_CLEANUP_MODE }}
       - name: 发布前最终门禁
         run: |
           python scripts/validate_skill.py
@@ -27,8 +45,25 @@ jobs:
         run: |
           mkdir -p dist
           tar -czf dist/redteam-ai300-skills.tgz skills docs GLOSSARY.md
+      - name: 交付物存在性断言 (keep-only)
+        run: python scripts/ci_cleanup.py verify --keep-only --keep dist/redteam-ai300-skills.tgz
       - name: 创建 Release
         uses: softprops/action-gh-release@v3
         with:
           files: dist/redteam-ai300-skills.tgz
           generate_release_notes: true
+      - name: 清理已上传的本地构建产物 (clean-dist)
+        # 仅在 Release 创建成功后执行，避免失败时误删唯一副本。
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: post
+          status: ${{ job.status }}
+          mode: ${{ env.CI_CLEANUP_MODE }}
+          clean-dist: 'true'
+      - name: 阶段后清理 (post, always)
+        if: always()
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: post
+          status: ${{ job.status }}
+          mode: ${{ env.CI_CLEANUP_MODE }}

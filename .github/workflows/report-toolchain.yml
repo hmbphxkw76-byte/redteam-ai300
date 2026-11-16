@@ -15,6 +15,18 @@ on:
     branches: [main]
   push:
     branches: ['**']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '仅报告清理范围，不实际删除（true/false）'
+        required: false
+        default: false
+        type: boolean
+
+# 自动触发规则：PR / push / 手动 dispatch 均执行；post 以 if: always()
+# 覆盖 success / failure / cancelled；dry_run 时清理仅报告。
+env:
+  CI_CLEANUP_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'dry-run' || 'apply' }}
 
 permissions:
   contents: read
@@ -28,6 +40,14 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+
+      - name: 阶段前清理 (pre)
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: pre
+          mode: ${{ env.CI_CLEANUP_MODE }}
+          temp-root: ${{ runner.temp }} /tmp
+          temp-targets: ${{ runner.temp }}/attack-ai-agent-real ${{ runner.temp }}/osai-report-smoke ${{ runner.temp }}/osai-report-smoke-build.log /tmp/pandoc.tar.gz /tmp/pandoc-3.14 /tmp/typst.tar.xz /tmp/typst-x86_64-unknown-linux-musl
 
       - name: 安装固定版本渲染工具链
         run: |
@@ -105,3 +125,13 @@ jobs:
           test "$(7z l -slt "$ARC" | grep '^Path = ' | grep -vcE '\.(pdf|7z)$' || true)" -eq 0
           test "$(stat -c %s "$ARC")" -le $((100 * 1024 * 1024))
           echo "T06: PDF TOC / 无密码 / 单 PDF 成员 / ≤100MB 全部 PASS"
+
+      - name: 阶段后清理 (post, always)
+        if: always()
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: post
+          status: ${{ job.status }}
+          mode: ${{ env.CI_CLEANUP_MODE }}
+          temp-root: ${{ runner.temp }} /tmp
+          temp-targets: ${{ runner.temp }}/attack-ai-agent-real ${{ runner.temp }}/osai-report-smoke ${{ runner.temp }}/osai-report-smoke-build.log /tmp/pandoc.tar.gz /tmp/pandoc-3.14 /tmp/typst.tar.xz /tmp/typst-x86_64-unknown-linux-musl

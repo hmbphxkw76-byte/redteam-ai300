@@ -303,6 +303,22 @@ class ACTests(unittest.TestCase):
             self.assertIsInstance(evidence.ready, bool)
             self.assertIsInstance(evidence.missing(), tuple)
 
+    def test_manifest_static_paths_exist(self):
+        """回归护栏：清单内 tests/ 与实现落点均为仓库静态文件，迁移后不得失效。
+
+        evidence/*-drill 为运行时产物，不在仓库内，故不纳入本断言。
+        """
+        from tools.capstone_rehearse.inventory import STAGE_SPECS
+        for spec in STAGE_SPECS:
+            stage_id, skills, impls, tests = spec[0], spec[4], spec[5], spec[6]
+            for path in impls + tests:
+                self.assertTrue(os.path.exists(os.path.join(ROOT, path)),
+                                "%s 清单路径失效：%s" % (stage_id, path))
+            for skill in skills:
+                self.assertTrue(
+                    os.path.exists(os.path.join(ROOT, "skills", skill, "SKILL.md")),
+                    "%s 技能本体缺失：%s" % (stage_id, skill))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -9,56 +9,32 @@
 from __future__ import annotations
 
 import glob
+import json
 import os
 from typing import Dict, Iterable, Optional, Tuple
 
 from .model import Stage, StageEvidence
 
+# 单一事实源（C1）：阶段→技能/实现/证据契约测试/片段目录的登记只存在于
+# stage_manifest.json。tools/ 与 tests/ 目录重组时只改该清单，不改本模块。
+MANIFEST_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             "stage_manifest.json")
+
+
+def _load_stage_specs(path: str = MANIFEST_PATH):
+    """从 JSON 清单构建 STAGE_SPECS；保持既有 8 元组形态，下游接口不变。"""
+    with open(path, encoding="utf-8") as handle:
+        payload = json.load(handle)
+    return tuple(
+        (row["stage_id"], row["name"], row["skill"], row["phase"],
+         tuple(row["skills"]), tuple(row["implementation"]),
+         tuple(row["evidence_contract"]), tuple(row["fragment_dirs"]))
+        for row in payload["stages"]
+    )
+
+
 # (stage_id, 名称, 代表技能, 阶段, 技能集合, 实现落点, 证据契约测试, 演练片段目录)
-STAGE_SPECS = (
-    ("cr-01", "威胁建模", "threat-model", "前置",
-     ("threat-model",), ("tools/threat_model",),
-     ("tests/test_threat_model.py",), ("evidence/threat-model-drill",)),
-    ("cr-02", "侦察枚举", "recon-ai", "前置",
-     ("recon-ai",), ("tools/recon_ai",),
-     ("tests/test_recon_ai.py", "tests/test_recon_evidence_contract.py"),
-     ("evidence/recon-ai-drill",)),
-    ("cr-03", "立足点", "foothold-traditional", "前置",
-     ("foothold-traditional",), ("tools/foothold_traditional",),
-     ("tests/test_foothold_traditional_evidence_contract.py",),
-     ("evidence/foothold-traditional-drill",)),
-    ("cr-04", "链式横向 + AI 向量利用", "attack-ai-agent", "利用",
-     ("attack-ai-agent", "attack-rag", "attack-mcp-tool", "attack-embeddings",
-      "attack-multi-agent", "attack-supply-chain", "attack-infra"),
-     ("tools/attack_ai_agent", "tools/attack_rag", "tools/attack_mcp_tool",
-      "tools/attack_embeddings", "tools/attack_multi_agent",
-      "tools/attack_supply_chain", "tools/attack_infra"),
-     ("tests/test_attack_rag_evidence_contract.py",
-      "tests/test_attack_mcp_tool_evidence_contract.py",
-      "tests/test_attack_multi_agent_evidence_contract.py"),
-     ("evidence/attack-ai-agent-drill", "evidence/attack-rag-drill")),
-    ("cr-05", "独立机", "attack-mcp-tool", "利用",
-     ("attack-mcp-tool", "attack-infra"), ("tools/attack_mcp_tool", "tools/attack_infra"),
-     ("tests/test_attack_mcp_tool_evidence_contract.py",
-      "tests/test_attack_infra_evidence_contract.py"),
-     ("evidence/attack-mcp-tool-drill",)),
-    ("cr-06", "战利品沉淀", "loot-manage", "收敛",
-     ("loot-manage",), ("tools/loot_manage",),
-     ("tests/test_loot_manage.py", "tests/test_loot_manage_evidence_contract.py"),
-     ("evidence/loot-manage-drill",)),
-    ("cr-07", "域控收敛", "domain-controller", "收敛",
-     ("verify-evidence",), ("tools/verify_evidence.py",),
-     ("tests/test_verify_evidence.py",),
-     ("evidence/verify-evidence-drill",)),
-    ("cr-08", "证据校验", "verify-evidence", "收敛",
-     ("verify-evidence",), ("tools/verify_evidence.py",),
-     ("tests/test_verify_evidence.py",),
-     ("evidence/verify-evidence-drill",)),
-    ("cr-09", "报告生成", "report-exam", "收敛",
-     ("report-exam",), ("tools/report_exam",),
-     ("tests/test_report_exam.py", "tests/test_report_exam_evidence_contract.py"),
-     ("evidence/report-exam-drill",)),
-)
+STAGE_SPECS = _load_stage_specs()
 
 
 def stages_from_specs() -> Tuple[Stage, ...]:

@@ -42,7 +42,7 @@
 
 ### ⑥ 下游契约定点
 
-`tests/test_contract_drift.py` 用 golden 片段锁定 `report_exam.index.parse_fragment` 依赖的节标题结构，共享工具改动任一标题即令测试变红。
+`tests/cross/test_contract_drift.py` 用 golden 片段锁定 `report_exam.index.parse_fragment` 依赖的节标题结构，共享工具改动任一标题即令测试变红。
 
 ## 后果
 

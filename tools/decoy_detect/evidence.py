@@ -16,7 +16,12 @@ DEFAULT_TOOL = os.path.join(ROOT, "tools", "collect_evidence.py")
 
 
 class EvidenceWriter:
-    """证据写入器：子进程调用共享收集器（行为与 CLI 完全一致）。"""
+    """证据写入器：子进程调用共享收集器（行为与 CLI 完全一致）。
+
+    契约：符合 `tools/_evidence_contract.py#EvidenceWriterContract` 最小接口
+    （describe / fragment_path / emit），由 scripts/check_evidence_contract.py 校验。
+    本类为 skill 薄封装，构造签名与关键字别名保持不变。
+    """
 
     def __init__(self, out_dir, manifest="", tool_path=DEFAULT_TOOL,
                  python=None, timeout=120):

@@ -48,8 +48,8 @@
 |---|---|---|
 | B1 | 技能解剖结构 | `GOVERNANCE.md` §4.2 五要素 + §4.4 登记；`python scripts/validate_skill.py` |
 | B2 | 术语与决策一致 | `python scripts/check_glossary.py`；术语以 `GLOSSARY.md` 为准；与 ADR 冲突须显式标注（`docs/operations/domain.md`） |
-| B3 | 语法与构建 | `python -m py_compile <变更的 .py>`；`python -m unittest discover -s tests -v` |
-| B4 | 证据契约 | 每步 `tools/collect_evidence.py --step <prefix>-NN --strict`；`tests/test_<name>_evidence_contract.py` 断言三件套（命令 + 输出 + 截图）与 AI 交互日志（GOVERNANCE §6.1、§6.3） |
+| B3 | 语法与构建 | `python -m py_compile <变更的 .py>`；`python -m unittest discover -s tests -t . -t . -v` |
+| B4 | 证据契约 | 每步 `tools/collect_evidence.py --step <prefix>-NN --strict`；`tests/<skill>/test_<name>_evidence_contract.py` 断言三件套（命令 + 输出 + 截图）与 AI 交互日志（GOVERNANCE §6.1、§6.3） |
 | B5 | 证据与 flag | flag 双通道一致（面板提交值 == 报告截图/正文）；访问证明 `whoami`/`id` + flag 同屏；技术读者可 copy/paste 逐步复现（GOVERNANCE §6.1、§6.2） |
 | B6 | CI 门禁 | `docs/standards/CI-CD.md` S0–S4；本地与 CI 判定一致；存在业务代码时行覆盖率 ≥80%；Conventional Commits；受保护 `main` 仅经 PR 合并 |
 | B7 | PyRIT 版本与对象图 | `pyrit==1.1.0`；权威索引 `docs/research/pyrit-canonical-references.md`；对象图统一采用 `pyrit.executor.attack` 下的 `*Attack` 与 `OpenAIChatTarget`；出现 `pyrit.orchestrator`、`*Orchestrator`、`AzureOpenAIChatTarget` 即登记为不符合项并修正 |
@@ -181,7 +181,7 @@
 - **目标**：以 v2 为判据补齐红—绿—重构循环，用测试锁定外部行为并收敛实现。
 - **输入**：规格 v2 验收条件、阶段 8 实现、`tests/` 既有夹具、`docs/standards/CI-CD.md` S2 要求。
 - **输出**：新增 / 修订的测试用例（标准库 `unittest`）、证据契约夹具、红→绿→重构三轮记录、覆盖率数据。
-- **关键活动**：为每条验收条件写一个失败用例（红）→ 最小改动使其通过（绿）→ 重构并复跑（重构）→ 补 `tests/test_<name>_evidence_contract.py` 断言每步契约 → 运行全量测试与覆盖率 → 测试暴露规格偏差时退回阶段 8 修正并重跑其门禁。
+- **关键活动**：为每条验收条件写一个失败用例（红）→ 最小改动使其通过（绿）→ 重构并复跑（重构）→ 补 `tests/<skill>/test_<name>_evidence_contract.py` 断言每步契约 → 运行全量测试与覆盖率 → 测试暴露规格偏差时退回阶段 8 修正并重跑其门禁。
 - **验收标准**：① 每条验收条件有对应测试；② 红阶段有实际失败输出留痕；③ 全量 `unittest` 通过；④ 存在业务代码时覆盖率 ≥80%；⑤ 只测外部行为，不断言实现细节；⑥ 本地与 CI 判定一致。
 - **阶段门禁**：B3、B4、B6、B8 全项；附全量测试输出与覆盖率数字；覆盖率不足时列出未覆盖分支与修正要求。
 - **学习要点**：「红」的可信输出是测试有效性的证据；测试暴露偏差后的回退动作体现阶段门禁的闭环性。

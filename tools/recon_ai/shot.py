@@ -20,6 +20,12 @@ CANDIDATES = (
     "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser",
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
 )
+CDP_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cdp_shot.js")
+
+
+def find_node():
+    """定位 Node（CDP 截图回退依赖）；缺失时回退路径不可用，不影响主路径。"""
+    return shutil.which("node") or shutil.which("node.exe") or ""
 
 
 def find_browser():
@@ -91,13 +97,48 @@ class FakeShot(ShotCapture):
 class HeadlessShot(ShotCapture):
     """无头浏览器截图：url 面直截，POST 面渲染转录页后再截。"""
 
-    def __init__(self, browser_path=None, budget_ms=8000, size="1280,900"):
+    def __init__(self, browser_path=None, budget_ms=8000, size="1280,900",
+                 node_path=None):
         self.browser = browser_path or find_browser()
         self.budget_ms = budget_ms
         self.size = size
+        self.node = find_node() if node_path is None else node_path
 
     def describe(self):
         return "headless:%s" % (os.path.basename(self.browser) if self.browser else "none")
+
+    def _file_ok(self, path):
+        return os.path.isfile(path) and os.path.getsize(path) > 0
+
+    def _native(self, target, out):
+        cmd = [self.browser, "--headless=new", "--disable-gpu", "--no-sandbox",
+               "--hide-scrollbars", "--window-size=%s" % self.size,
+               "--virtual-time-budget=%d" % self.budget_ms,
+               "--screenshot=%s" % out, target]
+        try:
+            subprocess.run(cmd, capture_output=True, timeout=60)
+        except (OSError, subprocess.SubprocessError):
+            return False
+        return self._file_ok(out)
+
+    def _cdp(self, target, out):
+        """--screenshot 静默失败时的回退（Edge 157 本机即此情形）。"""
+        if not self.node or not os.path.isfile(CDP_SCRIPT):
+            return False
+        cmd = [self.node, CDP_SCRIPT, self.browser, target, out, self.size]
+        for _ in range(2):
+            if os.path.isfile(out):
+                try:
+                    os.remove(out)  # 清掉上次 0 字节残留，避免误判
+                except OSError:
+                    pass
+            try:
+                subprocess.run(cmd, capture_output=True, timeout=120)
+            except (OSError, subprocess.SubprocessError):
+                continue
+            if self._file_ok(out):
+                return True
+        return False
 
     def capture(self, step_id, url, out_dir, kind="url", command="", response=""):
         if not self.browser:
@@ -112,21 +153,15 @@ class HeadlessShot(ShotCapture):
                 f.write(render_transcript(command, response, url))
             target = "file:///" + tmp_html.replace("\\", "/").lstrip("/")
         out = os.path.abspath(os.path.join(out_dir, "%s-%s.png" % (step_id, kind)))
-        cmd = [self.browser, "--headless=new", "--disable-gpu", "--no-sandbox",
-               "--hide-scrollbars", "--window-size=%s" % self.size,
-               "--virtual-time-budget=%d" % self.budget_ms,
-               "--screenshot=%s" % out, target]
         try:
-            subprocess.run(cmd, capture_output=True, timeout=120)
-        except (OSError, subprocess.SubprocessError):
-            return "", ""
+            ok = self._native(target, out) or self._cdp(target, out)
         finally:
             if tmp_html and os.path.isfile(tmp_html):
                 try:
                     os.remove(tmp_html)
                 except OSError:
                     pass
-        if os.path.isfile(out) and os.path.getsize(out) > 0:
+        if ok and self._file_ok(out):
             return out, kind
         return "", ""
 

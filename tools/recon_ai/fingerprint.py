@@ -53,8 +53,11 @@ RULES = (
          Category.MODEL_SERVICE, flags=0),
     Rule("sse_content", r'"content"\s*:\s*"', "SSE 流式聊天面",
          Category.MODEL_SERVICE, flags=0),
-    # 检索链路痕迹 → RAG
-    Rule("rag_trace", r"(retriev\w*|knowledge|embedding|vector\w*|documents)",
+    # 检索链路痕迹 → RAG（限定检索语义词，避免前端产物中的泛词误报）
+    Rule("rag_trace",
+         r"(retrieved_knowledge|vector_?store|knowledge[_-]?base|similarity_search|"
+         r"\bretriever\b|embedding_model|text-embedding|"
+         r"\"embeddings?\"\s*:|langchain|llama[_-]?index|haystack)",
          "RAG 检索链路（痕迹）", Category.RAG),
     # MCP 痕迹（限定 token，避免 "tool" 泛匹配）
     Rule("mcp_trace", r"(\bmcp\w*\b|\"tools\"\s*:)", "MCP 服务面",

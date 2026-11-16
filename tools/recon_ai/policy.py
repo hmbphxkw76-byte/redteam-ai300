@@ -30,10 +30,17 @@ def gate_requests(spec, profile):
     return passive + active
 
 
-def judge_decoy(present_categories, total=7):
-    """零组件判定：把疑似诱饵主机降级并给出依据（US-23 / AC-21）。"""
+def judge_decoy(present_categories, total=7, extra_signals=0):
+    """零组件判定：把疑似诱饵主机降级并给出依据（US-23 / AC-21）。
+
+    `extra_signals` 记录非组件类但可复核的活体证据（如应用族/健康端点）；
+    非零时不判诱饵，避免把「组件不可判定但有 AI 应用面」误判为 0 分主机。
+    """
     if present_categories:
         return False, ""
+    if extra_signals:
+        return False, ("被动面 0/%d 类 AI 组件指纹，但发现 %d 项应用族/健康面活体信号；"
+                       "按「未决面」继续记录，不判诱饵" % (total, extra_signals))
     return True, ("被动面 0/%d 类 AI 组件指纹；按 SKILL.md 失败与豁免降级为轻量枚举，"
                   "%d 分钟内结束，不在 0 分主机空耗" % (total, TIMEOUT_MINUTES))
 

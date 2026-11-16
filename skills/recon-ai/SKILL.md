@@ -15,37 +15,49 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
 先以**被动信号**（响应头、部署配置、前端产物、SSE 元数据）定位暴露的 AI 入口；仅在 `--profile active` 下追加定向端口枚举（`nmap -sV -p <定向端口清单> <TARGET>`，端口数 ≤8，禁止全端口扫描），再**逐类隐蔽枚举下列 7 类 AI 组件**，每类分配独立 step_id 并**经 `tools/collect_evidence.py` 产出「确切命令 + 关键输出 + 截图」三件套证据（含五件套校验表）**，落盘至 `loot/`，供 `report-exam` 与 CI 复用（对齐 GOVERNANCE §6 / §4.2 质量门）：
 
 1. **LLM 引擎识别（recon-01）**：识别 LLM 推理引擎（vLLM、Ollama、TGI、llama.cpp、TensorRT-LLM 等）及其版本与暴露端口。
+   - 证据：`python tools/collect_evidence.py --step recon-01 --out loot/recon-01-llm-engine.md --strict`
    - 命令：`curl -s <AI_ENDPOINT>/v1/models`
-   - 证据：`python tools/collect_evidence.py --step recon-01 --cmd "curl -s <AI_ENDPOINT>/v1/models" --out loot/recon-01-llm-engine.md --shot-cmd "screenshot --region model_list" --target <AI_ENDPOINT> --strict`
 2. **模型服务枚举（recon-02）**：枚举模型服务端点、可用模型名与版本、计费/限流边界。
+   - 证据：`python tools/collect_evidence.py --step recon-02 --out loot/recon-02-model-svc.md --strict`
    - 命令：`curl -s <AI_ENDPOINT>/v1/models | jq '.[].id'`
-   - 证据：`python tools/collect_evidence.py --step recon-02 --cmd "curl -s <AI_ENDPOINT>/v1/models | jq '.[].id'" --out loot/recon-02-model-svc.md --shot-cmd "screenshot --region model_ids" --target <AI_ENDPOINT> --strict`
 3. **RAG 库探测（recon-03）**：探测 RAG 框架/库（LangChain、LlamaIndex、Haystack 等）与检索链路痕迹（错误栈、特有路径、依赖特征）。
+   - 证据：`python tools/collect_evidence.py --step recon-03 --out loot/recon-03-rag-lib.md --strict`
    - 命令：`curl -s <RAG_ENDPOINT>/<probe_path>`
-   - 证据：`python tools/collect_evidence.py --step recon-03 --cmd "curl -s <RAG_ENDPOINT>/<probe_path>" --out loot/recon-03-rag-lib.md --shot-cmd "screenshot --region rag_probe" --target <RAG_ENDPOINT> --strict`
 4. **向量库发现（recon-04）**：发现向量数据库（Milvus :19530、Weaviate :8080、Qdrant :6333、Chroma、pgvector）及其健康检查/接口暴露。
+   - 证据：`python tools/collect_evidence.py --step recon-04 --out loot/recon-04-vector-db.md --strict`
    - 命令：`curl -s <VECTOR_ENDPOINT>/healthz`
-   - 证据：`python tools/collect_evidence.py --step recon-04 --cmd "curl -s <VECTOR_ENDPOINT>/healthz" --out loot/recon-04-vector-db.md --shot-cmd "screenshot --region vector_health" --target <VECTOR_ENDPOINT> --strict`
 5. **agent 系统识别（recon-05）**：识别 agent 框架（AutoGen、CrewAI、LangGraph 等）与编排/多智能体痕迹。
+   - 证据：`python tools/collect_evidence.py --step recon-05 --out loot/recon-05-agent-sys.md --strict`
    - 命令：`curl -s <AGENT_ENDPOINT>/<agent_probe>`
-   - 证据：`python tools/collect_evidence.py --step recon-05 --cmd "curl -s <AGENT_ENDPOINT>/<agent_probe>" --out loot/recon-05-agent-sys.md --shot-cmd "screenshot --region agent_probe" --target <AGENT_ENDPOINT> --strict`
 6. **MCP·工具面发现（recon-06）**：枚举 MCP 服务、工具定义（`/tools/list`）、function-calling 面与身份边界。
+   - 证据：`python tools/collect_evidence.py --step recon-06 --out loot/recon-06-mcp.md --strict`
    - 命令：`curl -s -X POST <TARGET>/api/secrets/validate -H "Content-Type: application/json" -d '{"labId":"<LAB>","answer":"<单次错误答案>"}'`（被动枚举工具面与校验语义；字典扫描 `ffuf` 仅可在 `--profile active` 且已授权时使用，禁止爆破）
-   - 证据：`python tools/collect_evidence.py --step recon-06 --cmd "curl -s <TARGET>/api/secrets/validate -d '<PROBE>'" --out loot/recon-06-mcp.md --shot-cmd "screenshot --region mcp_probe" --target <TARGET> --strict`
 7. **护栏与输入输出探测（recon-07）**：对发现的 AI 入口做最小侵入的输入/输出探测，记录护栏行为，并汇总以上结果至 `loot/ai-assets.md`。
+   - 证据：`python tools/collect_evidence.py --step recon-07 --out loot/recon-07-guardrail.md --strict`
    - 命令：`curl -s <AI_ENDPOINT>/v1/chat/completions -H "Content-Type: application/json" -d '{"model":"<MODEL>","messages":[{"role":"user","content":"<PROBE>"}]}'`
-   - 证据：`python tools/collect_evidence.py --step recon-07 --cmd "curl -s <AI_ENDPOINT>/v1/chat/completions -d '<PROBE>'" --out loot/recon-07-guardrail.md --shot-cmd "screenshot --region chat_response" --ai-log "见 loot/recon-07-guardrail.md" --flag "AI-ASSETS-<ENGAGEMENT>-<DATE>" --target <AI_ENDPOINT> --strict`
+
+证据通用参数：所有调用另加 `--cmd "<上方命令>" --shot-cmd "screenshot --region <REGION>" --target <TARGET>`；recon-07 另加 `--ai-log` 与 flag 双通道。
 
 ## 实现范围与能力边界
 
 #### 实现范围（In scope，已实现且可执行）
 
 - 7 步 AI 资产枚举（recon-01..recon-07），每步产出结构化证据片段 + 访问证明截图。
-- 结构化资产清单（7 字段契约，markdown + JSON 双态），可被下游技能按资产ID直接复用。
+- 自适应发现：入口 → 应用族 / 基路径 / 版本（Streamlit、Gradio、Ollama、OpenAI 兼容、OpenAPI），
+  发现请求上限 12 个且只读；未知端点不猜路径，不把「未发现」写成「存在」。
+- 结构化资产清单（7 字段契约，markdown + JSON 双态）：仅 PRESENT 建资产；
+  UNDETERMINED 记入未决面与缺口台账（类别/步骤/已试端点/依据/下一步），可被下游按资产ID复用。
 - 执行分级：`passive`（默认，无状态变更的读 + 一次无害回显）／`active`（追加定向端口探测，上限 8 个）。
+- 运行隔离：每次运行写入 `runs/<run_id>/`（run.json、证据片段、MANIFEST.jsonl、verification.json、报告副本），
+  双跑不覆盖；`MANIFEST` 按运行窗口校验，避免历史记录冒充本次证据。
+- 自校验门禁 C1–C9：步骤覆盖、证据新鲜度/三件套、截图、清单一致性、判定基底、七字段契约、
+  报告结构、证据完整性、结论一致性；任一门禁不过即退出码 1，结论不由模板常量决定。
 - 证据环节：三件套 + 脚本来源与修改说明 + 模型交互留痕 + flag 双通道 + JSONL 证据清单。
-- 诱饵判定与 30 分钟时间盒；失败隔离（单面失败不阻塞其余枚举）。
-- 入口：`python tools/recon_ai/cli.py run --target <TARGET> [--profile passive|active]`。
+- 诱饵判定与 30 分钟时间盒；失败隔离（单面失败不阻塞其余枚举，但对应门禁失败）。
+- 入口：
+  - `python tools/recon_ai/cli.py run --target <TARGET> [--profile passive|active]`
+  - `python tools/recon_ai/cli.py verify --run <RUN_DIR>`
+  - `python tools/recon_ai/cli.py inventory --path <AI_ASSETS_JSON>`
 
 #### 功能边界（Boundary）
 
@@ -54,9 +66,11 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
 3. **不做全端口扫描**：默认被动；主动档仅定向端口清单，且上限 8 个。
 4. **只读**：不调用重置端点、不变更目标状态、不上传任何内容。
 5. **不落盘明文凭据**：仅记 `Bearer-<前8位哈希>` 指纹。
-6. **不生成报告与提交物**：PDF / `.7z` 命名归档属 `report-exam` 与 `verify-evidence`。
+6. **不生成考试提交物**：PDF / `.7z` 命名归档与最终提交属 `report-exam` 与 `verify-evidence`；
+   本技能只产出自身验证报告（覆盖矩阵/证据核对/缺口台账/门禁）。
 7. **不深挖诱饵**：时间盒到期即降级为轻量枚举并记录判定依据。
 8. **不推断未观测事实**：取不到版本记「不可判定」，不以产品文档替代运行时事实。
+9. **不伪造截图**：无浏览器时标注「截图待补录」并使 C4 门禁失败（退出码 1），不得以占位图充数。
 
 **准入前提**：仅限已授权目标；未获授权时只允许被动分级。
 
@@ -69,13 +83,15 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
 | `fingerprint` | 响应签名 → 产品/版本/类别 | `detect`／`primary`／`signature_summary` |
 | `probes` | 7 步声明式探测（请求 + 解析 + 判据） | `STEP_SPECS`／`JUDGES`／`find`／`parse_sse` |
 | `shot` | 访问证明截图（`url` 直截 / `transcript` 转录页） | `ShotCapture`／`HeadlessShot`／`make_shot` |
-| `evidence` | 证据落盘，委托共享收集器 | `EvidenceWriter.emit`／`load_manifest` |
+| `evidence` | 证据落盘，委托共享收集器（UTF-8 双向固定） | `EvidenceWriter.emit`／`load_manifest` |
 | `policy` | 分级门控、诱饵判定、时间盒、失败隔离 | `gate_requests`／`judge_decoy`／`FailureBudget` |
-| `inventory` | 判据 → 七字段清单 + 契约校验 | `build` |
-| `runner` | 编排：执行 → 证据 → 清单 → 验证报告 | `run_recon` |
-| `cli` | 命令行入口与退出码语义 | `main` |
+| `discovery` | 入口 → 应用族/基路径/版本，追加类端点证据 | `discover`／`DiscoveryPlan` |
+| `inventory` | 判据 → 七字段清单 + 未决面/缺口台账 | `build` |
+| `verifier` | 运行自校验 C1–C9（只读实跑产物） | `verify_run`／`finalize`／`write_verification` |
+| `runner` | 编排：发现 → 执行 → 证据 → 清单 → 门禁 → 报告 | `run_recon` |
+| `cli` | 命令行入口、门禁退出码语义 | `main` |
 
-依赖方向单向：`cli → runner → {probes, inventory, evidence, policy, shot} → {transport, fingerprint, model}`，无环。设计记录见 `docs/operations/recon-ai-design.md`。
+依赖方向单向：`cli → runner → {discovery, probes, inventory, evidence, policy, verifier, shot} → {transport, fingerprint, model}`，无环。设计记录见 `docs/operations/recon-ai-closed-loop-design.md`。
 
 ## 证据环节（对齐官方规范）
 
@@ -97,9 +113,9 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
 
 枚举全程遵守「被动优先、低频低噪、不写盘凭据」三原则，避免触发 IDS / 暴露红队存在：
 
-- **被动优先**：先以 HTTP 响应头、TLS 证书、API 自检端点等被动/低侵入信号识别组件，确有必要再做端口扫描。
-- **低频低噪**：探测节奏控制在目标正常业务波动内；避免全端口高速扫描、批量爆破式请求。
-- **不写盘凭据明文**：口令、token 等凭证线索仅以「线索指纹」形式记入资产清单（如 `凭证线索: Bearer-<前8位哈希>`），绝不将明文凭据落盘。
+- **被动优先**：以响应头、TLS、自检端点等被动信号先于端口扫描。
+- **低频低噪**：节奏贴近业务波动，禁全端口高速扫描与批量爆破。
+- **不写盘凭据明文**：凭据仅记 `Bearer-<前8位哈希>` 线索指纹，绝不落盘明文。
 
 ## 质量门
 

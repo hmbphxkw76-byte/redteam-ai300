@@ -49,7 +49,9 @@ BUDGETS: dict[str, int] = {
     # 17000，留 ~361B；属 ADR-0005「基线 + 必要增量」，不删除既有内容。
     # 17000 → 17500：并入 #229 verify-evidence 术语块后实测 17186（+186），按
     # ADR-0006「合并后实际内容 + 余量」重算，留 ~314B。
-    "GLOSSARY.md": 17500,
+    # 17500 → 18500：新增侦察闭环术语 8 条（应用族/基路径/未决面等，+993B），
+    # 压缩后实测 18233，按 ADR-0005「基线 + 必要增量」留 ~267B。
+    "GLOSSARY.md": 18500,
     "docs/governance/GOVERNANCE.md": 17000,
     "docs/operations/skill-mainline-workflow.md": 28000,
     "docs/standards/cross-ide-mainline-workflow.md": 30000,

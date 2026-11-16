@@ -6,9 +6,11 @@
   py tools/recon_ai/cli.py run --target http://192.168.40.189 --profile passive
   py tools/recon_ai/cli.py run --target http://192.168.40.189 --no-shots
   py tools/recon_ai/cli.py inventory --path evidence/recon-ai/ai-assets.json
+  py tools/recon_ai/cli.py verify --run evidence/recon-ai/runs/<run_id>
 
-退出码：0 = 完成且清单契约合规；1 = 完成但清单契约不合规；2 = 用法/参数错误。
-单步骤失败属失败隔离（记 failed_steps），不影响退出码（AC-22）。
+退出码：0 = 完成且 C1–C9 门禁 PASS；1 = 完成但门禁 BLOCKED；
+2 = 用法/参数错误。单步骤失败属失败隔离（记 failed_steps），
+但会让对应门禁失败（不静默通过）。
 """
 import argparse
 import json
@@ -19,9 +21,9 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(os.path.dirname(_HERE))
 if __package__ in (None, ""):
     sys.path.insert(0, _ROOT)
-    from tools.recon_ai import policy, runner
+    from tools.recon_ai import policy, runner, verifier
 else:
-    from . import policy, runner
+    from . import policy, runner, verifier
 
 
 def _build_parser():
@@ -42,14 +44,21 @@ def _build_parser():
 
     inv = sub.add_parser("inventory", help="读取并打印已有资产清单摘要")
     inv.add_argument("--path", required=True, help="ai-assets.json 路径")
+
+    verify = sub.add_parser("verify", help="对已有运行目录复算 C1–C9 门禁")
+    verify.add_argument("--run", required=True, help="运行目录（含 run.json）")
+    verify.add_argument("--json", action="store_true", help="以 JSON 打印门禁结果")
     return ap
 
 
 def _print_summary(report, as_json=False):
     inventory = report.inventory
+    verification = getattr(report, "verification", None)
     if as_json:
-        print(json.dumps({
+        payload = {
             "target": report.target, "profile": report.profile,
+            "run_id": getattr(report, "run_id", ""),
+            "run_dir": getattr(report, "run_dir", ""),
             "assets": len(inventory.assets),
             "undetermined": inventory.undetermined,
             "decoy_suspected": inventory.decoy_suspected,
@@ -58,9 +67,15 @@ def _print_summary(report, as_json=False):
             "evidence": report.evidence_paths,
             "inventory_md": report.inventory_md,
             "manifest": report.manifest,
-        }, ensure_ascii=False, indent=2))
+        }
+        if verification is not None:
+            payload["verdict"] = verification.verdict
+            payload["failed_checks"] = [c.name for c in verification.failed()]
+            payload["verification_json"] = getattr(report, "verification_json", "")
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
         return
-    print("目标：%s　分级：%s" % (report.target, report.profile))
+    print("目标：%s　分级：%s　运行：%s"
+          % (report.target, report.profile, getattr(report, "run_id", "-")))
     print("传输：%s　截图：%s　证据工具：%s"
           % (report.transport, report.shot, report.evidence_tool))
     print("-" * 92)
@@ -87,14 +102,32 @@ def _print_summary(report, as_json=False):
         print("质量门失败（违反 C8，不得提交）：")
         for item in report.quality_failures:
             print("  - %s" % item)
+    if verification is not None:
+        print("自校验门禁（C1–C9）：%s" % verification.verdict)
+        for check in verification.failed():
+            print("  - FAIL %s：%s" % (check.name, check.detail))
     print("产物：%s　%s　%s" % (report.inventory_md, report.inventory_json, report.report_md))
+    if getattr(report, "run_dir", ""):
+        print("运行目录：%s" % report.run_dir)
 
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
-    if not argv or argv[0] not in ("run", "inventory", "-h", "--help"):
+    if not argv or argv[0] not in ("run", "inventory", "verify", "-h", "--help"):
         argv = ["run"] + argv
     args = _build_parser().parse_args(argv)
+
+    if args.cmd == "verify":
+        result = verifier.verify_run(args.run)
+        if args.json:
+            print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+        else:
+            print("运行：%s　目标：%s　判定：%s"
+                  % (result.run_id or "-", result.target or "-", result.verdict))
+            for check in result.checks:
+                print("%s %-16s %s" % ("PASS" if check.ok else "FAIL",
+                                       check.name, check.detail))
+        return 0 if result.verdict == "PASS" else 1
 
     if args.cmd == "inventory":
         try:
@@ -131,6 +164,9 @@ def main(argv=None):
 
     _print_summary(report, as_json=args.json)
     failed = bool(report.inventory.contract_violations() or report.quality_failures)
+    verification = getattr(report, "verification", None)
+    if verification is not None and verification.verdict != "PASS":
+        failed = True
     return 1 if failed else 0
 
 

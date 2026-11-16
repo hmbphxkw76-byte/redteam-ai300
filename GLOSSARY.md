@@ -316,6 +316,44 @@ _Avoid_: 权限截图
 **纳管 (onboarding)**:
 将新增 agent/skill 组件登记入流水线与 §4.4 流程，含 PR 门禁与验收。
 
+## 侦察闭环（recon-ai）
+
+**应用族 (app family)**:
+目标 AI 应用的技术族别（Streamlit / Gradio / Ollama / OpenAI 兼容 / OpenAPI 等）；由入口页、基路径健康端点与静态产物被动识别，决定端点计划。
+_Avoid_: 应用类型、框架类型
+
+**基路径 (base path)**:
+应用在反代下的挂载前缀（如 `/chat`）；`_stcore/health` 等端点须拼在其后，根路径 404 不得推断组件不存在。
+_Avoid_: 子路径、前缀路径
+
+**端点计划 (endpoint plan)**:
+发现阶段产出的「固定模板 + 族附加」候选请求表；探测步骤按计划执行，失败项进入已试端点清单。
+_Avoid_: 探测列表
+
+**运行标识 (run_id)**:
+一轮侦察的唯一标识（时间 + 目标主机派生），用于隔离本轮证据、MANIFEST 与报告。
+_Avoid_: 会话ID、批次号
+
+**证据新鲜度 (evidence freshness)**:
+证据片段属于本轮运行的属性（路径在运行目录内且时间落在运行窗口）；旧轮残留不得计入。
+_Avoid_: 证据时效
+
+**未决面 (undetermined surface)**:
+判定为「不可判定」的组件类别；须附已试端点与响应依据，不得伪装为资产。
+_Avoid_: 未知资产
+
+**缺口台账 (gap ledger)**:
+按类别汇总未决项、已试端点、响应状态与下一步动作的报告章节。
+_Avoid_: 缺失清单
+
+**自校验 (self-verification)**:
+运行结束后对证据、清单与报告执行的 C1–C9 布尔检查；结论 `PASS`/`BLOCKED` 由检查派生。
+_Avoid_: 自检、自动检查
+
+**覆盖矩阵 (coverage matrix)**:
+七类 AI 组件 × 判定/依据/证据引用的报告表格，用于证明侦察覆盖完整。
+_Avoid_: 覆盖表
+
 ## AI 基础设施 (AI infrastructure)
 
 **模型服务器 (model server)**:

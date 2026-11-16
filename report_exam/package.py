@@ -102,7 +102,7 @@ def _payload(model: ReportModel, report_md, appendix_md, pdf_path, zip_path):
         "fragments": [{
             "step_id": f.step_id, "host": f.host, "command": f.command,
             "output": f.output, "screenshot": f.screenshot,
-            "ai_log": f.ai_log, "flag": f.flag,
+            "ai_log": f.ai_log, "flag": f.flag, "raw": f.raw,
         } for f in frags],
         "panel_flags": model.panel_flags,
         "pdf_path": pdf_path,

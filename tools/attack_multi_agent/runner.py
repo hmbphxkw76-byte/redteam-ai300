@@ -126,9 +126,12 @@ def _step_a2a_01(sess, spec):
     if int(topo.get("agent_count", 0)) < 1 and not topo.get("bus_present"):
         ctx["capability_missing"] = True
         ctx["missing_reason"] = ("未发现多 agent 拓扑/消息总线（agent 数=%d，总线=%s）；"
-                                 "按 SKILL「失败与豁免」改走 attack-ai-agent（单 agent 面）。"
+                                 "按 SKILL「失败与豁免」改走 attack-ai-agent（单 agent 面）；"
+                                 "若为疑似诱饵机（0 分、无多 agent 面），依 decoy-detect 判定后 "
+                                 "≤30 分钟内结束，不在 0 分主机空耗。"
                                  % (int(topo.get("agent_count", 0)), topo.get("bus_present")))
-        note = "疑似单 agent 或无协同面，判定改走 attack-ai-agent，不阻塞其余路径。"
+        note = ("疑似单 agent 或无协同面，判定改走 attack-ai-agent，不阻塞其余路径；"
+                "疑似诱饵机则按 ≤30 分钟时间盒结束（不在 0 分主机空耗）。")
         return _StepOutcome(observation=obs, ctx=ctx, command=cmd, note=note,
                             response_for_shot=_render(obs))
     # 恶意 Agent Card / 拓扑扫描（主演 seam）
@@ -172,7 +175,9 @@ def _step_a2a_04(sess, spec):
     before, _ = sess.memory.read_memory(key)
     obs, cmd = sess.memory.poison_memory(key, sess.prompt(spec))
     det = message_accepted(obs.text)
-    judge = before_after_diff(before, sess.prompt(spec))
+    # F2 修复：前后对照判据须以「写入确实被受理」为前提；写入被拒（如 404）时
+    # before 常为兜底页/HTML，与 payload 恒不等会误判为「部分生效」。
+    judge = det and before_after_diff(before, sess.prompt(spec))
     ctx = {"memory_written": det, "memory_changed": judge,
            "local_only": sess.runtime.local_only}
     note = "记忆写入被接受" if det else "记忆写入未接受"

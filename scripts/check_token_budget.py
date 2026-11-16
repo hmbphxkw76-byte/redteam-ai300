@@ -38,7 +38,18 @@ BUDGETS: dict[str, int] = {
     # 超 14000 上限。属「基线 + 必要增量」（ADR-0005），术语为 v2 质量门与
     # check_glossary 必需规范词，不可删减，故上调至 15000 留 ~834B 余量。
     # 口径见 ADR-0005「基线 + 必要增量」，不删除既有内容。
-    "GLOSSARY.md": 15000,
+    # 15000 → 16500：attack-rag（D5/P0）新增 4 条 RAG 攻击面术语（知识库投毒 /
+    # 检索层操纵 / 间接注入 / 下游决策影响），并入 #203 的 A2A 术语块后实测
+    # 15895（脚本口径：LF 归一化 + UTF-8）。属「基线 + 必要增量」（ADR-0005），
+    # 术语为阶段 7 质量门与 check_glossary 必需规范词，不可删减，故上调至 16500
+    # 留 ~605B 余量以容纳并行 PR 的术语增量。
+    # 16500 → 17000：attack-infra（D9/P1）新增 3 条基础设施术语（模型服务器 /
+    # 推理网关 / 降级结论，+~470B），与 attack-rag 术语块合并后实测 16639，超
+    # 16500（+139）。按 ADR-0006「取并集后按合并实际内容 + 余量重算」上调至
+    # 17000，留 ~361B；属 ADR-0005「基线 + 必要增量」，不删除既有内容。
+    # 17000 → 17500：并入 #229 verify-evidence 术语块后实测 17186（+186），按
+    # ADR-0006「合并后实际内容 + 余量」重算，留 ~314B。
+    "GLOSSARY.md": 17500,
     "docs/governance/GOVERNANCE.md": 17000,
     "docs/operations/skill-mainline-workflow.md": 28000,
     "docs/standards/cross-ide-mainline-workflow.md": 30000,
@@ -103,6 +114,11 @@ CONTRACTS: tuple[tuple[str, str], ...] = (
     (".github/workflows/ci.yml", "Token 预算与规范契约复核 (S4)"),
     (".markdownlint-cli2.jsonc", "ignores"),  # 官方报告模板豁免
     ("scripts/check_token_budget.py", "ARTIFACT_LIMITS"),
+    # 契约漂移防线（docs/operations/contract-drift-prevention.md）：单一事实源清单 +
+    # 消费者登记表 + CI 接线锚点，防「契约变更删锚点而 CI 仍全绿」。
+    ("docs/contracts/collect_evidence.contract.md", "## CHANGELOG"),
+    ("docs/contracts/consumers.md", "report-exam"),
+    (".github/workflows/ci.yml", "check_contract_manifest.py"),
 )
 
 

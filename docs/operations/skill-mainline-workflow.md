@@ -1,6 +1,6 @@
 # SKILL.md 主线落地规范（默认自动流程）
 
-> **版本** v1.1 · **状态** 生效 · **性质** 唯一可信源
+> **版本** v1.2 · **状态** 生效 · **性质** 唯一可信源
 > **适用范围**：`skills/*/SKILL.md` 全部技能，以及 `docs/skill-specs-backlog.md` 中待实例化的技能
 > **依据**：[GOVERNANCE.md](../governance/GOVERNANCE.md) §4.2 / §6 / §8 · [CI-CD.md](../standards/CI-CD.md) · [GLOSSARY.md](../../GLOSSARY.md) · [pyrit-implementation-workflow.md](pyrit-implementation-workflow.md)（PyRIT 对象映射参考）
 > **冲突优先级**：官方考试事实（S1/S2/S3）> GOVERNANCE「必须」条款 > CI-CD 门禁 > 本规范 > `pyrit-implementation-workflow.md` 历史映射草案 > 技能局部约定
@@ -225,6 +225,7 @@
 2. **每阶段观察三件事**：输入来自哪里、输出被谁消费、门禁凭什么判定 `PASS`。三者可回答即掌握该阶段。
 3. **对照阅读**：`docs/operations/pyrit-implementation-workflow.md` §3 保留 10 阶段历史映射，用于理解 PyRIT 对象映射；主线顺序以本文件为准。
 4. **门禁留痕**：门禁记录表留在本阶段交付物中，对应 issue 只汇总阶段号 / 结论 / 复验命令的**索引**（§2.4 T5），形成可回溯且不重复的审计链。
+5. **契约指针**：每次落地消费共享工具 `collect_evidence.py` 的技能前，先读 `docs/contracts/collect_evidence.contract.md`（当前 `contract_version` 与 CHANGELOG 最近一次契约变更 PR），据此对齐证据片段 / 截图状态 / flag 双通道语义，禁止基于旧契约编码（契约漂移实证见 `docs/operations/contract-drift-prevention.md`）。
 
 ---
 
@@ -233,4 +234,4 @@
 1. 本规范修订须更新版本号，并以 Git diff 为唯一变更记录（ADR-0001）。
 2. 与 `GOVERNANCE.md` 条款冲突时，按文首「冲突优先级」处理；偏离「必须」条款须按 GOVERNANCE §8.3 显式声明豁免理由并经评审。
 3. 术语以 `GLOSSARY.md` 为唯一基准；英文技能名与字段码在首次出现时附中文说明。
-4. **修订记录**：v1.1（2026-11-14）新增 §2.4「Token 预算约束」并同步 §5 第 4 条留痕口径；属执行层效率约束，不改变阶段顺序、G0 判定语义、B1–B8 内容与宪法证据要求。变更记录以 Git diff 为准。
+4. **修订记录**：v1.1（2026-11-14）新增 §2.4「Token 预算约束」并同步 §5 第 4 条留痕口径；v1.2（2026-11-15）新增 §5 第 5 条「契约指针」（共享工具契约清单 `docs/contracts/collect_evidence.contract.md` 为消费前必读）；均不改变阶段顺序、G0 判定语义、B1–B8 内容与宪法证据要求。变更记录以 Git diff 为准。

@@ -97,11 +97,16 @@ def attack_multi_agent_targets():
     """attack-multi-agent 业务代码集合（覆盖率目标；排除 pyrit_attack 重依赖）。"""
     import importlib
     names = ("model", "a2a", "scanner", "steps", "grade", "evidence",
-             "shot", "transport", "runner", "cli")
+             "shot", "transport", "runner", "cli", "poc")
     mods = tuple(importlib.import_module("tools.attack_multi_agent." + n) for n in names)
+    # SKILL.md 点名的示意脚本（顶层薄壳）：纳入覆盖率，约束「命令字面可执行」不腐化
+    scripts = ("msg_inject", "agent_impersonate", "memory_poison",
+               "context_poison", "workflow_disrupt")
+    mods += tuple(importlib.import_module("tools." + n) for n in scripts)
     return mods, ("tests.test_attack_multi_agent_units",
                   "tests.test_attack_multi_agent_runner",
-                  "tests.test_attack_multi_agent_evidence_contract")
+                  "tests.test_attack_multi_agent_evidence_contract",
+                  "tests.test_attack_multi_agent_tools")
 
 
 def attack_embeddings_targets():
@@ -121,6 +126,50 @@ def threat_model_targets():
     mods = tuple(importlib.import_module("tools.threat_model." + n) for n in names)
     return mods, ("tests.test_threat_model",
                   "tests.test_threat_model_evidence_contract")
+
+
+def verify_evidence_targets():
+    """verify-evidence 业务代码集合（阶段 9 / v2 AC-19 覆盖率目标）。"""
+    import importlib
+    mod = importlib.import_module("tools.verify_evidence")
+    return (mod,), ("tests.test_verify_evidence",)
+
+
+def attack_rag_targets():
+    """attack-rag 业务代码集合（阶段 9 / v2 US10 覆盖率目标）。"""
+    import importlib
+    names = ("model", "embedder", "harness", "poisoned_rag", "retrieval_probe",
+             "decision_diff", "xapia", "backends", "evidence", "surface",
+             "ingest", "index_tamper", "steps", "runner", "cli")
+    mods = tuple(importlib.import_module("tools.attack_rag." + n) for n in names)
+    return mods, ("tests.test_attack_rag",
+                  "tests.test_attack_rag_evidence_contract")
+
+
+def attack_infra_targets():
+    """attack-infra 业务代码集合（阶段 9 / #213 AC-20 覆盖率目标）。"""
+    import importlib
+    names = ("model", "transport", "command", "evidence", "shot",
+             "fingerprint", "inventory", "path_a", "path_b", "path_c",
+             "report", "runner", "cli", "provenance")
+    mods = tuple(importlib.import_module("tools.attack_infra." + n) for n in names)
+    return mods, ("tests.test_attack_infra_units",
+                  "tests.test_attack_infra_path_a",
+                  "tests.test_attack_infra_path_b",
+                  "tests.test_attack_infra_path_c",
+                  "tests.test_attack_infra_runner",
+                  "tests.test_attack_infra_evidence_contract")
+
+
+def tooling_automate_targets():
+    """tooling-automate 业务代码集合（阶段 9 / AC-20 覆盖率目标）。"""
+    import importlib
+    names = ("manifest", "runner", "reuse", "summary", "cli")
+    mods = tuple(importlib.import_module("tools.tooling_automate." + n) for n in names)
+    return mods, ("tests.test_tooling_manifest", "tests.test_tooling_runner",
+                  "tests.test_tooling_reuse", "tests.test_tooling_summary",
+                  "tests.test_tooling_evidence_contract",
+                  "tests.test_tooling_tdd_contract")
 
 
 def resolve_target(mode):
@@ -144,13 +193,25 @@ def resolve_target(mode):
     if mode == "threat-model":
         mods, tests = threat_model_targets()
         return list(mods), list(tests)
+    if mode == "attack-rag":
+        mods, tests = attack_rag_targets()
+        return list(mods), list(tests)
     if mode == "report-exam":
         mods, tests = report_exam_targets()
+        return list(mods), list(tests)
+    if mode == "verify-evidence":
+        mods, tests = verify_evidence_targets()
         return list(mods), list(tests)
     if mode == "recon-ai":
         return list(recon_ai_targets()[0]), list(recon_ai_targets()[1])
     if mode == "attack-mcp-tool":
         return list(attack_mcp_tool_targets()[0]), list(attack_mcp_tool_targets()[1])
+    if mode == "attack-infra":
+        mods, tests = attack_infra_targets()
+        return list(mods), list(tests)
+    if mode == "tooling-automate":
+        mods, tests = tooling_automate_targets()
+        return list(mods), list(tests)
     if mode == "all":
         mods, tests = report_exam_targets()
         ra_mods, ra_tests = recon_ai_targets()
@@ -161,12 +222,18 @@ def resolve_target(mode):
         ma_mods, ma_tests = attack_multi_agent_targets()
         em_mods, em_tests = attack_embeddings_targets()
         tm_mods, tm_tests = threat_model_targets()
+        rg_mods, rg_tests = attack_rag_targets()
+        ve_mods, ve_tests = verify_evidence_targets()
+        ai_mods, ai_tests = attack_infra_targets()
+        ta_mods, ta_tests = tooling_automate_targets()
         return (list(AA_MODULES) + list(mods) + list(ra_mods) + list(am_mods)
                 + list(sc_mods) + list(dd_mods) + list(lm_mods)
-                + list(ma_mods) + list(em_mods) + list(tm_mods),
+                + list(ma_mods) + list(em_mods) + list(tm_mods)
+                + list(rg_mods) + list(ve_mods) + list(ai_mods) + list(ta_mods),
                 list(AA_TESTS) + list(tests) + list(ra_tests) + list(am_tests)
                 + list(sc_tests) + list(dd_tests) + list(lm_tests)
-                + list(ma_tests) + list(em_tests) + list(tm_tests))
+                + list(ma_tests) + list(em_tests) + list(tm_tests)
+                + list(rg_tests) + list(ve_tests) + list(ai_tests) + list(ta_tests))
     raise ValueError("未知 --target：%s" % mode)
 
 
@@ -241,7 +308,8 @@ def main(argv=None):
                     choices=("attack-ai-agent", "report-exam", "recon-ai",
                              "attack-mcp-tool", "attack-supply-chain",
                              "decoy-detect", "loot-manage", "attack-multi-agent",
-                             "attack-embeddings", "threat-model", "all"),
+                             "attack-embeddings", "threat-model", "attack-rag",
+                             "verify-evidence", "attack-infra", "tooling-automate", "all"),
                     help="被测业务代码集合（默认 attack-ai-agent，兼容既有 CI）")
     args = ap.parse_args(argv)
 

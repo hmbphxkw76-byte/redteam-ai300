@@ -11,6 +11,7 @@ from .attacks import (FakeRagTarget, adversarial_shift, invert,
                       vector_lookup)
 from .harness import (DeterministicEmbedder, EmbeddingHarness,
                       InMemoryVectorStore, fixture_corpus)
+from .live import LiveEmbeddingClient, LiveError, LiveVectorStoreClient
 from .model import (LEVELS, STEP_IDS, AttackReport, AttackRequest, Finding,
                     StepVerdict)
 from .runner import OBJECT_GRAPH, Runtime, run_attack
@@ -21,6 +22,7 @@ __all__ = [
     "LEVELS", "STEP_IDS",
     "DeterministicEmbedder", "InMemoryVectorStore", "EmbeddingHarness",
     "fixture_corpus", "FakeRagTarget",
+    "LiveEmbeddingClient", "LiveVectorStoreClient", "LiveError",
     "invert", "membership_inference", "membership_auc", "adversarial_shift",
     "vector_lookup", "rag_impact",
 ]

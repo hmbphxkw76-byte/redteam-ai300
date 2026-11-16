@@ -13,6 +13,7 @@ evidence/
 
 # 本地 LLM 凭据（PyRIT OpenAIChatTarget 读取；含密钥，禁止提交）
 .env
+
 # 运行时战利品/侦察/证据（含目标 IP，不入库；仅 registry.md 登记簿入库）
 loot/*
 !loot/registry.md

@@ -29,10 +29,16 @@ class EstimateTokensTests(unittest.TestCase):
 
 class BudgetRulesTests(unittest.TestCase):
     def test_explicit_path_takes_precedence_over_glob(self):
+        # 显式登记路径：断言命中其键而非通配默认值；预算调整不产生脆弱断言。
+        explicit = "docs/operations/skill-mainline-workflow.md"
+        self.assertIn(explicit, ctb.BUDGETS)
+        self.assertEqual(ctb.budget_for(explicit), ctb.BUDGETS[explicit])
+        self.assertGreater(ctb.budget_for(explicit), ctb.BUDGETS["docs/operations/*.md"])
+        # 未显式登记路径：由 glob 规则命中。
         self.assertEqual(
-            ctb.budget_for("docs/operations/skill-mainline-workflow.md"), 28000
+            ctb.budget_for("docs/operations/domain.md"),
+            ctb.BUDGETS["docs/operations/*.md"],
         )
-        self.assertEqual(ctb.budget_for("docs/operations/domain.md"), 17000)
 
     def test_report_exam_has_its_own_cap(self):
         self.assertEqual(ctb.budget_for("skills/report-exam/SKILL.md"), 21000)

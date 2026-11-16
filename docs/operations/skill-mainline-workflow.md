@@ -2,7 +2,7 @@
 
 > **版本** v1.2 · **状态** 生效 · **性质** 唯一可信源
 > **适用范围**：`skills/*/SKILL.md` 全部技能，以及 `docs/skill-specs-backlog.md` 中待实例化的技能
-> **依据**：[GOVERNANCE.md](../governance/GOVERNANCE.md) §4.2 / §6 / §8 · [CI-CD.md](../standards/CI-CD.md) · [GLOSSARY.md](../../GLOSSARY.md) · [pyrit-implementation-workflow.md](pyrit-implementation-workflow.md)（PyRIT 对象映射参考）
+> **依据**：[GOVERNANCE.md](../governance/GOVERNANCE.md) §4.2 / §6 / §8 · [CI-CD.md](../standards/CI-CD.md) · [GLOSSARY.md](../../GLOSSARY.md) · [pyrit-implementation-workflow.md](pyrit-implementation-workflow.md)（PyRIT 对象映射参考） · [osai-ai300-framework-decision.md](osai-ai300-framework-decision.md)（框架选型决策） · [osai-skill-framework-matrix.md](osai-skill-framework-matrix.md)（技能×框架组合对照）
 > **冲突优先级**：官方考试事实（S1/S2/S3）> GOVERNANCE「必须」条款 > CI-CD 门禁 > 本规范 > `pyrit-implementation-workflow.md` 历史映射草案 > 技能局部约定
 
 ---
@@ -29,6 +29,15 @@
 6. **阶段门禁**：每阶段收尾执行 §2 的 G0；结论为 `PASS` 才进入下一阶段。
 7. **三层隔离前置强制**：每个主线任务必须在独立 worktree + 独立 `feat/*` 分支上落地，用 `python scripts/mainline_worktree.py create <技能名>` 建干净基线；推送前须过 `python scripts/checkout_lock.py --check` 共享检出锁；main 级串行合并由 `ci.yml` `concurrency` + `merge_group` 保障。详见 ADR-0006（`docs/governance/adr/0006-three-layer-isolation.md`）。违反三层隔离（在共享主工作树直接落地、并发改共享文件未取并集、绕过检出锁推送）判定为不符合项。**首次在新环境启用 pre-push 钩子**：`git config core.hooksPath .githooks`（本地配置，不入 repo）。
 
+### 1.4 固定阅读要求（框架选型前置，全技能强制）
+
+每份 `SKILL.md` 主线落地前，**必须**先读以下两份资料（对 `AGENTS.md` C3 冷备默认不加载的显式例外，不随冷备策略跳过）：
+
+- `docs/research/osai-ai300-framework-decision.md`：框架选型决策（best-of-breed 分层栈结论）。
+- `docs/research/osai-skill-framework-matrix.md`：技能 × 最佳攻击框架组合对照（优先级总排序 + 逐技能明细）。
+
+强制要点：① 每次技能开发开始前必读（含 backlog 实例化、既有技能续推、PR 续做、子 agent 承接）；② 所选框架组合**必须取自矩阵对应技能条目**；③ PyRIT 仅在占优场景做主角，按矩阵指定主控框架（详见 §5 第 5 条与 B9）；④ 偏离矩阵须在规格/门禁记录中显式说明理由（GOVERNANCE §8.3）。
+
 ---
 
 ## 2. 阶段门禁协议 G0（每阶段收尾强制执行）
@@ -45,11 +54,12 @@
 | B6 | CI 门禁 | `docs/standards/CI-CD.md` S0–S4；本地与 CI 判定一致；存在业务代码时行覆盖率 ≥80%；Conventional Commits；受保护 `main` 仅经 PR 合并 |
 | B7 | PyRIT 版本与对象图 | `pyrit==1.1.0`；权威索引 `docs/research/pyrit-canonical-references.md`；对象图统一采用 `pyrit.executor.attack` 下的 `*Attack` 与 `OpenAIChatTarget`；出现 `pyrit.orchestrator`、`*Orchestrator`、`AzureOpenAIChatTarget` 即登记为不符合项并修正 |
 | B8 | 可追溯性 | 每条结论附一手来源；issue / PR / commit 互链（`Closes #x`）；推送按双通道约定各试一次即停；门禁记录留痕 |
+| B9 | 框架选型合规 | 已读两份框架资料（§1.4）；组合取自矩阵对应条目；PyRIT 仅在其占优场景做主角；偏离矩阵须显式说明理由（§1.4④） |
 
 ### 2.2 收尾动作（5 步）
 
 1. **列交付物**：逐项列出本阶段实际产出的文件、issue、命令与输出。
-2. **逐项校验**：对照 B1–B8 与本节阶段的「验收标准」逐条判定；可自动化的检查须给出确切命令与输出摘要，人工检查须给出判据与结论。
+2. **逐项校验**：对照 B1–B9 与本节阶段的「验收标准」逐条判定；可自动化的检查须给出确切命令与输出摘要，人工检查须给出判据与结论。
 3. **生成门禁记录表**，字段固定：
 
    | 编号 | 检查项 | 依据 | 实测结果（命令 + 输出摘要） | 判定 | 不符合项描述 | 修正要求（文件 + 位置 + 动作 + 复验命令） | 复验结果 | 结论 |
@@ -61,7 +71,7 @@
 
 ### 2.3 持续校验
 
-每阶段除校验自身交付物外，还须复核上游交付物未被本阶段改动破坏：上游验收标准与 B1–B8 中与本阶段相关的条目再次执行。复核失败时按 §2.2 第 4 步处置。
+每阶段除校验自身交付物外，还须复核上游交付物未被本阶段改动破坏：上游验收标准与 B1–B9 中与本阶段相关的条目再次执行。复核失败时按 §2.2 第 4 步处置。
 
 ### 2.4 Token 预算约束（适用全部 11 阶段）
 
@@ -71,7 +81,7 @@
 |---|---|---|
 | T1 | 单一事实源：B1–B8 定义、宪法条款、PyRIT API 事实、证据片段、AI 交互日志只引 `路径#锚点` | 门禁记录或规格中出现整段复述 |
 | T2 | 增量门禁：§2.2 第 3 步的表只列**本阶段变更项**；每项「实测结果」≤3 行命令输出摘要 | 出现未变更项的全量重述 |
-| T3 | 每阶段仍逐条判定 B1–B8（语义不变），但记录压缩为「基线编号 → 判定 → 证据命令」三列；完整基线定义与全量输出仅在阶段 11 汇总一次 | 阶段 1–10 重列八行完整基线定义 |
+| T3 | 每阶段仍逐条判定 B1–B9（语义不变），但记录压缩为「基线编号 → 判定 → 证据命令」三列；完整基线定义与全量输出仅在阶段 11 汇总一次 | 阶段 1–10 重列九行完整基线定义 |
 | T4 | §2.3 上游复核：实跑上游验收命令并记录退出码 / 摘要，不复述上游规格全文 | 粘贴上游正文或重复门禁表 |
 | T5 | 留痕去重：§2.2 第 5 步的 issue 评论只含「阶段号 / 结论 / 不符合项数 / 复验命令」，门禁表本身留在交付物中 | 评论重复完整门禁表 |
 | T6 | 子 agent brief 只带路径、验收命令与约束；`docs/research/` 已核实事实不再重复检索 | brief 内嵌规格 / 调研正文 |
@@ -89,17 +99,17 @@
 ### 3.1 阶段 1 — `research`（调研）
 
 - **目标**：用一手来源锁定实现所依赖的事实（API 名称、版本、行为边界），消除规格阶段的猜测。
-- **输入**：目标 `SKILL.md`；`docs/research/pyrit-canonical-references.md`；官方仓库、官方文档、源码；`GOVERNANCE.md` 与相关 ADR。
+- **输入**：目标 `SKILL.md`；`docs/research/pyrit-canonical-references.md`；§1.4 两份框架资料；官方仓库、官方文档、源码；`GOVERNANCE.md` 与相关 ADR。
 - **输出**：`docs/research/<topic>.md` 一份，逐条结论附来源 URL 与版本；列「已核实 / 待核实 / 已排除」三类清单。
 - **关键活动**：后台 agent 独立检索一手源 → 逐条回溯到拥有该事实的源 → 与 `SKILL.md` 的攻击路径逐项对齐 → 记录版本破坏性变更与禁用名称 → 标出实现前必须取证的核实闸。
 - **验收标准**：① 每条结论可定位到官方 URL / 源码位置；② 版本号明确（`pyrit==1.1.0`）；③ 每条攻击路径都有对应对象映射；④ 待核实项逐条命名且给出取证方式；⑤ 文档落盘于 `docs/research/`。
-- **阶段门禁**：B7、B8 全项；核对 G0 §2.2 表字段齐全；不符合项含「缺来源」「版本含糊」「攻击路径未映射」三类时逐条列出修正要求与复验命令。
+- **阶段门禁**：B7、B8、B9 全项；核对 G0 §2.2 表字段齐全；不符合项含「缺来源」「版本含糊」「攻击路径未映射」「框架组合未对齐矩阵」四类时逐条列出修正要求与复验命令。
 - **学习要点**：观察「事实 → 规格」的传导；规格中出现未经一手源确认的 API 名称，即本阶段未达标。
 
 ### 3.2 阶段 2 — `to-spec` ①（行为规格 / What）
 
 - **目标**：把 `SKILL.md` 声明的行为与攻击逻辑翻译成**做什么**的规格，形成可评审的用户视角描述。
-- **输入**：目标 `SKILL.md`；阶段 1 调研文档；`GLOSSARY.md`；`docs/operations/issue-tracker.md`、`triage-labels.md`、`domain.md`。
+- **输入**：目标 `SKILL.md`；阶段 1 调研文档；`GLOSSARY.md`；`docs/operations/issue-tracker.md`、`triage-labels.md`、`domain.md`；§1.4 两份框架资料。
 - **输出**：issue tracker 中规格 v1（按 `to-spec` 模板七节），标签 `ready-for-agent`；保留 `SKILL.md` 原文为行为唯一来源，不改写。
 - **关键活动**：探索代码库现状 → 用领域术语撰写 Problem Statement / Solution / 长清单 User Stories / Implementation Decisions / Testing Decisions / Out of Scope / Further Notes → 提出 seam（接缝）数量与位置并与用户核对 → 发布到 issue tracker。
 - **验收标准**：① 七节齐全；② User Stories 覆盖 `SKILL.md` 全部攻击路径与质量门；③ 术语符合 `GLOSSARY.md`；④ 与 ADR 无静默冲突；⑤ Implementation Decisions 不含具体文件路径与代码片段；⑥ seam 提案已与用户核对并记录结论。
@@ -109,7 +119,7 @@
 ### 3.3 阶段 3 — `to-spec` ②（工程规格定稿 / 可验证性与可拆解性收敛）
 
 - **目标**：以 v1 为输入做第二次独立规格化，把「做什么」收敛为**可验证、可拆解、可交接**的定稿规格 v2；这是与阶段 2 不同的产物，不是重发一次 v1。
-- **输入**：规格 v1 全文；阶段 1 待核实项的取证结果；代码库现状（`scripts/`、`tests/`、`tools/`、`.github/`）；GOVERNANCE §8.2 八项检查单；CI-CD S1–S4；`docs/research/pyrit-canonical-references.md`。
+- **输入**：规格 v1 全文；阶段 1 待核实项的取证结果；代码库现状（`scripts/`、`tests/`、`tools/`、`.github/`）；GOVERNANCE §8.2 八项检查单；CI-CD S1–S4；`docs/research/pyrit-canonical-references.md`；§1.4 两份框架资料。
 - **输出**：规格 v2 定稿（默认在 v1 同一 issue 以 `## 工程规格定稿 (v2)` 追加，保留 v1 全文并附 v1→v2 差异清单；若新建独立 issue，须在 v1 标注被取代并双向互链）；含逐条验收条件、测试决策、门禁映射、风险与核实闸。
 - **关键活动**：逐条审查 v1 User Stories 的可判定性 → 把不可判定的描述改写为布尔验收条件 → 补齐 Testing Decisions（只测外部行为、列既有参考测试）→ 把 CI 门禁映射到每条验收条件 → 收敛 seam 决策与对象图 → 记录 v1→v2 差异及理由 → 发布并留痕。
 - **验收标准**：① 每条 User Story 有对应布尔验收条件；② 每条验收条件指向具体检查命令或人工判据；③ 待核实项已关闭或转为带取证方式的核实闸；④ 差异清单逐条可追溯；⑤ 规格中不存在两套互相冲突的「当前规格」；⑥ 与阶段 2 输出内容不同且版本号递增。
@@ -159,11 +169,11 @@
 ### 3.8 阶段 8 — `implement-spec`（按规格实现）
 
 - **目标**：按 v2 + 工单产出接口完整、可编译、可验证的最小实现切片，并保持与 `SKILL.md` 行为一致。
-- **输入**：规格 v2、`ready-for-agent` 工单与 brief、设计记录、`GLOSSARY.md`、`docs/research/pyrit-canonical-references.md`。
+- **输入**：规格 v2、`ready-for-agent` 工单与 brief、设计记录、`GLOSSARY.md`、`docs/research/pyrit-canonical-references.md`；§1.4 两份框架资料。
 - **输出**：实现代码（模块、对象图构造、公开入口）、必要的配置与依赖声明、每步证据片段；变更清单。
 - **关键活动**：按工单逐片实现 → 对象图统一采用 `pyrit.executor.attack` 的 `*Attack` 与 `OpenAIChatTarget` → 外部依赖走注入点 → 每步调用 `collect_evidence.py --step <prefix>-NN --strict` → 保持 `SKILL.md` 为行为唯一来源 → 记录实现与规格的对应矩阵。
 - **验收标准**：① 每条 v2 验收条件有对应实现位置；② `py_compile` 通过；③ 对象图符合 B7；④ 每步证据三件套齐全且可 copy/paste 复现；⑤ 无硬编码凭据；⑥ 变更清单与工单一一对应。
-- **阶段门禁**：B1、B2、B3、B4、B5、B7、B8 全项；门禁记录须含每条命令的输出摘要。
+- **阶段门禁**：B1、B2、B3、B4、B5、B7、B8、B9 全项；门禁记录须含每条命令的输出摘要。
 - **学习要点**：实现阶段的产出必须**可验证**；本阶段只交付最小切片，完整测试与收敛在阶段 9。
 
 ### 3.9 阶段 9 — `tdd`（测试驱动开发）
@@ -183,7 +193,7 @@
 - **输出**：双轴并列报告（每轴发现数、最严重项、逐条分类：硬违规 / 判断项）、修复清单、复跑结果。
 - **关键活动**：固定基线并确认 diff 非空 → 并行子 agent 分别审查两轴，不合并、不重排 → 逐条分类 → 硬违规先修复并复跑门禁 → 判断项记录为改进项 → 复跑 §2.3 上游复核。
 - **验收标准**：① 两轴报告并列且各自结论完整；② 每条发现带文件位置与分类；③ 硬违规数量为 0；④ 规格覆盖矩阵无遗漏；⑤ 门禁套件全绿。
-- **阶段门禁**：B1–B8 全项；附双轴发现数与最严重项；硬违规未清零时结论为 `BLOCKED`。
+- **阶段门禁**：B1–B9 全项；附双轴发现数与最严重项；硬违规未清零时结论为 `BLOCKED`。
 - **学习要点**：两轴分离可区分「代码写得对不对」与「做的是不是要求的」；判断项不阻断交付，硬违规阻断。
 
 ### 3.11 阶段 11 — `pr-push-review`（PR 与推送前评审复合阶段）
@@ -196,7 +206,7 @@
   2. `pr`：按模板写 PR 正文，Summary 用最小可视化（树 / diff / 调用链 / Mermaid），Evidence 给出改前改后证据，Merge Danger 标注单向门 / 双向门与影响半径；正文含对齐能力域、优先级、目标计分单元、端到端演示四项。
   3. 推送与 PR：Conventional Commits → 推送前先过 `python scripts/checkout_lock.py --check`（共享检出锁，检测到并发改共享文件即阻断，须先在单一 worktree 取并集）→ `git push origin main`（SSH）失败则 `git push origin-https main`，各试一次即停 → 受保护 `main` 经 PR 合并 → 确认 CI S1–S4 全绿 → 记录 PR 与 issue 的 `Closes #x` 关联。
 - **验收标准**：① 双轴报告含每轴发现数与最严重项；② 门禁套件结果行为 `passed` 全绿；③ PR 正文四节齐全且四项纳管字段齐全；④ 推送记录含实际使用的通道与结果；⑤ CI S1–S4 全绿；⑥ 3 轮未收敛时输出未收敛清单并停在本阶段。
-- **阶段门禁**：B1–B8 全项；额外核对固定点、diff 非空、确认批次记录、PR 要素与检查名；推送失败时结论为 `BLOCKED` 并等待下次推送再试一轮。
+- **阶段门禁**：B1–B9 全项；额外核对固定点、diff 非空、确认批次记录、PR 要素与检查名；推送失败时结论为 `BLOCKED` 并等待下次推送再试一轮。
 - **学习要点**：交付前的最后一道语义闸门；「人工确认批次」与「最多 3 轮」体现可控收敛，而非无限返工。
 
 ---
@@ -225,7 +235,8 @@
 2. **每阶段观察三件事**：输入来自哪里、输出被谁消费、门禁凭什么判定 `PASS`。三者可回答即掌握该阶段。
 3. **对照阅读**：`docs/operations/pyrit-implementation-workflow.md` §3 保留 10 阶段历史映射，用于理解 PyRIT 对象映射；主线顺序以本文件为准。
 4. **门禁留痕**：门禁记录表留在本阶段交付物中，对应 issue 只汇总阶段号 / 结论 / 复验命令的**索引**（§2.4 T5），形成可回溯且不重复的审计链。
-5. **契约指针**：每次落地消费共享工具 `collect_evidence.py` 的技能前，先读 `docs/contracts/collect_evidence.contract.md`（当前 `contract_version` 与 CHANGELOG 最近一次契约变更 PR），据此对齐证据片段 / 截图状态 / flag 双通道语义，禁止基于旧契约编码（契约漂移实证见 `docs/operations/contract-drift-prevention.md`）。
+5. **框架选型前置**：技能开发前先读两份框架资料（§1.4 强制）；组合取自矩阵对应条目，PyRIT 仅在占优场景做主角，偏离须显式说明理由（§1.4③④、B9）。
+6. **契约指针**：落地消费共享工具 `collect_evidence.py` 的技能前，先读 `docs/contracts/collect_evidence.contract.md`（`contract_version` 与 CHANGELOG 最近变更 PR），对齐证据片段 / 截图状态 / flag 双通道语义，禁止基于旧契约编码（实证见 `contract-drift-prevention.md`）。
 
 ---
 
@@ -234,4 +245,4 @@
 1. 本规范修订须更新版本号，并以 Git diff 为唯一变更记录（ADR-0001）。
 2. 与 `GOVERNANCE.md` 条款冲突时，按文首「冲突优先级」处理；偏离「必须」条款须按 GOVERNANCE §8.3 显式声明豁免理由并经评审。
 3. 术语以 `GLOSSARY.md` 为唯一基准；英文技能名与字段码在首次出现时附中文说明。
-4. **修订记录**：v1.1（2026-11-14）新增 §2.4「Token 预算约束」并同步 §5 第 4 条留痕口径；v1.2（2026-11-15）新增 §5 第 5 条「契约指针」（共享工具契约清单 `docs/contracts/collect_evidence.contract.md` 为消费前必读）；均不改变阶段顺序、G0 判定语义、B1–B8 内容与宪法证据要求。变更记录以 Git diff 为准。
+4. **修订记录**：v1.1（2026-11-14）新增 §2.4「Token 预算约束」并同步 §5 第 4 条留痕口径；v1.2（2026-11-15）新增 §1.4「固定阅读要求（框架选型前置）」与 §2.1 基线 B9「框架选型合规」、§5 第 5 条「契约指针」（共享工具契约清单 `docs/contracts/collect_evidence.contract.md` 为消费前必读），并在阶段 1/2/3/8 输入、阶段 1/8/10/11 门禁、§5 操作建议中固化两份框架资料的必读与组合对齐要求；均不改变阶段顺序、G0 判定语义、B1–B8 内容与宪法证据要求。变更记录以 Git diff 为准。

@@ -63,6 +63,7 @@ class Judgement:
     version: str = ""
     signature: str = ""
     note: str = ""
+    basis: str = ""      # 判定依据（可复核的一句话，C6）
     context: dict = field(default_factory=dict)
 
 
@@ -134,12 +135,14 @@ def curl_command(method, url, json_body=None):
 # 判据（recon-01..07）
 # --------------------------------------------------------------------------
 def judge_engine(results, ctx):
-    """recon-01：从运行时响应命名模型；模型清单端点缺失时记「不存在」。"""
+    """recon-01：从运行时响应命名模型；模型清单缺失时记「不存在」。"""
     conf = results[0] if results else None
     catalog = results[1] if len(results) > 1 else None
     if conf is None or conf.error:
-        return Judgement(Existence.UNDETERMINED, note="部署配置不可达：%s"
-                         % (conf.error if conf else "无响应"))
+        return Judgement(Existence.UNDETERMINED,
+                         note="部署配置不可达：%s"
+                              % (conf.error if conf else "无响应"),
+                         basis="部署配置请求未获得响应")
     hit = fingerprint.primary(conf, Category.LLM_ENGINE)
     notes = []
     if hit:
@@ -153,9 +156,31 @@ def judge_engine(results, ctx):
         return Judgement(
             Existence.PRESENT, product=hit.product or "不可判定",
             version=hit.version or "不可判定", signature=hit.signature,
-            note="；".join(notes), context={"model": hit.product})
-    return Judgement(Existence.UNDETERMINED,
-                     note="未见 LLM 引擎运行时指纹（被动面）")
+            note="；".join(notes), basis="部署配置响应含 `llm_model_default` 字段",
+            context={"model": hit.product})
+    plan = ctx.get("plan")
+    if plan is not None and getattr(plan, "family", "unknown") != "unknown":
+        basis = ("应用族=%s，基路径=`%s`；运行时配置端点未暴露模型名"
+                 % (plan.family, plan.base_path or "/"))
+        note = "未见 LLM 引擎运行时指纹（发现阶段识别为 %s）" % plan.family
+    else:
+        basis = "部署配置与模型清单均未命中 LLM 引擎运行时指纹"
+        note = "未见 LLM 引擎运行时指纹（被动面）"
+    return Judgement(Existence.UNDETERMINED, note=note, basis=basis)
+
+
+def _model_catalog(results):
+    """从已试端点中找模型清单（OpenAI 兼容 / Ollama），返回 (结果, 产品, 依据)。"""
+    for result in results:
+        if result is None or result.error or not result.ok or is_spa_fallback(result):
+            continue
+        path = result.url.split("?")[0].rstrip("/")
+        body = result.body or ""
+        if path.endswith("/v1/models") and '"data"' in body:
+            return result, "OpenAI 兼容模型服务（/v1/models）", "模型清单含 data 数组"
+        if path.endswith("/api/tags") and '"models"' in body:
+            return result, "Ollama 模型服务（/api/tags）", "模型清单含 models 数组"
+    return None, "", ""
 
 
 def judge_model_service(results, ctx):
@@ -164,11 +189,22 @@ def judge_model_service(results, ctx):
     runs = results[1] if len(results) > 1 else None
     if chat is None or chat.error:
         return Judgement(Existence.UNDETERMINED,
-                         note="聊天端点不可达：%s" % (chat.error if chat else "无响应"))
+                         note="聊天端点不可达：%s" % (chat.error if chat else "无响应"),
+                         basis="聊天端点请求未获得响应")
     sse = parse_sse(chat.body)
+    if not sse.events:
+        catalog, product, why = _model_catalog(results)
+        if catalog is not None:
+            return Judgement(Existence.PRESENT, product=product,
+                             version="不可判定", signature=catalog.url,
+                             note="%s（HTTP %d）" % (why, catalog.status),
+                             basis="%s 返回 %s" % (catalog.url, why))
+        basis = ("聊天端点返回 SPA 回退页（非 SSE）" if is_spa_fallback(chat)
+                 else "聊天响应未含 SSE 事件")
+        return Judgement(Existence.UNDETERMINED, product="不可判定",
+                         note="未发现模型服务端点：%s（HTTP %d）"
+                              % (basis, chat.status), basis=basis)
     notes = []
-    if sse.events:
-        notes.append("SSE 事件类型：%s" % "、".join(sse.events))
     if sse.meta.get("request_id"):
         notes.append("request_id 可见（%s…）" % str(sse.meta["request_id"])[:8])
     for key in ("lab_id", "phase", "control_mode", "artifact_replay"):
@@ -177,28 +213,36 @@ def judge_model_service(results, ctx):
     if runs is not None and not runs.error:
         notes.append("运行遥测端点 HTTP %d（%s）"
                      % (runs.status, "可匿名读取" if runs.ok else "受限"))
-    existence = Existence.PRESENT if sse.events else Existence.UNDETERMINED
-    product = "SSE 流式聊天面" if sse.events else "不可判定"
-    return Judgement(existence, product=product, version="不可判定",
-                     signature="event: %s" % (sse.events[0] if sse.events else ""),
+    notes.insert(0, "SSE 事件类型：%s" % "、".join(sse.events))
+    return Judgement(Existence.PRESENT, product="SSE 流式聊天面",
+                     version="不可判定", signature="event: %s" % sse.events[0],
                      note="；".join(notes),
+                     basis="聊天端点返回 SSE 事件（%s）" % "、".join(sse.events),
                      context={"sse": sse, "chat": chat, "runs": runs,
                               "phase": str(sse.meta.get("phase", "") or "")})
 
 
 def judge_rag(results, ctx):
-    """recon-03：以检索链路痕迹判定 RAG 存在与框架族。"""
-    bundle = results[-1] if results else None
-    if bundle is None or bundle.error:
-        return Judgement(Existence.UNDETERMINED, note="前端产物不可达，无法取检索痕迹")
-    hit = fingerprint.primary(bundle, Category.RAG)
-    if hit:
-        return Judgement(Existence.PRESENT, product=hit.product,
-                         version="不可判定", signature=hit.signature,
-                         note="前端产物含检索链路痕迹（%s）→ 存在 RAG 面；具体框架不可判定"
-                         % hit.signature)
+    """recon-03：以检索链路痕迹判定 RAG 存在与框架族（扫描全部已试端点）。"""
+    if not results:
+        return Judgement(Existence.UNDETERMINED, note="无前端产物可判读",
+                         basis="未执行前端产物请求")
+    tried = 0
+    for result in results:
+        if result is None or result.error:
+            continue
+        tried += 1
+        hit = fingerprint.primary(result, Category.RAG)
+        if hit:
+            return Judgement(Existence.PRESENT, product=hit.product,
+                             version="不可判定", signature=hit.signature,
+                             note="前端产物含检索链路痕迹（%s）→ 存在 RAG 面；"
+                                  "具体框架不可判定" % hit.signature,
+                             basis="%s 命中检索痕迹" % result.url)
     return Judgement(Existence.UNDETERMINED, product="不可判定",
-                     note="未检出检索链路痕迹")
+                     note="未检出检索链路痕迹（已试 %d 个端点）" % tried,
+                     basis="已试 %d 个端点均无检索链路痕迹" % tried)
+
 
 
 def _port_list():
@@ -214,16 +258,19 @@ def judge_vector(results, ctx):
     if profile != "active" or not ports:
         return Judgement(Existence.UNDETERMINED, product="不可判定",
                          note="被动面无独立向量库端口证据；「未发现」不等于「不存在」，"
-                              "需 --profile active 定向探测（%s）" % _port_list())
+                              "需 --profile active 定向探测（%s）" % _port_list(),
+                         basis="被动档未执行向量库端口探测")
     alive = [r for r in ports if r.ok and not is_spa_fallback(r)]
     if alive:
         return Judgement(Existence.PRESENT, product="向量库（端口存活，实现不可判定）",
                          version="不可判定",
                          signature="、".join(r.url for r in alive),
-                         note="主动探测发现存活端口：%s" % "、".join(r.url for r in alive))
+                         note="主动探测发现存活端口：%s" % "、".join(r.url for r in alive),
+                         basis="定向端口存活：%s" % "、".join(r.url for r in alive))
     return Judgement(Existence.ABSENT, product="无", version="无",
                      note="主动探测：定向端口全部关闭（%s）"
-                          % "、".join(r.url for r in ports))
+                          % "、".join(r.url for r in ports),
+                     basis="主动探测 %d 个定向端口全部不可达" % len(ports))
 
 
 def judge_agent(results, ctx):
@@ -231,28 +278,61 @@ def judge_agent(results, ctx):
     schema = results[0] if results else None
     runs = results[1] if len(results) > 1 else None
     if schema is None or schema.error:
-        return Judgement(Existence.UNDETERMINED, note="编排面不可达")
+        return Judgement(Existence.UNDETERMINED, note="编排面不可达",
+                         basis="编排面请求未获得响应")
+    if is_spa_fallback(schema):
+        return Judgement(Existence.UNDETERMINED, product="不可判定",
+                         note="编排面返回 SPA 回退页（HTTP %d），无 schema 证据"
+                              % schema.status,
+                         basis="编排面响应为 SPA 回退页，不构成编排证据")
     has_param = "request_id" in (schema.body or "")
     notes = []
     if has_param:
         notes.append("实验面接口暴露 `request_id` 语义（HTTP %d）" % schema.status)
-    if runs is not None and not runs.error:
+    runs_ok = (runs is not None and not runs.error and runs.ok
+               and not is_spa_fallback(runs))
+    if runs_ok:
         notes.append("运行遥测端点 HTTP %d" % runs.status)
-    if not notes:
-        return Judgement(Existence.UNDETERMINED, note="未见编排/智能体痕迹")
+    if not has_param and not runs_ok:
+        return Judgement(Existence.UNDETERMINED, note="未见编排/智能体痕迹",
+                         basis="编排面 schema 与遥测端点均无编排痕迹")
     notes.append("依据为编排面 schema + 遥测端点；具体 agent 框架不可判定（推断）")
     return Judgement(Existence.PRESENT, product="agent 编排面（推断，框架不可判定）",
                      version="不可判定", signature="request_id schema",
-                     note="；".join(notes))
+                     note="；".join(notes),
+                     basis="实验面 schema 暴露 `request_id` 或遥测端点可读")
+
+
+def _openapi_surface(results):
+    """扫描已试端点中的 OpenAPI 描述（工具面的客观证据）。"""
+    for result in results:
+        if result is None or result.error or not result.ok or is_spa_fallback(result):
+            continue
+        if not result.url.split("?")[0].rstrip("/").endswith("/openapi.json"):
+            continue
+        body = result.body or ""
+        if '"openapi"' in body and ('"paths"' in body or '"tools"' in body):
+            return result
+    return None
 
 
 def judge_mcp(results, ctx):
     """recon-06：工具面与凭据校验预言机（含 200+success:false 语义）。"""
     oracle = results[0] if results else None
-    if oracle is None or oracle.error:
-        return Judgement(Existence.UNDETERMINED, note="MCP 校验端点不可达")
-    body = oracle.body or ""
+    body = (oracle.body or "") if oracle is not None else ""
     explicit = re.search(r'"success"\s*:\s*(true|false)', body)
+    openapi = None
+    if oracle is None or oracle.error or (not explicit and oracle.status != 422):
+        openapi = _openapi_surface(results)
+        if openapi is not None:
+            return Judgement(Existence.PRESENT, product="OpenAPI 工具面",
+                             version="不可判定", signature="openapi.json",
+                             note="`/openapi.json` 可匿名读取（HTTP %d），暴露工具面契约"
+                                  % openapi.status,
+                             basis="%s 返回 OpenAPI 描述" % openapi.url)
+    if oracle is None or oracle.error:
+        return Judgement(Existence.UNDETERMINED, note="MCP 校验端点不可达",
+                         basis="MCP 校验端点请求未获得响应")
     notes = []
     if explicit:
         notes.append("失败语义为 HTTP %d + `success:%s`（禁以状态码判失败）"
@@ -260,11 +340,14 @@ def judge_mcp(results, ctx):
     if oracle.status == 422:
         notes.append("参数校验 422 暴露字段名，可枚举工具面契约")
     if not explicit and oracle.status != 422:
-        return Judgement(Existence.UNDETERMINED, note="未见 MCP 工具面痕迹")
+        return Judgement(Existence.UNDETERMINED, note="未见 MCP 工具面痕迹",
+                         basis="校验端点无 success 语义且无 OpenAPI 工具面")
     notes.append("身份边界：匿名可调用校验接口")
     return Judgement(Existence.PRESENT, product="凭据校验预言机（MCP 信任边界面）",
                      version="不可判定", signature=explicit.group(0) if explicit else "422 schema",
-                     note="；".join(notes))
+                     note="；".join(notes),
+                     basis=("校验端点返回 `%s`" % explicit.group(0)) if explicit
+                     else "校验端点返回 422 schema")
 
 
 def judge_guardrail(results, ctx):
@@ -272,8 +355,16 @@ def judge_guardrail(results, ctx):
     chat = ctx.get("reuse_chat")
     headers = ctx.get("headers") or {}
     if chat is None or chat.error:
-        return Judgement(Existence.UNDETERMINED, note="无聊天响应可判读")
+        return Judgement(Existence.UNDETERMINED, note="无聊天响应可判读",
+                         basis="未获得聊天端点响应")
     sse = parse_sse(chat.body)
+    if not sse.events or is_spa_fallback(chat):
+        missing = missing_security_headers(headers)
+        note = "聊天端点未返回 SSE（HTTP %d），无法判读护栏行为" % chat.status
+        if missing:
+            note += "；缺失安全响应头：%s" % "、".join(missing)
+        return Judgement(Existence.UNDETERMINED, product="不可判定",
+                         note=note, basis="聊天响应非 SSE（SPA 回退页或无事件）")
     notes, behavior = [], ""
     if ECHO_MARKER in sse.text:
         behavior = "放行原样回显"
@@ -292,8 +383,10 @@ def judge_guardrail(results, ctx):
     notes.append("control_mode=%s" % (sse.meta.get("control_mode") or "未知"))
     return Judgement(Existence.PRESENT, product="护栏（%s）" % behavior,
                      version="不可判定", signature=behavior,
-                     note="；".join(notes), context={"behavior": behavior,
-                                                     "missing_headers": missing})
+                     note="；".join(notes), basis="聊天响应 SSE 文本可判读",
+                     context={"behavior": behavior,
+                              "missing_headers": missing})
+
 
 
 JUDGES: Dict[str, Callable] = {

@@ -18,7 +18,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from tools.recon_ai import cli, probes, shot, transport  # noqa: E402
+from tools.recon_ai import cli, fingerprint, probes, shot, transport  # noqa: E402
 from tools.recon_ai import runner as runner_mod  # noqa: E402
 from tools.recon_ai.model import Asset, AssetInventory, Category, Existence  # noqa: E402
 
@@ -133,6 +133,29 @@ class ShotTests(unittest.TestCase):
         self.assertEqual(capture.capture("s", "u", tempfile.gettempdir()), ("", ""))
         self.assertIn("none", capture.describe())
 
+    def test_headless_falls_back_to_cdp_when_native_screenshot_fails(self):
+        def fake_run(cmd, **kwargs):
+            if "--screenshot=" in " ".join(cmd):
+                return mock.Mock(returncode=0)
+            with open(cmd[4], "wb") as f:
+                f.write(b"\x89PNG\r\n\x1a\nCDP")
+            return mock.Mock(returncode=0)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            capture = shot.HeadlessShot(browser_path="browser.exe", node_path="node")
+            with mock.patch.object(shot.subprocess, "run", side_effect=fake_run):
+                path, kind = capture.capture("s", "http://t", tmp)
+        self.assertEqual(kind, "url")
+        self.assertTrue(path.endswith("s-url.png"))
+
+    def test_cdp_disabled_without_node(self):
+        capture = shot.HeadlessShot(browser_path="browser.exe", node_path="")
+        with mock.patch.object(shot.subprocess, "run",
+                               return_value=mock.Mock(returncode=0)) as run:
+            with tempfile.TemporaryDirectory() as tmp:
+                self.assertEqual(capture.capture("s", "http://t", tmp), ("", ""))
+        self.assertEqual(run.call_count, 1)  # 仅原生路径尝试一次
+
     def test_make_shot_respects_switch(self):
         self.assertEqual(shot.make_shot(enabled=False).describe(), "none")
 
@@ -144,6 +167,34 @@ class ShotTests(unittest.TestCase):
                 self.assertEqual(shot.find_browser(), name)
         finally:
             os.remove(name)
+
+
+class BaseTargetTests(unittest.TestCase):
+    def test_file_target_normalized_to_origin(self):
+        self.assertEqual(runner_mod._base_target("http://h/reports/x.html"),
+                         "http://h")
+        self.assertEqual(runner_mod._base_target("http://h/chat"), "http://h/chat")
+
+
+class FingerprintTests(unittest.TestCase):
+    @staticmethod
+    def _result(body, content_type="application/javascript"):
+        return runner_mod.ProbeResult(step_id="recon-03", url="http://t/bundle.js",
+                                      status=200, body=body, content_type=content_type)
+
+    def test_frontend_identifier_embedding_id_is_not_rag(self):
+        # Streamlit 前端包中的 embeddingId 是普通标识符，不构成 RAG 痕迹
+        self.assertIsNone(fingerprint.primary(self._result("var embeddingId=1;"),
+                                              Category.RAG))
+
+    def test_embedding_model_is_rag(self):
+        match = fingerprint.primary(self._result('{"embedding_model":"bge-m3"}'),
+                                    Category.RAG)
+        self.assertIsNotNone(match)
+
+    def test_retrieved_knowledge_is_rag(self):
+        self.assertIsNotNone(fingerprint.primary(
+            self._result("var retrieved_knowledge=1;"), Category.RAG))
 
 
 class ProbeParsingTests(unittest.TestCase):

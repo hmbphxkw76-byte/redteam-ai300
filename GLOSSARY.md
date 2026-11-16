@@ -316,6 +316,10 @@ _Avoid_: 权限截图
 **纳管 (onboarding)**:
 将新增 agent/skill 组件登记入流水线与 §4.4 流程，含 PR 门禁与验收。
 
+## 侦察闭环（recon-ai）
+
+术语（应用族/基路径/运行标识/未决面/缺口台账/自校验）见 `docs/operations/recon-ai-closed-loop-design.md`。
+_Avoid_: 应用类型、子路径、证据时效、未知资产、自验证、覆盖表
 ## AI 基础设施 (AI infrastructure)
 
 **模型服务器 (model server)**:

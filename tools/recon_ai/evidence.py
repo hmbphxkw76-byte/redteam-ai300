@@ -72,8 +72,14 @@ class EvidenceWriter:
             cmd += ["--manifest", self.manifest]
         if strict:
             cmd += ["--strict"]
+        # Windows 子进程默认走 GBK：显式 UTF-8 两侧一致，非法字节以替换符降级，
+        # 避免父进程 UnicodeDecodeError 丢掉整份证据（0xce 事故根因）。
+        env = dict(os.environ)
+        env["PYTHONUTF8"] = "1"
+        env["PYTHONIOENCODING"] = "utf-8"
         proc = subprocess.run(cmd, input=output or "", capture_output=True,
-                              text=True, encoding="utf-8", timeout=self.timeout)
+                              text=True, encoding="utf-8", errors="replace",
+                              env=env, timeout=self.timeout)
         return out, proc.returncode, (proc.stderr or "").strip()
 
 

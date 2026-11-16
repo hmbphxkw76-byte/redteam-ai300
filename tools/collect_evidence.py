@@ -342,6 +342,13 @@ def build_manifest_record(step_id, command, report, timestamp, profile="",
 
 
 def main(argv=None):
+    # 统一 UTF-8 读写：Windows 默认 GBK 会把中文输出/命令按错误编码解码，
+    # 导致 strict 质量门误报或父进程解码失败。非法字节以替换符降级，不中断取证。
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     ap = argparse.ArgumentParser(
         description="把一次攻击/侦察步骤打包为结构化 markdown 证据片段"
                     "（对齐 GOVERNANCE §质量门 / §6）。",

@@ -137,6 +137,7 @@ class AssetInventory:
     timebox_minutes: int = 30
     failed_steps: List[str] = field(default_factory=list)
     undetermined: List[str] = field(default_factory=list)
+    gaps: List[dict] = field(default_factory=list)
 
     @classmethod
     def create(cls, target, profile, assets=None, **kwargs):
@@ -151,8 +152,8 @@ class AssetInventory:
     def contract_violations(self):
         """返回契约违规描述列表；空列表即合规（AC-13）。"""
         problems = []
-        if not self.assets:
-            problems.append("资产清单为空：未产出任何资产（应至少记录不可判定类别）")
+        if not self.assets and not (self.undetermined or self.gaps):
+            problems.append("资产清单为空：未产出任何资产或未决面（应至少记录不可判定类别）")
         seen = set()
         for asset in self.assets:
             miss = asset.missing_fields()
@@ -174,6 +175,7 @@ class AssetInventory:
             "timebox_minutes": self.timebox_minutes,
             "failed_steps": list(self.failed_steps),
             "undetermined": list(self.undetermined),
+            "gaps": list(self.gaps),
             "assets": [a.to_dict() for a in self.assets],
         }
 
@@ -199,6 +201,20 @@ class AssetInventory:
                 a.credential_hint or "无", a.evidence_step))
         if self.undetermined:
             lines += ["", "**不可判定类别**（需主动探测或人工确认）：%s" % "、".join(self.undetermined)]
+        if self.gaps:
+            lines += ["", "| 类别 | 步骤 | 已试端点 | 判定依据 | 下一步 |",
+                      "|---|---|---|---|---|"]
+            for gap in self.gaps:
+                tried = gap.get("tried") or []
+                tried_text = "；".join(
+                    "%s %s→%s" % (t.get("method", ""), t.get("url", ""),
+                                  t.get("status") or t.get("error") or "无响应")
+                    for t in tried[:4]) or "无"
+                lines.append("| %s | `%s` | %s | %s | %s |" % (
+                    gap.get("category", ""), gap.get("step_id", ""),
+                    tried_text.replace("|", "\\|"),
+                    (gap.get("basis") or "无").replace("|", "\\|"),
+                    gap.get("next", "主动档定向探测或人工确认")))
         if self.failed_steps:
             lines += ["", "**失败步骤**（失败隔离，不阻塞其余枚举）：%s" % "、".join(self.failed_steps)]
         lines += ["", "> 复现：`python tools/recon_ai/cli.py run --target %s --profile %s`"

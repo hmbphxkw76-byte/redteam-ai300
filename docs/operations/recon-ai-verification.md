@@ -168,7 +168,7 @@ python scripts/validate_skill.py && python scripts/check_glossary.py \
 4. 截图失败时 C4 判 `BLOCKED` 且退出码 1，不以占位图充数；CDP 失败重试 1 次。
 5. GLOSSARY 术语块超预算且共享文件与其他 worktree 并发 → SKILL 压缩重复证据行；GLOSSARY 改为指针（术语定义留设计文档）至 17491/17500，未改共享预算脚本。
 
-**门禁记录（阶段 8 / 9 / 10）**
+### 门禁记录（阶段 8 / 9 / 10）
 
 | 编号 | 检查项 | 实测（命令 + 摘要） | 判定 |
 |---|---|---|---|
@@ -185,4 +185,3 @@ python scripts/validate_skill.py && python scripts/check_glossary.py \
 **阶段 8–10 结论**：`PASS`（不符合项 0）。**审查方式限制**：子 agent 类型被运行配置禁用，阶段 10 改为主会话按 Standards/Spec 两轴顺序自审，未做独立第三方复核。
 
 **基线限制（与本次变更无 diff）**：全量 825 用例中 3 失败 + 6 错误——`test_tooling_*` 因 `tests` 包导入路径缺失、`test_attack_ai_agent_runner` 因未安装 pyrit、`capstone` 规格 10091B 超 10000B；本分支未修改相关文件。
-

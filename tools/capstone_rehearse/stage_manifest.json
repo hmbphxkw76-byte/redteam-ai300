@@ -7,61 +7,129 @@
       "name": "威胁建模",
       "skill": "threat-model",
       "phase": "前置",
-      "skills": ["threat-model"],
-      "implementation": ["tools/threat_model"],
-      "evidence_contract": ["tests/test_threat_model.py"],
-      "fragment_dirs": ["evidence/threat-model-drill"]
+      "skills": [
+        "threat-model"
+      ],
+      "implementation": [
+        "tools/threat_model"
+      ],
+      "evidence_contract": [
+        "tests/threat_model/test_threat_model.py"
+      ],
+      "fragment_dirs": [
+        "evidence/threat-model-drill"
+      ]
     },
     {
       "stage_id": "cr-02",
       "name": "侦察枚举",
       "skill": "recon-ai",
       "phase": "前置",
-      "skills": ["recon-ai"],
-      "implementation": ["tools/recon_ai"],
-      "evidence_contract": ["tests/test_recon_ai.py", "tests/test_recon_evidence_contract.py"],
-      "fragment_dirs": ["evidence/recon-ai-drill"]
+      "skills": [
+        "recon-ai"
+      ],
+      "implementation": [
+        "tools/recon_ai"
+      ],
+      "evidence_contract": [
+        "tests/recon_ai/test_recon_ai.py",
+        "tests/recon_ai/test_recon_evidence_contract.py"
+      ],
+      "fragment_dirs": [
+        "evidence/recon-ai-drill"
+      ]
     },
     {
       "stage_id": "cr-03",
       "name": "立足点",
       "skill": "foothold-traditional",
       "phase": "前置",
-      "skills": ["foothold-traditional"],
-      "implementation": ["skills/foothold-traditional/SKILL.md"],
+      "skills": [
+        "foothold-traditional"
+      ],
+      "implementation": [
+        "skills/foothold-traditional/SKILL.md"
+      ],
       "implementation_note": "foothold-traditional 为 Prompt-only 技能，无 tools/ 实现包；其实现落点即 SKILL.md 本体。原 tools/foothold_traditional 为悬空路径，已订正。",
-      "evidence_contract": ["tests/test_foothold_traditional_evidence_contract.py"],
-      "fragment_dirs": ["evidence/foothold-traditional-drill"]
+      "evidence_contract": [
+        "tests/foothold_traditional/test_foothold_traditional_evidence_contract.py"
+      ],
+      "fragment_dirs": [
+        "evidence/foothold-traditional-drill"
+      ]
     },
     {
       "stage_id": "cr-04",
       "name": "链式横向 + AI 向量利用",
       "skill": "attack-ai-agent",
       "phase": "利用",
-      "skills": ["attack-ai-agent", "attack-rag", "attack-mcp-tool", "attack-embeddings", "attack-multi-agent", "attack-supply-chain", "attack-infra"],
-      "implementation": ["tools/attack_ai_agent", "tools/attack_rag", "tools/attack_mcp_tool", "tools/attack_embeddings", "tools/attack_multi_agent", "tools/attack_supply_chain", "tools/attack_infra"],
-      "evidence_contract": ["tests/test_attack_rag_evidence_contract.py", "tests/test_attack_mcp_tool_evidence_contract.py", "tests/test_attack_multi_agent_evidence_contract.py"],
-      "fragment_dirs": ["evidence/attack-ai-agent-drill", "evidence/attack-rag-drill"]
+      "skills": [
+        "attack-ai-agent",
+        "attack-rag",
+        "attack-mcp-tool",
+        "attack-embeddings",
+        "attack-multi-agent",
+        "attack-supply-chain",
+        "attack-infra"
+      ],
+      "implementation": [
+        "tools/attack_ai_agent",
+        "tools/attack_rag",
+        "tools/attack_mcp_tool",
+        "tools/attack_embeddings",
+        "tools/attack_multi_agent",
+        "tools/attack_supply_chain",
+        "tools/attack_infra"
+      ],
+      "evidence_contract": [
+        "tests/attack_rag/test_attack_rag_evidence_contract.py",
+        "tests/attack_mcp_tool/test_attack_mcp_tool_evidence_contract.py",
+        "tests/attack_multi_agent/test_attack_multi_agent_evidence_contract.py"
+      ],
+      "fragment_dirs": [
+        "evidence/attack-ai-agent-drill",
+        "evidence/attack-rag-drill"
+      ]
     },
     {
       "stage_id": "cr-05",
       "name": "独立机",
       "skill": "attack-mcp-tool",
       "phase": "利用",
-      "skills": ["attack-mcp-tool", "attack-infra"],
-      "implementation": ["tools/attack_mcp_tool", "tools/attack_infra"],
-      "evidence_contract": ["tests/test_attack_mcp_tool_evidence_contract.py", "tests/test_attack_infra_evidence_contract.py"],
-      "fragment_dirs": ["evidence/attack-mcp-tool-drill"]
+      "skills": [
+        "attack-mcp-tool",
+        "attack-infra"
+      ],
+      "implementation": [
+        "tools/attack_mcp_tool",
+        "tools/attack_infra"
+      ],
+      "evidence_contract": [
+        "tests/attack_mcp_tool/test_attack_mcp_tool_evidence_contract.py",
+        "tests/attack_infra/test_attack_infra_evidence_contract.py"
+      ],
+      "fragment_dirs": [
+        "evidence/attack-mcp-tool-drill"
+      ]
     },
     {
       "stage_id": "cr-06",
       "name": "战利品沉淀",
       "skill": "loot-manage",
       "phase": "收敛",
-      "skills": ["loot-manage"],
-      "implementation": ["tools/loot_manage"],
-      "evidence_contract": ["tests/test_loot_manage.py", "tests/test_loot_manage_evidence_contract.py"],
-      "fragment_dirs": ["evidence/loot-manage-drill"]
+      "skills": [
+        "loot-manage"
+      ],
+      "implementation": [
+        "tools/loot_manage"
+      ],
+      "evidence_contract": [
+        "tests/loot_manage/test_loot_manage.py",
+        "tests/loot_manage/test_loot_manage_evidence_contract.py"
+      ],
+      "fragment_dirs": [
+        "evidence/loot-manage-drill"
+      ]
     },
     {
       "stage_id": "cr-07",
@@ -70,30 +138,53 @@
       "phase": "收敛",
       "skills": [],
       "skill_note": "域控收敛为编排阶段（GOVERNANCE §4.5「如取分」），无专属技能；空技能集的 skill_body 判据记 True（不适用≠缺失）。原 domain-controller 为计分键而非注册技能，已订正。",
-      "implementation": ["tools/scored_targets.py"],
-      "evidence_contract": ["tests/test_verify_evidence.py"],
+      "implementation": [
+        "tools/scored_targets.py"
+      ],
+      "evidence_contract": [
+        "tests/shared_tools/test_verify_evidence.py"
+      ],
       "contract_note": "cr-07 取值范围仅为 domain-controller 计分键单次提交约束（verify-evidence v2 AC-14），与 cr-08 的完整证据校验不同；两者共用该测试文件但语义不同。",
-      "fragment_dirs": ["evidence/verify-evidence-drill"]
+      "fragment_dirs": [
+        "evidence/verify-evidence-drill"
+      ]
     },
     {
       "stage_id": "cr-08",
       "name": "证据校验",
       "skill": "verify-evidence",
       "phase": "收敛",
-      "skills": ["verify-evidence"],
-      "implementation": ["tools/verify_evidence.py"],
-      "evidence_contract": ["tests/test_verify_evidence.py"],
-      "fragment_dirs": ["evidence/verify-evidence-drill"]
+      "skills": [
+        "verify-evidence"
+      ],
+      "implementation": [
+        "tools/verify_evidence.py"
+      ],
+      "evidence_contract": [
+        "tests/shared_tools/test_verify_evidence.py"
+      ],
+      "fragment_dirs": [
+        "evidence/verify-evidence-drill"
+      ]
     },
     {
       "stage_id": "cr-09",
       "name": "报告生成",
       "skill": "report-exam",
       "phase": "收敛",
-      "skills": ["report-exam"],
-      "implementation": ["tools/report_exam"],
-      "evidence_contract": ["tests/test_report_exam.py", "tests/test_report_exam_evidence_contract.py"],
-      "fragment_dirs": ["evidence/report-exam-drill"]
+      "skills": [
+        "report-exam"
+      ],
+      "implementation": [
+        "tools/report_exam"
+      ],
+      "evidence_contract": [
+        "tests/report_exam/test_report_exam.py",
+        "tests/report_exam/test_report_exam_evidence_contract.py"
+      ],
+      "fragment_dirs": [
+        "evidence/report-exam-drill"
+      ]
     }
   ]
 }

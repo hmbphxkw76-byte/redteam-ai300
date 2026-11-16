@@ -36,7 +36,7 @@
 - `docs/research/osai-ai300-framework-decision.md`：框架选型决策（best-of-breed 分层栈结论）。
 - `docs/research/osai-skill-framework-matrix.md`：技能 × 最佳攻击框架组合对照（优先级总排序 + 逐技能明细）。
 
-强制要点：① 每次技能开发开始前必读（含 backlog 实例化、既有技能续推、PR 续做、子 agent 承接）；② 所选框架组合**必须取自矩阵对应技能条目**；③ PyRIT 仅在 LLM/Agt/RAG/Emb/SC/Rep 占优场景做主角，MCP/MA/Infra/Cloud/传统横向按矩阵指定主控框架，不得强行用 PyRIT 单栈；④ 偏离矩阵须在规格/门禁记录中显式说明理由（GOVERNANCE §8.3）。
+强制要点：① 每次技能开发开始前必读（含 backlog 实例化、既有技能续推、PR 续做、子 agent 承接）；② 所选框架组合**必须取自矩阵对应技能条目**；③ PyRIT 仅在占优场景做主角，按矩阵指定主控框架（详见 §5 第 5 条与 B9）；④ 偏离矩阵须在规格/门禁记录中显式说明理由（GOVERNANCE §8.3）。
 
 ---
 
@@ -99,7 +99,7 @@
 ### 3.1 阶段 1 — `research`（调研）
 
 - **目标**：用一手来源锁定实现所依赖的事实（API 名称、版本、行为边界），消除规格阶段的猜测。
-- **输入**：目标 `SKILL.md`；`docs/research/pyrit-canonical-references.md`；`docs/research/osai-ai300-framework-decision.md`、`docs/research/osai-skill-framework-matrix.md`（§1.4 必读，框架组合须取自矩阵对应条目）；官方仓库、官方文档、源码；`GOVERNANCE.md` 与相关 ADR。
+- **输入**：目标 `SKILL.md`；`docs/research/pyrit-canonical-references.md`；§1.4 两份框架资料；官方仓库、官方文档、源码；`GOVERNANCE.md` 与相关 ADR。
 - **输出**：`docs/research/<topic>.md` 一份，逐条结论附来源 URL 与版本；列「已核实 / 待核实 / 已排除」三类清单。
 - **关键活动**：后台 agent 独立检索一手源 → 逐条回溯到拥有该事实的源 → 与 `SKILL.md` 的攻击路径逐项对齐 → 记录版本破坏性变更与禁用名称 → 标出实现前必须取证的核实闸。
 - **验收标准**：① 每条结论可定位到官方 URL / 源码位置；② 版本号明确（`pyrit==1.1.0`）；③ 每条攻击路径都有对应对象映射；④ 待核实项逐条命名且给出取证方式；⑤ 文档落盘于 `docs/research/`。
@@ -109,7 +109,7 @@
 ### 3.2 阶段 2 — `to-spec` ①（行为规格 / What）
 
 - **目标**：把 `SKILL.md` 声明的行为与攻击逻辑翻译成**做什么**的规格，形成可评审的用户视角描述。
-- **输入**：目标 `SKILL.md`；阶段 1 调研文档；`GLOSSARY.md`；`docs/operations/issue-tracker.md`、`triage-labels.md`、`domain.md`；`docs/research/osai-ai300-framework-decision.md`、`docs/research/osai-skill-framework-matrix.md`（框架组合须取自矩阵对应条目）。
+- **输入**：目标 `SKILL.md`；阶段 1 调研文档；`GLOSSARY.md`；`docs/operations/issue-tracker.md`、`triage-labels.md`、`domain.md`；§1.4 两份框架资料。
 - **输出**：issue tracker 中规格 v1（按 `to-spec` 模板七节），标签 `ready-for-agent`；保留 `SKILL.md` 原文为行为唯一来源，不改写。
 - **关键活动**：探索代码库现状 → 用领域术语撰写 Problem Statement / Solution / 长清单 User Stories / Implementation Decisions / Testing Decisions / Out of Scope / Further Notes → 提出 seam（接缝）数量与位置并与用户核对 → 发布到 issue tracker。
 - **验收标准**：① 七节齐全；② User Stories 覆盖 `SKILL.md` 全部攻击路径与质量门；③ 术语符合 `GLOSSARY.md`；④ 与 ADR 无静默冲突；⑤ Implementation Decisions 不含具体文件路径与代码片段；⑥ seam 提案已与用户核对并记录结论。
@@ -119,7 +119,7 @@
 ### 3.3 阶段 3 — `to-spec` ②（工程规格定稿 / 可验证性与可拆解性收敛）
 
 - **目标**：以 v1 为输入做第二次独立规格化，把「做什么」收敛为**可验证、可拆解、可交接**的定稿规格 v2；这是与阶段 2 不同的产物，不是重发一次 v1。
-- **输入**：规格 v1 全文；阶段 1 待核实项的取证结果；代码库现状（`scripts/`、`tests/`、`tools/`、`.github/`）；GOVERNANCE §8.2 八项检查单；CI-CD S1–S4；`docs/research/pyrit-canonical-references.md`；`docs/research/osai-ai300-framework-decision.md`、`docs/research/osai-skill-framework-matrix.md`（框架组合须取自矩阵对应条目）。
+- **输入**：规格 v1 全文；阶段 1 待核实项的取证结果；代码库现状（`scripts/`、`tests/`、`tools/`、`.github/`）；GOVERNANCE §8.2 八项检查单；CI-CD S1–S4；`docs/research/pyrit-canonical-references.md`；§1.4 两份框架资料。
 - **输出**：规格 v2 定稿（默认在 v1 同一 issue 以 `## 工程规格定稿 (v2)` 追加，保留 v1 全文并附 v1→v2 差异清单；若新建独立 issue，须在 v1 标注被取代并双向互链）；含逐条验收条件、测试决策、门禁映射、风险与核实闸。
 - **关键活动**：逐条审查 v1 User Stories 的可判定性 → 把不可判定的描述改写为布尔验收条件 → 补齐 Testing Decisions（只测外部行为、列既有参考测试）→ 把 CI 门禁映射到每条验收条件 → 收敛 seam 决策与对象图 → 记录 v1→v2 差异及理由 → 发布并留痕。
 - **验收标准**：① 每条 User Story 有对应布尔验收条件；② 每条验收条件指向具体检查命令或人工判据；③ 待核实项已关闭或转为带取证方式的核实闸；④ 差异清单逐条可追溯；⑤ 规格中不存在两套互相冲突的「当前规格」；⑥ 与阶段 2 输出内容不同且版本号递增。
@@ -169,7 +169,7 @@
 ### 3.8 阶段 8 — `implement-spec`（按规格实现）
 
 - **目标**：按 v2 + 工单产出接口完整、可编译、可验证的最小实现切片，并保持与 `SKILL.md` 行为一致。
-- **输入**：规格 v2、`ready-for-agent` 工单与 brief、设计记录、`GLOSSARY.md`、`docs/research/pyrit-canonical-references.md`；`docs/research/osai-ai300-framework-decision.md`、`docs/research/osai-skill-framework-matrix.md`（框架组合须取自矩阵对应条目）。
+- **输入**：规格 v2、`ready-for-agent` 工单与 brief、设计记录、`GLOSSARY.md`、`docs/research/pyrit-canonical-references.md`；§1.4 两份框架资料。
 - **输出**：实现代码（模块、对象图构造、公开入口）、必要的配置与依赖声明、每步证据片段；变更清单。
 - **关键活动**：按工单逐片实现 → 对象图统一采用 `pyrit.executor.attack` 的 `*Attack` 与 `OpenAIChatTarget` → 外部依赖走注入点 → 每步调用 `collect_evidence.py --step <prefix>-NN --strict` → 保持 `SKILL.md` 为行为唯一来源 → 记录实现与规格的对应矩阵。
 - **验收标准**：① 每条 v2 验收条件有对应实现位置；② `py_compile` 通过；③ 对象图符合 B7；④ 每步证据三件套齐全且可 copy/paste 复现；⑤ 无硬编码凭据；⑥ 变更清单与工单一一对应。
@@ -235,8 +235,8 @@
 2. **每阶段观察三件事**：输入来自哪里、输出被谁消费、门禁凭什么判定 `PASS`。三者可回答即掌握该阶段。
 3. **对照阅读**：`docs/operations/pyrit-implementation-workflow.md` §3 保留 10 阶段历史映射，用于理解 PyRIT 对象映射；主线顺序以本文件为准。
 4. **门禁留痕**：门禁记录表留在本阶段交付物中，对应 issue 只汇总阶段号 / 结论 / 复验命令的**索引**（§2.4 T5），形成可回溯且不重复的审计链。
-5. **框架选型前置**：每次技能开发前先读两份框架资料（`osai-ai300-framework-decision.md` 与 `osai-skill-framework-matrix.md`，§1.4 强制）；所选框架组合须取自矩阵对应技能条目，PyRIT 仅在其占优场景（LLM/Agt/RAG/Emb/SC/Rep）做主角，MCP/MA/Infra/Cloud/传统横向按矩阵指定主控框架，不得强行用 PyRIT 单栈；偏离须显式说明理由（§1.4④）。
-6. **契约指针**：每次落地消费共享工具 `collect_evidence.py` 的技能前，先读 `docs/contracts/collect_evidence.contract.md`（当前 `contract_version` 与 CHANGELOG 最近一次契约变更 PR），据此对齐证据片段 / 截图状态 / flag 双通道语义，禁止基于旧契约编码（契约漂移实证见 `docs/operations/contract-drift-prevention.md`）。
+5. **框架选型前置**：技能开发前先读两份框架资料（§1.4 强制）；组合取自矩阵对应条目，PyRIT 仅在占优场景做主角，偏离须显式说明理由（§1.4③④、B9）。
+6. **契约指针**：落地消费共享工具 `collect_evidence.py` 的技能前，先读 `docs/contracts/collect_evidence.contract.md`（`contract_version` 与 CHANGELOG 最近变更 PR），对齐证据片段 / 截图状态 / flag 双通道语义，禁止基于旧契约编码（实证见 `contract-drift-prevention.md`）。
 
 ---
 

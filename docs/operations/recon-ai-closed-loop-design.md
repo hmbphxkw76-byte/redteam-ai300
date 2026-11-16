@@ -46,12 +46,13 @@ discovery 仅依赖 probes.RequestSpec 与 transport 响应结构，不依赖 ru
 
 1. 入口探测：GET 目标根（或给定路径），解析同源链接与脚本；候选基路径 = 根 + 最多 3 个应用型链接。
 2. 族识别（只读）：
-   - Streamlit：`{base}/_stcore/health` 200 文本 + `host-config` 可选 + 入口含 `Streamlit`/静态 index；版本从 bundle `version:\`x.y.z\``。
+   - Streamlit：`{base}/_stcore/health` 200 文本 + `host-config` 可选 + 入口含 `Streamlit`/静态 index；版本从 bundle `version:\`x.y.z\``；`/_stcore/agent/openapi.json` 作为 recon-06 证据。成功后 recon-02 只 GET 聊天前端入口，不发 AIVP 式聊天 POST。
+   - DVAA 式编排面：`/agents` 数组（`securityLevel`+`protocol`）收敛为 `dvaa`，`/api/llm/status` 提供 provider/model；recon-02 聊天端点=清单中 `weak/critical/vulnerable` 的 api agent（优先 `helperbot`），agent 端口 `/mcp/tools` 作为 recon-06 证据。
    - Gradio：`{base}/config` JSON 含 `version`/`dependencies`。
    - Ollama：`/api/tags` JSON 含 `models`。
    - OpenAI 兼容：`/v1/models` JSON。
    - OpenAPI：`/openapi.json` JSON 含 `openapi`/`paths`。
-3. 端点计划 = **固定模板（保持原顺序） + 族附加请求（去重追加）**；保证既有 `results[0]`/`results[1]` 索引不变。
+3. 端点计划 = **固定模板（保持原顺序） + 族附加请求（去重追加）**；保证既有 `results[0]`/`results[1]` 索引不变。发现阶段的响应按 `step_id` 并入 `plan.step_results`，执行时追加在该步结果尾部，供证据与判据共用。
 4. 每个失败请求进入 `tried`（method/url/status/error），供判据与缺口台账引用。
 5. 发现异常不阻断：记录 warning，回退固定模板。
 

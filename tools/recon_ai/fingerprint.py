@@ -42,6 +42,25 @@ RULES = (
     # 部署配置泄露默认模型 → LLM 引擎类别（版本从产品名中提取，如 LongCat-2.5）
     Rule("model_default", r'"llm_model_default"\s*:\s*"([^"]+)"',
          "模型默认值", Category.LLM_ENGINE, product_group=1),
+    # 运行时模型状态端点（如 DVAA /api/llm/status）暴露 provider + model
+    Rule("llm_status",
+         r'"provider"\s*:\s*"[^"]+"[\s\S]{0,240}?"model"\s*:\s*"([^"]+)"',
+         "模型运行时状态", Category.LLM_ENGINE, product_group=1),
+    # OpenAI 兼容聊天响应的 JSON（非 SSE）
+    Rule("openai_chat_json", r'"object"\s*:\s*"chat\.completion"',
+         "OpenAI 兼容聊天 API（JSON）", Category.MODEL_SERVICE),
+    # Streamlit 运行时（/chat 前端）
+    Rule("streamlit", r"(?:_stcore|streamlit)", "Streamlit 聊天前端",
+         Category.MODEL_SERVICE),
+    # Streamlit agent API 文档（即使 API 关闭，文档端点仍暴露协议与状态）
+    Rule("streamlit_agent", r'"x-streamlit-agent-api"\s*:\s*"(\w+)"',
+         "Streamlit agent API", Category.MCP),
+    # 多智能体编排清单（/agents 返回 securityLevel/protocol 的数组）
+    Rule("agent_inventory", r'"securityLevel"\s*:\s*"',
+         "多智能体编排面", Category.AGENT),
+    # MCP 工具清单（/mcp/tools 返回 tools 数组）
+    Rule("mcp_tools_json", r'"tools"\s*:\s*\[\s*\{\s*"name"\s*:',
+         "MCP 工具清单", Category.MCP),
     # FastAPI 的 404 语义
     Rule("fastapi_404", r'\{"detail"\s*:\s*"Not Found"\}',
          "FastAPI", Category.MODEL_SERVICE),

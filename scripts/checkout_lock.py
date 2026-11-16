@@ -65,7 +65,10 @@ def _git_env() -> dict[str, str]:
 
 
 def _run(cmd: list[str], cwd: str | None = None, check: bool = True) -> subprocess.CompletedProcess:
-    proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=_git_env())
+    # 固定 UTF-8：Git 输出为 UTF-8，Windows 默认按 GBK 解码会把中文 worktree
+    # 路径解成乱码，CreateProcess(cwd=...) 随即报 NotADirectoryError。
+    proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", env=_git_env())
     if check and proc.returncode != 0:
         raise RuntimeError(
             "命令失败: %s\n%s\n%s" % (" ".join(cmd), proc.stdout, proc.stderr)

@@ -6,6 +6,7 @@
 import os
 import sys
 import unittest
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
@@ -64,6 +65,18 @@ class TestConflictDetection(unittest.TestCase):
         offenders = {"GLOSSARY.md": ["D:/_a_wt", "D:/_b_wt"]}
         conflicts = {f: w for f, w in offenders.items() if len(w) >= 2}
         self.assertEqual(set(conflicts.keys()), {"GLOSSARY.md"})
+
+
+class TestGitDecoding(unittest.TestCase):
+    """_run 固定 UTF-8 解码：防止中文 worktree 路径在 GBK 默认环境下乱码。"""
+
+    def test_run_forces_utf8_decoding(self):
+        fake = mock.Mock(returncode=0, stdout="", stderr="")
+        with mock.patch.object(cl.subprocess, "run", return_value=fake) as run:
+            cl._run(["git", "worktree", "list"])
+        kwargs = run.call_args.kwargs
+        self.assertEqual(kwargs["encoding"], "utf-8")
+        self.assertEqual(kwargs["errors"], "replace")
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ import tempfile
 import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from types import SimpleNamespace
 from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -239,6 +240,38 @@ class ProbeParsingTests(unittest.TestCase):
         self.assertEqual(judgement.existence, Existence.PRESENT)
         self.assertIn("422", judgement.note)
         self.assertEqual(probes.judge_guardrail([], {}).existence, Existence.UNDETERMINED)
+
+    def test_mcp_judge_aggregates_every_alive_port(self):
+        results = [
+            runner_mod.ProbeResult(
+                step_id="recon-06", url="http://t:7010/mcp/tools", status=200,
+                body='{"tools":[{"name":"read_file"}]}',
+                headers={"Access-Control-Allow-Origin": "*"}),
+            runner_mod.ProbeResult(
+                step_id="recon-06", url="http://t:7011/mcp/tools", status=200,
+                body='{"tools":[{"name":"query_database"},{"name":"get_user"}]}'),
+            runner_mod.ProbeResult(
+                step_id="recon-06", url="http://t:7012/mcp/tools", status=0,
+                error="refused"),
+        ]
+        judgement = probes.judge_mcp(results, {})
+        self.assertEqual(judgement.existence, Existence.PRESENT)
+        self.assertIn(":7010", judgement.note)
+        self.assertIn(":7011", judgement.note)
+        self.assertNotIn(":7012", judgement.note)
+        self.assertEqual(judgement.context.get("endpoints"),
+                         ["http://t:7010/mcp/tools", "http://t:7011/mcp/tools"])
+
+    def test_streamlit_guardrail_records_websocket_gap(self):
+        chat = runner_mod.ProbeResult(
+            step_id="recon-02", url="http://t/chat/", status=200,
+            body="<html><script src=\"static/js/main.js\"></script></html>",
+            content_type="text/html")
+        plan = SimpleNamespace(family="streamlit", signals=["chat_entry"])
+        judgement = probes.judge_guardrail([chat], {"reuse_chat": chat, "plan": plan})
+        self.assertEqual(judgement.existence, Existence.UNDETERMINED)
+        self.assertIn("WebSocket", judgement.note)
+        self.assertIn("聊天入口", judgement.note)
 
     def test_vector_judge_active_all_closed(self):
         closed = [runner_mod.ProbeResult(step_id="recon-04", url="http://h:%d/" % p,

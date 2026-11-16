@@ -448,6 +448,11 @@ def _openapi_surface(results):
     return None
 
 
+def _mcp_port(url):
+    match = re.search(r":(\d+)/mcp/tools$", url.split("?")[0].rstrip("/"))
+    return ":" + match.group(1) if match else url
+
+
 def judge_mcp(results, ctx):
     """recon-06：工具面与凭据校验预言机（含 200+success:false 语义）。"""
     for result in results:
@@ -469,6 +474,7 @@ def judge_mcp(results, ctx):
                              basis="OpenAPI 文档声明 agent API 状态",
                              context={"endpoint": result.url})
 
+    hits = []
     for result in results:
         if result is None or result.error or not result.ok:
             continue
@@ -485,18 +491,31 @@ def judge_mcp(results, ctx):
             continue
         names = [str(tool.get("name")) for tool in tools
                  if isinstance(tool, dict) and tool.get("name")]
-        note = ["`/mcp/tools` 匿名返回 %d 个工具：%s"
-                % (len(names), "、".join(names[:8]))]
-        allow = "、".join("%s: %s" % (k, v) for k, v in (result.headers or {}).items()
-                          if k.lower().startswith("access-control-"))
+        hits.append((result, names))
+    if hits:
+        listing = "、".join("%s(%d)" % (_mcp_port(r.url), len(n)) for r, n in hits)
+        note = ["`/mcp/tools` 在 %d 个端口匿名返回工具清单：%s"
+                % (len(hits), listing)]
+        for result, names in hits:
+            if names:
+                note.append("%s 工具：%s" % (_mcp_port(result.url),
+                                            "、".join(names[:8])))
+        allow = ""
+        for result, _ in hits:
+            allow = "、".join("%s: %s" % (k, v)
+                              for k, v in (result.headers or {}).items()
+                              if k.lower().startswith("access-control-"))
+            if allow:
+                break
         if allow:
             note.append("CORS 头：%s" % allow)
         note.append("工具定义含 `vulnerable` 标记（靶场语义）")
         return Judgement(Existence.PRESENT, product="MCP 工具清单（DVAA agent）",
                          version="不可判定", signature="tools JSON array",
                          note="；".join(note),
-                         basis="`/mcp/tools` 返回工具清单",
-                         context={"endpoint": result.url})
+                         basis="`/mcp/tools` 返回工具清单（%d 个端口）" % len(hits),
+                         context={"endpoint": hits[0][0].url,
+                                  "endpoints": [r.url for r, _ in hits]})
 
     declared = ctx.get("agent_inventory") or {}
     declared_note = ""
@@ -547,6 +566,15 @@ def judge_mcp(results, ctx):
 def judge_guardrail(results, ctx):
     """recon-07：护栏行为与安全响应头（复用 recon-02 的聊天响应，不重复请求）。"""
     chat = ctx.get("reuse_chat")
+    plan = ctx.get("plan")
+    if plan is not None and getattr(plan, "family", "") == "streamlit":
+        note = "Streamlit 聊天经 WebSocket 传输，只读 HTTP 无法完成一轮对话"
+        if "chat_entry" in getattr(plan, "signals", []):
+            note += "；入口页存在独立聊天入口（按钮/iframe）"
+        note += "；护栏行为需授权下浏览器交互验证，不以无证据推断"
+        return Judgement(Existence.UNDETERMINED, product="不可判定",
+                         note=note,
+                         basis="Streamlit 会话走 WebSocket，被动面无对话响应可判读")
     headers = (chat.headers if chat is not None else None) or ctx.get("headers") or {}
     if chat is None or chat.error:
         return Judgement(Existence.UNDETERMINED, note="无聊天响应可判读",

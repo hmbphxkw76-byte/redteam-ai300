@@ -119,6 +119,7 @@ Table of Contents                              (official，须含 "Offsec AI Red
 - 每个 flag **双通道一致**：控制面板提交值 == 报告正文/截图值（§6.2 / §2.4）；截图须含 `whoami`/`id` + flag 同屏（访问证明）。
 - 每个阶段**有截图**；每个命令/输出/脚本/AI 交互均记录（§6.1 / §6.3）。
 - 域控 `proof.txt` **仅可提交一次**（§2.2）。
+- **提交打包**：整包 `report/` + `evidence/`（保持相对结构），或直接 include 后导出 PDF；打包前 `python scripts/check_report_assets.py <报告>` 须 PASS（规则见 `docs/operations/osai-submission-compliance.md` §6），断图即 `BLOCKED`。
 
 ---
 

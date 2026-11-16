@@ -237,6 +237,7 @@
 4. **门禁留痕**：门禁记录表留在本阶段交付物中，对应 issue 只汇总阶段号 / 结论 / 复验命令的**索引**（§2.4 T5），形成可回溯且不重复的审计链。
 5. **框架选型前置**：技能开发前先读两份框架资料（§1.4 强制）；组合取自矩阵对应条目，PyRIT 仅在占优场景做主角，偏离须显式说明理由（§1.4③④、B9）。
 6. **契约指针**：落地消费共享工具 `collect_evidence.py` 的技能前，先读 `docs/contracts/collect_evidence.contract.md`（`contract_version` 与 CHANGELOG 最近变更 PR），对齐证据片段 / 截图状态 / flag 双通道语义，禁止基于旧契约编码（实证见 `contract-drift-prevention.md`）。
+7. **提交打包**：报告定稿后按 `docs/operations/osai-submission-compliance.md` §6 执行——整包 `report/` + `evidence/` 或直接 include 后导出 PDF，并跑 `python scripts/check_report_assets.py <报告>`；断图即 `BLOCKED`。技能开发不得生成绝对路径引用或 base64 复制截图。
 
 ---
 

@@ -77,10 +77,20 @@ class EvidenceWriter:
         env = dict(os.environ)
         env["PYTHONUTF8"] = "1"
         env["PYTHONIOENCODING"] = "utf-8"
-        proc = subprocess.run(cmd, input=output or "", capture_output=True,
-                              text=True, encoding="utf-8", errors="replace",
-                              env=env, timeout=self.timeout)
-        return out, proc.returncode, (proc.stderr or "").strip()
+        # 一次性子进程异常（NTSTATUS/负退出码且 stderr 为空）重试一次；
+        # 质量门失败（有 stderr）不重试，避免掩盖真实判定问题。
+        for attempt in range(2):
+            proc = subprocess.run(cmd, input=output or "", capture_output=True,
+                                  text=True, encoding="utf-8", errors="replace",
+                                  env=env, timeout=self.timeout)
+            stderr = (proc.stderr or "").strip()
+            if not _abnormal_exit(proc.returncode) or stderr or attempt == 1:
+                break
+        return out, proc.returncode, stderr
+
+
+def _abnormal_exit(code):
+    return code is not None and (code < 0 or 0xC0000000 <= code <= 0xFFFFFFFF)
 
 
 def load_manifest(path):

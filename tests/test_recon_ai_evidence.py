@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -48,6 +49,35 @@ class EncodingRegressionTests(unittest.TestCase):
                 text = f.read()
         self.assertEqual(proc.returncode, 0, proc.stderr.decode("utf-8", "replace"))
         self.assertIn(CHINESE, text)
+
+
+class SubprocessRetryTests(unittest.TestCase):
+    """一次性异常退出（NTSTATUS/负值 + 空 stderr）只重试一次；质量门失败不重试。"""
+
+    @staticmethod
+    def _proc(code, stderr=""):
+        return mock.Mock(returncode=code, stderr=stderr)
+
+    def test_abnormal_exit_retries_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            writer = evidence.EvidenceWriter(tmp)
+            with mock.patch.object(
+                    evidence.subprocess, "run",
+                    side_effect=[self._proc(0xC000012D), self._proc(0)]) as run:
+                _, code, _ = writer.emit("recon-01", "curl", "out")
+        self.assertEqual(code, 0)
+        self.assertEqual(run.call_count, 2)
+
+    def test_quality_gate_failure_is_not_retried(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            writer = evidence.EvidenceWriter(tmp)
+            with mock.patch.object(
+                    evidence.subprocess, "run",
+                    side_effect=[self._proc(1, "quality gate failed")]) as run:
+                _, code, err = writer.emit("recon-01", "curl", "out")
+        self.assertEqual(code, 1)
+        self.assertIn("quality gate", err)
+        self.assertEqual(run.call_count, 1)
 
 
 if __name__ == "__main__":

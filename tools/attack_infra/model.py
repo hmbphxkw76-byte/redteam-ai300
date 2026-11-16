@@ -139,10 +139,25 @@ class RunReport:
         return [s for s in self.steps if s.outcome is Outcome.ABSENT]
 
     def next_skills(self) -> List[str]:
-        """ABSENT 时建议转出的技能（AC-16）。"""
-        if not self.absent():
+        """ABSENT 时按步骤映射转出技能（AC-16，对齐 SKILL.md 失败与豁免）。
+
+        步骤级映射，避免把「无云平台」也笼统导向 MCP 工具面：
+        - infra-05（推理网关缺位）→ attack-supply-chain-tools（目标常以 GitLab 等
+          代码供应链承载推理凭据，8080 实测即 GitLab，见 canonical F-19）；
+        - infra-01/03/04/06/07/08（无基础设施面/模型服务器/提权入口）→
+          attack-mcp-tool、attack-ai-agent；
+        - infra-02（云平台）缺位属「本目标非云 AI 平台」预期态，不触发转技能。
+        """
+        absent_steps = {s.step_id for s in self.absent()}
+        if not absent_steps:
             return []
-        return ["attack-mcp-tool", "attack-ai-agent"]
+        skills: List[str] = []
+        if "infra-05" in absent_steps:
+            skills.append("attack-supply-chain-tools")
+        if absent_steps & {"infra-01", "infra-03", "infra-04",
+                           "infra-06", "infra-07", "infra-08"}:
+            skills += ["attack-mcp-tool", "attack-ai-agent"]
+        return skills
 
 
 @dataclass

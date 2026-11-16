@@ -100,11 +100,19 @@ def discover(ctx: RunContext) -> StepVerdict:
 
 
 def cloud_misconfig(ctx: RunContext) -> StepVerdict:
-    """infra-02：云存储匿名列举（`--no-sign-request`，canonical F-8）。"""
+    """infra-02：云 AI 平台配置错误（匿名列举云存储，canonical F-8）。
+
+    本地目标通常无云平台：无 bucket 时产出可复现的「非云 AI 平台」判定依据，
+    而非仅凭「未提供 bucket」空判（对齐校验标准「可 copy/paste 复现」）。
+    """
     if not ctx.buckets:
+        output = ("判定依据：未提供云存储桶标识；目标 %s 无云 AI 平台特征"
+                  "（非 AWS/GCP 部署，infra-01 未发现 SageMaker/Vertex/云元数据"
+                  "端点），判定为本地部署，跳过云存储匿名列举"
+                  % ctx.target)
         return StepVerdict("infra-02", Outcome.ABSENT, reason="none_found",
-                           summary="未提供待核云存储桶",
-                           output="判定依据：未提供 bucket，未发起匿名列举请求",
+                           summary="未提供待核云存储桶，目标非云 AI 平台",
+                           output=output,
                            command="aws s3 ls --no-sign-request")
     argv_all, outs, worst = [], [], None
     for bucket in ctx.buckets:

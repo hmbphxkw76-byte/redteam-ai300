@@ -36,10 +36,14 @@
 | F-12 | 演练目标 `10250` 为 HTTPS 端点（kubelet 风格）：`/` 与 `/version` → `404 page not found`；`/healthz`、`/pods`、`/metrics`、`/configz` → `401 Unauthorized` | `curl -k --noproxy '*' https://192.168.40.189:10250/{healthz,pods,metrics,configz}` | `401` + `Unauthorized`（12 字节） |
 | F-13 | 80 端口为 SPA 回退：`/v1/models`、`/health`、`/v1/completions`、`/v2/health/ready`、`/v2/models`、`/metrics`、`/docs` 全部 `200 text/html 1702` | `curl -s -o /dev/null -w "%{http_code} %{content_type} %{size_download}" http://192.168.40.189/<path>` | 七条路径输出完全一致 |
 | F-14 | 本机代理污染：`HTTP_PROXY=http://127.0.0.1:65383`；不加 `--noproxy '*'` 时 `:8000`/`:4000` 返回 `502`（体为本地 Windows `os error 10061`）、`:10250` 返回 `400 Client sent an HTTP request to an HTTPS server`（代理产生） | `env | grep -i proxy`；对比加/不加 `--noproxy` 的同 URL 结果 | 加 `--noproxy '*'` 后 `:8000`/`:4000` 为 `000`（连接拒绝），`:10250` 为真实 `404/401` |
-| F-15 | 其余常见 AI 基础设施端口未开放：`3000`、`5000`、`9000`、`8501`、`2375`、`2376`、`10255` 均 `000`；`8081` 为 Go 风格 `404 page not found`（服务存在，身份待核） | 端口探测循环（http/https 各一次） | 仅 `8081` 返回 `404`，其余无响应 |
+| F-15 | 其余常见 AI 基础设施端口未开放：`3000`、`5000`、`9000`、`8501`、`2375`、`2376`、`10255` 均 `000` | 端口探测循环（http/https 各一次） | 上述端口无响应；`8080`/`8081` 身份见 F-19/F-20 |
 | F-16 | 每步证据基线与 flag 双通道要求 | `GOVERNANCE.md` §6.1 / §6.2（正文不转抄，C1）；`docs/governance/references/OSAI-Exam-Guide-snapshot.md` §1/§4 | 仅记录「要求存在于何处」，不复述条款 |
 | F-17 | 证据落盘唯一入口 `tools/collect_evidence.py`，参数含 `--step/--cmd/--output*/--screenshot/--shot-cmd/--ai-log/--flag*/--target/--strict` | `python tools/collect_evidence.py --help` | 参数表原文命中 |
 | F-18 | 本技能计分单元与次要目标 | `GLOSSARY.md`（AI向量机 / 独立机）；`skills/attack-infra/SKILL.md` front-matter | `scoring_unit` 单值；语义见术语表条目，不复述 |
+
+| F-19 | 演练目标 `8080` 为 **GitLab**（代码供应链面，非本技能推理网关）：`GET /` → `302` 重定向到 `/users/sign_in`，响应头含 `X-Gitlab-Meta`；`GET /api/v4/version` 未认证返回 `{"message":"401 Unauthorized"}` | `curl -s -D - -o /dev/null http://192.168.40.189:8080/`；`curl -s http://192.168.40.189:8080/api/v4/version` | 302 → `/users/sign_in`；`{"message":"401 Unauthorized"}` |
+| F-20 | 演练目标 `8081` 为 **flannel**（K8s CNI 守护进程）健康检查：`GET /` 与 `/health`、`/api/v1/models`、`/v1/models` 均 `404 page not found`，`GET /healthz` → `200 text/plain` 体为 `flanneld is running` | `curl -s -i http://192.168.40.189:8081/`；`curl -s http://192.168.40.189:8081/healthz` | `404 page not found`；`flanneld is running` |
+| F-21 | `192.168.40.183` 为 **DVAA**（OpenA2A 多智能体靶场，端口 `9000`），非本技能目标；`/health`、`/docs`、`/agents`、`/v1/models` 均 `200`（SPA 回退），由 `attack-multi-agent` 处理 | `curl -s http://192.168.40.183:9000/`；`/health` `/docs` `/agents` 各 `200` | 首页 `DVAA - The AI agent you're supposed to break` |
 
 ---
 

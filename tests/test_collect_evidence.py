@@ -64,6 +64,39 @@ class CollectEvidenceTests(unittest.TestCase):
             self.assertIn("whoami", text)
             self.assertIn("**三件套齐全**：否（缺失：关键输出、截图）。", text)
 
+    def test_shot_status_pending_when_hook_only(self):
+        # F3 回归：仅给 --shot-cmd（无截图文件）时，清单 shot_status=待补录，
+        # 校验表如实标注「待补录」而非「已提供」，但三件套件仍满足（既有契约）。
+        import json
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "out.md")
+            man = os.path.join(tmp, "manifest.jsonl")
+            r = run("--step", "s1", "--cmd", "echo hi", "--output", "hi",
+                    "--shot-cmd", "screenshot-hook --out /tmp/x.png",
+                    "--manifest", man, "--out", out)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            with open(out, encoding="utf-8") as f:
+                text = f.read()
+            self.assertIn("待补录（钩子命令已记录）", text)
+            self.assertNotIn("| 截图 | 是 | 已提供 |", text)
+            rec = json.loads(open(man, encoding="utf-8").read().splitlines()[0])
+            self.assertEqual(rec["shot_status"], "待补录")
+            self.assertTrue(rec["complete"])
+
+    def test_shot_status_provided_with_file(self):
+        import json
+        with tempfile.TemporaryDirectory() as tmp:
+            shot = os.path.join(tmp, "s.png")
+            with open(shot, "wb") as f:
+                f.write(b"\x89PNG\r\n\x1a\n")
+            out = os.path.join(tmp, "out.md")
+            man = os.path.join(tmp, "manifest.jsonl")
+            r = run("--step", "s1", "--cmd", "echo hi", "--output", "hi",
+                    "--screenshot", shot, "--manifest", man, "--out", out)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            rec = json.loads(open(man, encoding="utf-8").read().splitlines()[0])
+            self.assertEqual(rec["shot_status"], "已提供")
+
     def test_strict_fails_when_incomplete(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = os.path.join(tmp, "out.md")

@@ -23,6 +23,9 @@ needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix。
 信息不足标 needs-info 并列出所缺；为每张 ready-for-agent 工单写完整 brief：
 目标 / 输入 / 约束 / 验收条件 / 验证命令（从工单与 v2 提炼，不新增语义）。
 硬约束：每张工单恰有一个规范标签；ready-for-agent 必含完整 brief；结论留痕。
+契约指针：工单涉及共享工具 collect_evidence.py 时，brief 必附契约指针
+（docs/contracts/collect_evidence.contract.md 当前 contract_version + CHANGELOG 最近
+一次契约变更 PR 号），约束消费语义对齐当前契约，禁止基于旧契约编码。
 完成后按 G0 收尾（B8）：列不符合项与修正要求；结论 PASS 才进入阶段 6。
 ```
 
@@ -30,5 +33,6 @@ needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix。
 
 - [ ] 每张工单恰有一个规范标签，附分类理由
 - [ ] 每个 `ready-for-agent` 工单含完整五要素 brief
+- [ ] 涉及共享工具 `collect_evidence.py` 的 brief 附契约指针（契约清单当前版本 + 最近变更 PR）
 - [ ] 人工项与 `ready-for-human` 一一对应并记录依据
 - [ ] 分类结论已留痕（issue 评论或工单正文）

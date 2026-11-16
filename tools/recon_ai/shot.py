@@ -12,6 +12,8 @@ import html
 import os
 import shutil
 import subprocess
+import tempfile
+import time
 
 CANDIDATES = (
     r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
@@ -110,16 +112,49 @@ class HeadlessShot(ShotCapture):
     def _file_ok(self, path):
         return os.path.isfile(path) and os.path.getsize(path) > 0
 
-    def _native(self, target, out):
-        cmd = [self.browser, "--headless=new", "--disable-gpu", "--no-sandbox",
-               "--hide-scrollbars", "--window-size=%s" % self.size,
-               "--virtual-time-budget=%d" % self.budget_ms,
-               "--screenshot=%s" % out, target]
+    def _png_complete(self, path):
+        """PNG 以 IEND 块收尾；只有完整文件才允许计哈希（C12）。"""
         try:
-            subprocess.run(cmd, capture_output=True, timeout=60)
-        except (OSError, subprocess.SubprocessError):
+            if os.path.getsize(path) < 12:
+                return False
+            with open(path, "rb") as f:
+                f.seek(-8, os.SEEK_END)
+                return f.read(8) == b"IEND\xaeB`\x82"
+        except OSError:
             return False
-        return self._file_ok(out)
+
+    def _wait_stable(self, path, timeout=3.0, interval=0.1):
+        """等待截图写完：以 PNG IEND 块为完成标志，避免半成品哈希。"""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if self._png_complete(path):
+                return True
+            time.sleep(interval)
+        return self._png_complete(path)
+
+    def _native(self, target, out):
+        for _ in range(2):
+            if os.path.isfile(out):
+                try:
+                    os.remove(out)
+                except OSError:
+                    pass
+            profile = tempfile.mkdtemp(prefix="recon-ai-shot-")
+            cmd = [self.browser, "--headless=new", "--disable-gpu", "--no-sandbox",
+                   "--hide-scrollbars", "--no-first-run",
+                   "--user-data-dir=%s" % profile,
+                   "--window-size=%s" % self.size,
+                   "--virtual-time-budget=%d" % self.budget_ms,
+                   "--screenshot=%s" % out, target]
+            try:
+                proc = subprocess.run(cmd, capture_output=True, timeout=60)
+            except (OSError, subprocess.SubprocessError):
+                continue
+            finally:
+                shutil.rmtree(profile, ignore_errors=True)
+            if getattr(proc, "returncode", 0) == 0 and self._wait_stable(out):
+                return True
+        return False
 
     def _cdp(self, target, out):
         """--screenshot 静默失败时的回退（Edge 157 本机即此情形）。"""
@@ -136,7 +171,7 @@ class HeadlessShot(ShotCapture):
                 subprocess.run(cmd, capture_output=True, timeout=120)
             except (OSError, subprocess.SubprocessError):
                 continue
-            if self._file_ok(out):
+            if self._wait_stable(out, timeout=2.0):
                 return True
         return False
 
@@ -153,6 +188,11 @@ class HeadlessShot(ShotCapture):
                 f.write(render_transcript(command, response, url))
             target = "file:///" + tmp_html.replace("\\", "/").lstrip("/")
         out = os.path.abspath(os.path.join(out_dir, "%s-%s.png" % (step_id, kind)))
+        if os.path.isfile(out):
+            try:
+                os.remove(out)  # 避免把上一轮残留当成本次截图
+            except OSError:
+                pass
         try:
             ok = self._native(target, out) or self._cdp(target, out)
         finally:
@@ -163,6 +203,23 @@ class HeadlessShot(ShotCapture):
                     pass
         if ok and self._file_ok(out):
             return out, kind
+        if kind != "transcript" and (command or response):
+            # 直截偶发失败（静态资源/浏览器启动竞态）时退化为转录页：
+            # 仍是本次命令与响应的真实渲染，不伪造页面。
+            fallback_html = os.path.join(out_dir, ".%s-fallback.html" % step_id)
+            out2 = os.path.join(out_dir, "%s-transcript.png" % step_id)
+            with open(fallback_html, "w", encoding="utf-8") as f:
+                f.write(render_transcript(command, response, url))
+            page = "file:///" + fallback_html.replace("\\", "/").lstrip("/")
+            try:
+                ok2 = self._native(page, out2) or self._cdp(page, out2)
+            finally:
+                try:
+                    os.remove(fallback_html)
+                except OSError:
+                    pass
+            if ok2 and self._file_ok(out2):
+                return out2, "transcript"
         return "", ""
 
 

@@ -107,17 +107,18 @@ def build_url(target, path, lab=""):
     return target + path
 
 
-def _request(transport, spec, req, url, step_id, timeout):
+def _request(transport, spec, req, url, step_id, timeout, body=None):
     """发一次请求并包装为 ProbeResult（不抛异常：网络失败转 error）。"""
+    payload = req.json_body if body is None else body
     result = ProbeResult(
         step_id=step_id, url=url, method=req.method,
-        command=probes.curl_command(req.method, url, req.json_body),
-        request_body=dict(req.json_body or {}),
+        command=probes.curl_command(req.method, url, payload),
+        request_body=dict(payload or {}),
         note=req.tag,
     )
     t0 = time.time()
     try:
-        resp = transport.request(req.method, url, req.json_body,
+        resp = transport.request(req.method, url, payload,
                                  timeout=timeout or req.timeout)
     except Exception as exc:  # 传输层异常一律归「不可判定」，不中断整轮
         result.error = "传输异常：%s" % exc
@@ -155,7 +156,9 @@ def run_recon(target, profile="passive", lab="MM_04", out_dir=None,
 
     plan = None
     try:
-        plan = discovery_mod.discover(target, transport,
+        # 传原始入口（含报告页路径）：发现阶段按 origin 探测端点，
+        # 同时读取入口页本身以识别独立聊天按钮/iframe 等交互入口。
+        plan = discovery_mod.discover(requested, transport,
                                       timeout=min(timeout or 15, 20))
     except Exception as exc:  # 发现失败降级为通用端点枚举，不阻塞主线
         warnings.append("发现阶段异常（降级为通用端点）：%s" % exc)
@@ -199,9 +202,13 @@ def run_recon(target, profile="passive", lab="MM_04", out_dir=None,
             else:
                 results = []
                 for req in policy.gate_requests(spec, profile):
+                    if req.when is not None and not req.when(ctx):
+                        continue
                     path = req.path_fn(ctx) if req.path_fn else req.path
                     url = build_url(target, path, lab)
-                    result = _request(transport, spec, req, url, spec.step_id, timeout)
+                    body = req.body_fn(ctx) if req.body_fn is not None else None
+                    result = _request(transport, spec, req, url, spec.step_id,
+                                      timeout, body=body)
                     results.append(result)
                     if req.collect and not result.error:
                         try:
@@ -212,10 +219,12 @@ def run_recon(target, profile="passive", lab="MM_04", out_dir=None,
                         endpoints[spec.step_id] = url
                         ctx["headers"] = result.headers or ctx.get("headers", {})
                 if spec.requests and spec.step_id not in endpoints:
-                    endpoints[spec.step_id] = build_url(
-                        target, spec.requests[0].path, lab)
-                if spec.step_id == "recon-03" and plan is not None:
-                    results.extend(plan.results)
+                    fallback = (getattr(plan, "entry_url", "") if plan is not None
+                                else "") or build_url(
+                                    target, spec.requests[0].path, lab)
+                    endpoints[spec.step_id] = fallback
+                if plan is not None:
+                    results.extend(plan.step_results.get(spec.step_id, []))
                 step_results[spec.step_id] = results
 
             judgement = probes.JUDGES[spec.judge](results, ctx)
@@ -241,7 +250,8 @@ def run_recon(target, profile="passive", lab="MM_04", out_dir=None,
 
             kind = ("transcript" if spec.reuse or any(
                 r.method in ECHO_PATH_HINT for r in results) else "url")
-            shot_url = endpoints.get(spec.step_id) or (target + "/explore")
+            shot_url = ((judgement.context or {}).get("endpoint")
+                        or endpoints.get(spec.step_id) or (target + "/explore"))
             shot_path, shot_kind = "", ""
             if capture_shots:
                 shot_path, shot_kind = shot.capture(
@@ -264,8 +274,8 @@ def run_recon(target, profile="passive", lab="MM_04", out_dir=None,
                 warnings.append("%s 证据质量门未过：%s" % (spec.step_id, detail))
                 quality_failures.append("%s：%s" % (spec.step_id, detail))
 
-            tried_src = results or ([ctx["reuse_chat"]]
-                                    if ctx.get("reuse_chat") is not None else [])
+            tried_src = results or (
+                step_results.get(spec.reuse, []) if spec.reuse else [])
             record.update({
                 "status": "done",
                 "existence": judgement.existence.value,
@@ -299,7 +309,7 @@ def run_recon(target, profile="passive", lab="MM_04", out_dir=None,
         judgements, requested, profile,
         failed_steps=budget.failed_steps, endpoints=endpoints, phases=phases,
         hints=hints, tried=tried_by_step,
-        extra_signals=1 if plan is not None and plan.family != "unknown" else 0)
+        extra_signals=(len(plan.signals) if plan is not None else 0))
     finished = datetime.now().astimezone().isoformat(timespec="seconds")
 
     os.makedirs(out_dir, exist_ok=True)
@@ -395,7 +405,7 @@ def _ai_log(spec, results, ctx):
     """
     # 仅对「真的向目标模型发送了提示」的步骤产出；否则不臆造交互留痕（§6.3 真实性）
     posts = [r for r in results
-             if r.method == "POST" and (r.request_body or {}).get("prompt")]
+             if r.method == "POST" and _prompt_of(r)]
     reused_from = ""
     if not posts and spec.reuse and ctx.get("reuse_chat") is not None:
         posts = [ctx["reuse_chat"]]
@@ -403,17 +413,45 @@ def _ai_log(spec, results, ctx):
     if not posts:
         return ""
     result = posts[0]
-    sse = probes.parse_sse(result.body)
     model = ctx.get("model") or "不可判定"
-    prompt = (result.request_body or {}).get("prompt", "（未记录）")
+    prompt = _prompt_of(result) or "（未记录）"
     return "\n".join([
         "通道：%s %s%s" % (result.method, result.url, reused_from),
         "被交互模型：%s（由 recon-01 部署配置识别的默认模型）" % model,
         "提示（prompt）：%s" % prompt,
-        "输出（前 600 字符）：%s" % (sse.text[:600] or "（空）"),
+        "输出（前 600 字符）：%s" % (_response_text(result.body)[:600] or "（空）"),
         "采纳：是（作为 %s 的护栏/服务面判定依据）" % spec.step_id,
         "备注：本记录为目标模型交互留痕，不含 AI 辅助工具的会话内容。",
     ])
+
+
+def _prompt_of(result):
+    """从 prompt 或 OpenAI messages 请求体提取提示文本。"""
+    body = result.request_body or {}
+    if body.get("prompt"):
+        return str(body["prompt"])
+    messages = body.get("messages") or []
+    for message in messages:
+        if isinstance(message, dict) and message.get("role") == "user":
+            return str(message.get("content") or "")
+    return ""
+
+
+def _response_text(body):
+    """SSE 或 OpenAI 兼容 JSON 响应提取文本。"""
+    sse = probes.parse_sse(body)
+    if sse.text:
+        return sse.text
+    try:
+        data = json.loads(body or "")
+    except (TypeError, ValueError):
+        return ""
+    if isinstance(data, dict):
+        try:
+            return str(data["choices"][0]["message"]["content"])
+        except (KeyError, IndexError, TypeError):
+            return ""
+    return ""
 
 
 def _reuse_brief(result):

@@ -138,7 +138,7 @@ class ShotTests(unittest.TestCase):
             if "--screenshot=" in " ".join(cmd):
                 return mock.Mock(returncode=0)
             with open(cmd[4], "wb") as f:
-                f.write(b"\x89PNG\r\n\x1a\nCDP")
+                f.write(b"\x89PNG\r\n\x1a\nCDP" + b"IEND\xaeB`\x82")
             return mock.Mock(returncode=0)
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -154,7 +154,25 @@ class ShotTests(unittest.TestCase):
                                return_value=mock.Mock(returncode=0)) as run:
             with tempfile.TemporaryDirectory() as tmp:
                 self.assertEqual(capture.capture("s", "http://t", tmp), ("", ""))
-        self.assertEqual(run.call_count, 1)  # 仅原生路径尝试一次
+        self.assertEqual(run.call_count, 2)  # 原生路径重试两次，未启用 CDP
+
+    def test_url_capture_falls_back_to_transcript_page(self):
+        def fake_run(cmd, **kwargs):
+            joined = " ".join(cmd)
+            if joined.startswith("browser.exe") and cmd[-1].startswith("http"):
+                return mock.Mock(returncode=1)
+            out = [c for c in cmd if c.startswith("--screenshot=")][0].split("=", 1)[1]
+            with open(out, "wb") as f:
+                f.write(b"\x89PNG\r\n\x1a\nFB" + b"IEND\xaeB`\x82")
+            return mock.Mock(returncode=0)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            capture = shot.HeadlessShot(browser_path="browser.exe", node_path="")
+            with mock.patch.object(shot.subprocess, "run", side_effect=fake_run):
+                path, kind = capture.capture(
+                    "s", "http://t", tmp, command="curl http://t", response="denied")
+        self.assertEqual(kind, "transcript")
+        self.assertTrue(path.endswith("s-transcript.png"))
 
     def test_make_shot_respects_switch(self):
         self.assertEqual(shot.make_shot(enabled=False).describe(), "none")

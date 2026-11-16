@@ -65,12 +65,13 @@ def build(judgements, target, profile, failed_steps=None, endpoints=None,
                          "next": "主动档定向探测或人工确认"})
             continue
         index += 1
+        judged_endpoint = (judgement.context or {}).get("endpoint") or ""
         assets.append(Asset(
             asset_id="ai-%s-%s-%02d" % (SLUGS[category], host, index),
             category=category.value,
             product=judgement.product or "不可判定",
             version=judgement.version or "不可判定",
-            endpoint=endpoints.get(step_id) or "不可判定",
+            endpoint=judged_endpoint or endpoints.get(step_id) or "不可判定",
             credential_hint=hints.get(step_id) or "无",
             evidence_step=step_id,
             phase=phases.get(step_id, ""),

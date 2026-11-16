@@ -1,0 +1,74 @@
+# 标准化清理复合动作：所有阶段前后复用同一套安全/幂等清理契约。
+# 脚本 scripts/ci_cleanup.py 是唯一事实源；本动作只负责接线与传参（C1）。
+name: CI 标准化清理
+description: 阶段前后清理缓存/临时文件/构建残余并核验无残留（安全、幂等、可复用）
+inputs:
+  phase:
+    description: 'pre=阶段开始前清陈旧缓存；post=阶段结束后清本次产物'
+    required: true
+  status:
+    description: '作业结局 success/failure/cancelled/skipped，仅用于审计输出'
+    required: false
+    default: success
+  mode:
+    description: 'apply=实际清理；dry-run=仅报告（workflow_dispatch 手动审计用）'
+    required: false
+    default: apply
+  temp-root:
+    description: '额外的临时根（空格分隔）；每项临时目标必须落在某个临时根内'
+    required: false
+    default: ''
+  temp-targets:
+    description: '空格分隔的临时目标路径；每项须落在临时根内，否则被跳过'
+    required: false
+    default: ''
+  keep:
+    description: '空格分隔的交付物路径；verify 阶段断言其仍存在'
+    required: false
+    default: ''
+  keep-only:
+    description: 'true=verify 只断言交付物不查残留（交付物门禁）'
+    required: false
+    default: 'false'
+  clean-dist:
+    description: 'true=post 阶段清理 dist/ 已知构建输出（仅限产物已上传之后）'
+    required: false
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: 执行清理并核验
+      shell: bash
+      env:
+        CLEANUP_PHASE: ${{ inputs.phase }}
+        CLEANUP_STATUS: ${{ inputs.status }}
+        CLEANUP_MODE: ${{ inputs.mode }}
+        CLEANUP_TEMP_ROOT: ${{ inputs.temp-root }}
+        CLEANUP_TEMP_TARGETS: ${{ inputs.temp-targets }}
+        CLEANUP_KEEP: ${{ inputs.keep }}
+        CLEANUP_KEEP_ONLY: ${{ inputs.keep-only }}
+        CLEANUP_CLEAN_DIST: ${{ inputs.clean-dist }}
+      run: |
+        set -euo pipefail
+        apply_flag=()
+        residue_flag=()
+        [ "$CLEANUP_MODE" = "apply" ] && apply_flag=(--apply)
+        # dry-run 故意保留残留用于审计，verify 只告警不阻断。
+        [ "$CLEANUP_MODE" != "apply" ] && residue_flag=(--allow-residue)
+        args=("$CLEANUP_PHASE" --status "$CLEANUP_STATUS" "${apply_flag[@]}")
+        verify_args=(verify --status "$CLEANUP_STATUS" "${residue_flag[@]}")
+        [ "$CLEANUP_KEEP_ONLY" = "true" ] && verify_args+=(--keep-only)
+        [ "$CLEANUP_CLEAN_DIST" = "true" ] && args+=(--clean-dist)
+        for root in $CLEANUP_TEMP_ROOT; do
+          args+=(--temp-root "$root")
+          verify_args+=(--temp-root "$root")
+        done
+        for target in $CLEANUP_TEMP_TARGETS; do
+          args+=(--temp-target "$target")
+          verify_args+=(--temp-target "$target")
+        done
+        for kept in $CLEANUP_KEEP; do
+          verify_args+=(--keep "$kept")
+        done
+        python3 scripts/ci_cleanup.py "${args[@]}"
+        python3 scripts/ci_cleanup.py "${verify_args[@]}"

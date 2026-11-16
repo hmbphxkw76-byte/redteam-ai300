@@ -13,6 +13,20 @@ on:
   merge_group:
     types: [checks_requested]
 
+  # 手动审计入口：dry_run=true 时所有清理步骤仅报告范围、不实际删除。
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '仅报告清理范围，不实际删除（true/false）'
+        required: false
+        default: false
+        type: boolean
+
+# 自动触发规则：清理接线在每个作业首尾执行，post 以 if: always() 覆盖
+# success / failure / cancelled 三种结束状态；手动 dispatch 时按 dry_run 切换。
+env:
+  CI_CLEANUP_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'dry-run' || 'apply' }}
+
 permissions:
   contents: read
 
@@ -31,6 +45,11 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+      - name: 阶段前清理 (pre)
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: pre
+          mode: ${{ env.CI_CLEANUP_MODE }}
       - name: Markdown 规范检查
         uses: DavidAnson/markdownlint-cli2-action@v25
         with:
@@ -73,6 +92,16 @@ jobs:
       - name: attack-rag 注入脚本语法编译 (S1)
         # SKILL.md 路径 A 点名的 inject_kb.py（独立步骤，避免与并发会话共用长行）
         run: python -m py_compile tools/inject_kb.py
+      - name: 阶段后清理 (post, always)
+        if: always()
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: post
+          status: ${{ job.status }}
+          mode: ${{ env.CI_CLEANUP_MODE }}
+          # S1 生成的 PR 正文临时文件（契约门禁步骤写入 /tmp）
+          temp-root: /tmp
+          temp-targets: /tmp/osai_pr_body.md
 
   tests:
     name: 自动化测试 (S2)
@@ -83,10 +112,22 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+      - name: 阶段前清理 (pre)
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: pre
+          mode: ${{ env.CI_CLEANUP_MODE }}
       - name: 运行测试
         run: python -m unittest discover -s tests -q
       - name: 行覆盖率门禁 (S2, ≥80%)
         run: python scripts/measure_coverage.py --target all --min 80
+      - name: 阶段后清理 (post, always)
+        if: always()
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: post
+          status: ${{ job.status }}
+          mode: ${{ env.CI_CLEANUP_MODE }}
 
   build:
     name: 构建 (S3)
@@ -95,16 +136,39 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+      - name: 阶段前清理 (pre)
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: pre
+          mode: ${{ env.CI_CLEANUP_MODE }}
       - name: 打包技能与治理产物
         run: |
           mkdir -p dist
           tar -czf dist/redteam-ai300-skills.tgz skills docs GLOSSARY.md
           (cd dist && sha256sum redteam-ai300-skills.tgz > redteam-ai300-skills.tgz.sha256)
+      - name: 交付物存在性断言 (keep-only)
+        # 上传前先确认交付物齐全；keep-only 不因缓存残留误判，且清理器不会删 dist。
+        run: python3 scripts/ci_cleanup.py verify --keep-only --keep dist/redteam-ai300-skills.tgz --keep dist/redteam-ai300-skills.tgz.sha256
       - name: 上传产物
         uses: actions/upload-artifact@v7
         with:
           name: redteam-ai300-skills
           path: dist/
+      - name: 清理已上传的本地构建产物 (clean-dist)
+        # 仅在上传成功后执行（无 if: always），避免失败时误删尚未上传的唯一副本。
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: post
+          status: ${{ job.status }}
+          mode: ${{ env.CI_CLEANUP_MODE }}
+          clean-dist: 'true'
+      - name: 阶段后清理 (post, always)
+        if: always()
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: post
+          status: ${{ job.status }}
+          mode: ${{ env.CI_CLEANUP_MODE }}
 
   integration:
     name: 集成合规 (S4)
@@ -116,9 +180,21 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+      - name: 阶段前清理 (pre)
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: pre
+          mode: ${{ env.CI_CLEANUP_MODE }}
       - name: 全量技能合规
         run: python scripts/validate_skill.py
       - name: 全量术语一致性
         run: python scripts/check_glossary.py
       - name: Token 预算与规范契约复核 (S4)
         run: python scripts/check_token_budget.py --check
+      - name: 阶段后清理 (post, always)
+        if: always()
+        uses: ./.github/actions/ci-cleanup
+        with:
+          phase: post
+          status: ${{ job.status }}
+          mode: ${{ env.CI_CLEANUP_MODE }}

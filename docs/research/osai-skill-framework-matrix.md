@@ -101,7 +101,7 @@
 - **适用场景**：向量库/embedding store 主机。
 
 ### ⑩ attack-multi-agent（D4 / P1）
-- **推荐组合**：**A2ASecBench**（协议感知基准，ICLR'26） + Cisco a2a-scanner（Agent Card 分析） + PyRIT HTTPTarget（打 A2A 端点多轮） + A2A Python SDK/samples（靶标基座与 recon）。
+- **推荐组合**：**A2ASecBench**（协议感知基准，ICLR'26） + Cisco a2a-scanner（Agent Card 分析） + PyRIT HTTPTarget（打 A2A 端点多轮） + A2A Python SDK/samples（演练目标基座与 recon）。
 - **组合方式**：a2a-scanner 扫恶意 Agent Card；A2ASecBench 六类攻击可插拔 SUT；PyRIT 打端点。
 - **选择理由**：MA 是 AI 场景；PyRIT 无原生 MA 策略，靠 A2ASecBench + 专项；A2A SDK 做协议 recon。
 - **适用场景**：multi-agent 平台（A2A 协议）主机。

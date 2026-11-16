@@ -166,7 +166,7 @@ python scripts/validate_skill.py && python scripts/check_glossary.py \
 2. 目标含 `.html` 时端点拼成 `/x.html/v1/models` → `_base_target` 归一 origin，证据仍记录原始目标；新增单测。
 3. Edge `--screenshot` 静默退出 0 且无 PNG → 新增 CDP 回退 `cdp_shot.js`（`Page.captureScreenshot`）；http 目标按 origin 放行不安全来源拦截；实测 7/7 PNG。
 4. 截图失败时 C4 判 `BLOCKED` 且退出码 1，不以占位图充数；CDP 失败重试 1 次。
-5. GLOSSARY（+993B 术语）与 SKILL 超 C4 预算 → 压缩 SKILL 重复证据行；GLOSSARY 按 ADR-0005 上调 17500→18500 并留 267B 余量。
+5. GLOSSARY 术语块超预算且共享文件与其他 worktree 并发 → SKILL 压缩重复证据行；GLOSSARY 改为指针（术语定义留设计文档）至 17491/17500，未改共享预算脚本。
 
 **门禁记录（阶段 8 / 9 / 10）**
 
@@ -180,7 +180,7 @@ python scripts/validate_skill.py && python scripts/check_glossary.py \
 | B6 | CI 门禁 | token 预算/契约清单/消费者均 PASS；全量基线 9 项失败为存量（见限制） | 符合 |
 | B7 | PyRIT 对象图 | 本包零 pyrit 导入 | 符合 |
 | B8 | 可追溯性 | issue #259 / 本文件 / PR 互链（阶段 11 补链） | 符合 |
-| C4 | 产物预算 | GLOSSARY 18233/18500；SKILL 11973/12000；单阶段记录 <2KB | 符合 |
+| C4 | 产物预算 | GLOSSARY 17491/17500（指针化）；SKILL 11973/12000；单阶段记录 <2KB | 符合 |
 
 **阶段 8–10 结论**：`PASS`（不符合项 0）。**审查方式限制**：子 agent 类型被运行配置禁用，阶段 10 改为主会话按 Standards/Spec 两轴顺序自审，未做独立第三方复核。
 

@@ -94,6 +94,12 @@ class CloudTests(unittest.TestCase):
         self.assertIs(verdict.outcome, Outcome.ABSENT)
         self.assertEqual(verdict.reason, "none_found")
 
+    def test_no_bucket_documents_non_cloud_rationale(self):
+        """C1：无 bucket 时产出可复现的「非云 AI 平台」判定依据。"""
+        verdict = path_a.cloud_misconfig(_ctx(FakeTransport({})))
+        self.assertIn("判定依据", verdict.output)
+        self.assertIn("无云 AI 平台特征", verdict.output)
+
     def test_anonymous_listing_success(self):
         argv = ("aws", "s3", "ls", "s3://b", "--no-sign-request", "--recursive")
         cmd = FakeCommand({argv: CommandResult(code=0, stdout="2026-01-01 model.bin")})

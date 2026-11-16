@@ -41,7 +41,7 @@
 | 检查 | 命令 | 结果 |
 |---|---|---|
 | 全量测试 | `python -m unittest discover -s tests` | `Ran 655 tests … OK (skipped=2)` |
-| 覆盖率 | `python scripts/measure_coverage.py --target attack-infra --min 80` | 1210/1329 = 91.0% |
+| 覆盖率 | `python scripts/measure_coverage.py --target attack-infra --min 80` | 1354/1487 = 91.1% |
 | 术语 | `python scripts/check_glossary.py` | PASS（47 废弃术语 0 命中） |
 | 技能结构 | `python scripts/validate_skill.py` | PASS（16 技能） |
 | 产物预算 | `python scripts/check_token_budget.py --check` | PASS |

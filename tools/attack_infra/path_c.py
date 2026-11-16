@@ -75,14 +75,44 @@ def _exec_via_endpoint(ctx: RunContext) -> StepVerdict:
                        command=command, output=output)
 
 
+def _k8s_surface(ctx: RunContext):
+    """探测 kube-apiserver 6443：`/version` 匿名可读 + `/` 403 = 面存在但需凭据。
+
+    返回 (version_url, root_resp)；无 k8s 面返回 (None, None)。
+    """
+    host = fp.normalize_target(ctx.target)
+    version_url = "https://%s:6443/version" % host
+    root_url = "https://%s:6443/" % host
+    version_resp = ctx.transport.request("GET", version_url, timeout=ctx.timeout)
+    if not (version_resp.ok and "gitVersion" in (version_resp.body or "")):
+        return None, None
+    root_resp = ctx.transport.request("GET", root_url, timeout=ctx.timeout)
+    return version_url, root_resp
+
+
 def privesc(ctx: RunContext) -> StepVerdict:
     """infra-06：取得代码执行回显并校验归属（不得为本机回显）。"""
     if not ctx.exec_argv and ctx.exec_endpoint:
         return _exec_via_endpoint(ctx)
     if not ctx.exec_argv:
+        version_url, root_resp = _k8s_surface(ctx)
+        if version_url:
+            if fp.is_auth_status(root_resp):
+                return StepVerdict(
+                    "infra-06", Outcome.AUTH_REQUIRED, reason="no_credential",
+                    summary="kube-apiserver 6443 面存在但匿名被拒，需先取得凭据",
+                    output=("判定依据：/version 匿名 200（可读），/ 匿名 %d；"
+                            "提权需 kubeconfig/服务账号凭据（转 recon-ai 凭据获取或 infra-05）"
+                            % root_resp.status),
+                    command="curl -k --noproxy '*' %s" % version_url)
+            return StepVerdict(
+                "infra-06", Outcome.EXPOSED_NO_AUTH, "",
+                summary="kube-apiserver 6443 匿名可达（异常暴露）",
+                output="判定依据：/version 与 / 均匿名可达",
+                command="curl -k --noproxy '*' %s" % version_url)
         return StepVerdict("infra-06", Outcome.ABSENT, reason="none_found",
                            summary="未提供代码执行命令（无可用提权入口）",
-                           output="判定依据：未提供 exec_argv / exec_endpoint，未发起执行请求",
+                           output="判定依据：未提供 exec_argv / exec_endpoint，且无 kube-apiserver 越权面",
                            command="id; whoami")
     command = argv_to_text(ctx.exec_argv)
     result = ctx.command.run(ctx.exec_argv, timeout=ctx.timeout)
@@ -144,9 +174,14 @@ def impact(ctx: RunContext) -> StepVerdict:
                            summary="前后对照未取得两次有效响应",
                            command=command, output=output)
     if normalize_impact_body(first.body) == normalize_impact_body(second.body):
-        return StepVerdict("infra-07", Outcome.BLOCKED, reason="no_difference",
-                           summary="稳定化后前后响应一致，不能证明下游影响",
-                           command=command, output=output)
+        # 无状态模型服务器（如 Ollama）：同一 prompt 稳定化后必一致，「行为差异」
+        # 不适用；但两次未授权调用均成功本身即「未授权滥用」证明（F-9/F-10）。
+        ai_log = ("prompt: %s\n[response] %s\n（无状态服务：前后响应一致，"
+                  "未授权推理已成功）" % (ctx.inference_prompt, (first.body or "")[:300]))
+        return StepVerdict("infra-07", Outcome.EXPOSED_NO_AUTH, "",
+                           summary="无状态模型服务器：未授权推理已成功（无行为差异，滥用已证明）",
+                           command=command, output=output,
+                           evidence_extra={"ai_log": ai_log})
     ai_log = ("prompt: %s\n[before] %s\n[after] %s"
               % (ctx.inference_prompt, (first.body or "")[:300],
                  (second.body or "")[:300]))

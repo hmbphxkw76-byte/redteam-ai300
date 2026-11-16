@@ -16,6 +16,8 @@ JSON_MODELS = "json_models"
 OLLAMA_TAGS = "ollama_tags"
 K8S_VERSION = "k8s_version"
 LITELLM_HEALTH = "litellm_health"
+GITLAB_VERSION = "gitlab_version"
+FLANNEL_HEALTHZ = "flannel_healthz"
 EMPTY_OK = "empty_ok"
 HTML = "html"
 AUTH = "auth"
@@ -41,6 +43,8 @@ CANDIDATE_PORTS: dict = {
     "ollama": (11434,),
     "k8s_apiserver": (6443,),
     "kubelet": (10250,),
+    "gitlab": (8080,),
+    "flannel": (8081,),
 }
 
 PROBES: Tuple[Probe, ...] = (
@@ -51,6 +55,8 @@ PROBES: Tuple[Probe, ...] = (
     Probe("litellm", "/health", (LITELLM_HEALTH, EMPTY_OK), (4000,)),
     Probe("k8s_apiserver", "/version", (K8S_VERSION,), (6443,)),
     Probe("kubelet", "/healthz", (EMPTY_OK, AUTH), (10250,)),
+    Probe("gitlab", "/api/v4/version", (GITLAB_VERSION, AUTH), (8080,)),
+    Probe("flannel", "/healthz", (FLANNEL_HEALTHZ,), (8081,)),
 )
 
 ALL_PORTS: Tuple[int, ...] = tuple(sorted({p for probe in PROBES for p in probe.ports}))
@@ -83,9 +89,13 @@ def shape_of(resp: HttpResponse) -> str:
                 return LITELLM_HEALTH
             if "gitVersion" in payload:
                 return K8S_VERSION
+            if "version" in payload and "revision" in payload:
+                return GITLAB_VERSION
             if payload.get("kind") == "Status":
                 return AUTH
         return ""
+    if "flanneld" in body.lower():
+        return FLANNEL_HEALTHZ
     if body == "" or body.lower() in ("ok", "ok\n", "ready", "live"):
         return EMPTY_OK
     return ""

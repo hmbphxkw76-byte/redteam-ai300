@@ -17,6 +17,7 @@ import os
 import subprocess
 import sys
 import unittest
+import unittest.mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
@@ -133,6 +134,20 @@ class CheckoutLockContractParsingTests(unittest.TestCase):
     def test_parse_change_commits_empty(self):
         mod = _load_checkout_lock()
         self.assertEqual(mod._parse_change_commits("无 commit 登记"), [])
+
+    def test_git_env_strips_push_injected_vars(self):
+        """回归：pre-push 注入的 GIT_DIR 等须被剥离，否则每个 git -C worktree
+        仍指向调用 push 的仓库，导致「所有 worktree 改动同一文件」的假阳性。"""
+        mod = _load_checkout_lock()
+        with unittest.mock.patch.dict(
+            os.environ,
+            {"GIT_DIR": "D:/fake/.git/worktrees/x", "GIT_WORK_TREE": "D:/fake",
+             "GIT_INDEX_FILE": "D:/fake/index", "GIT_COMMON_DIR": "D:/fake/.git"},
+        ):
+            env = mod._git_env()
+        for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_PREFIX"):
+            self.assertNotIn(key, env, "git 环境变量 %s 未被剥离" % key)
+        self.assertIn("PATH", env, "环境应保留非 git 变量")
 
 
 if __name__ == "__main__":

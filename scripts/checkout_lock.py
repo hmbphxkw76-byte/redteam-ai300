@@ -49,8 +49,23 @@ def _parse_change_commits(text: str) -> list[tuple[str, str]]:
     return CHANGE_RE.findall(text)
 
 
+def _git_env() -> dict[str, str]:
+    """隔离 git 环境变量。
+
+    pre-push hook 运行时 git 会注入 GIT_DIR / GIT_WORK_TREE / GIT_INDEX_FILE /
+    GIT_PREFIX。若继承这些变量，每个 `git -C <worktree>` 仍指向调用 push 的那个
+    worktree 的仓库，导致「所有 worktree 都被判改动同一文件」的假阳性（实证：
+    在 worktree 内 push 时 lock 误报 GLOSSARY.md 被 7 个 worktree 改动）。
+    此处构造干净环境，让 `-C` 按各 worktree 自身仓库解析。
+    """
+    env = dict(os.environ)
+    for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_PREFIX", "GIT_COMMON_DIR"):
+        env.pop(key, None)
+    return env
+
+
 def _run(cmd: list[str], cwd: str | None = None, check: bool = True) -> subprocess.CompletedProcess:
-    proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=_git_env())
     if check and proc.returncode != 0:
         raise RuntimeError(
             "命令失败: %s\n%s\n%s" % (" ".join(cmd), proc.stdout, proc.stderr)

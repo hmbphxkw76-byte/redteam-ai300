@@ -40,7 +40,7 @@ jobs:
           python scripts/validate_skill.py
           python scripts/check_glossary.py
       - name: 运行测试
-        run: python -m unittest discover -s tests -q
+        run: python -m unittest discover -s tests -t . -q
       - name: 打包产物
         run: |
           mkdir -p dist

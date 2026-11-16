@@ -2,8 +2,8 @@
 
 # capstone-rehearse — 工程规格 v2（定稿 · 可验证性收敛）
 
-> 阶段 3 `to-spec` ②（独立第二遍）· 输入：v1（#231 正文）、阶段 1 调研（G-A…G-F）、§8.2、CI-CD S1–S4、PyRIT 权威索引（版本归属偏差见 VG-6）。
-> **活版本 = v2**（工程规格 How to verify）；v1 保留全文为「行为规格 What」，不改写、不取代；二者经 issue #231 正文与本评论双向互链，不存在两套冲突的当前规格。
+> 阶段 3 `to-spec` ② · 输入：v1（#231）、调研（G-A…G-F）、§8.2、CI-CD S1–S4、PyRIT 索引（偏差见 VG-6）。
+> **活版本 = v2**（How to verify）；v1 为「行为规格 What」，不改写；二者经 issue #231 双向互链，无冲突当前规格。
 
 ---
 
@@ -34,7 +34,7 @@
 | AC-19 | 21/30 | 退出码 0=PASS / 1=未过 / 2=用法错误，与 `ready_for_exam` 一致；摘要含阻断缺口数 | CLI 三态夹具 |
 | AC-20 | 32 | 每条判定附一手来源锚点；规格/门禁/issue 只写 `路径#锚点`，不复述宪法条款（C1/T1） | 人工抽检 |
 | AC-21 | 09/30 | 走查步骤含「命令+输出+截图」三件套与 AI 交互日志；不取 flag，双通道标 N/A 不伪造 | 证据契约测试 |
-| AC-22 | 20/30 | 全量 `unittest discover -s tests` 通过；业务代码行覆盖率 ≥80% | S2 实跑 |
+| AC-22 | 20/30 | 全量 `unittest discover -s tests -t .` 通过；业务代码行覆盖率 ≥80% | S2 实跑 |
 | AC-23 | 25 | 零 `import pyrit`；无 `pyrit.orchestrator`/`*Orchestrator`/`AzureOpenAIChatTarget` 实现引用 | 源码扫描 |
 | AC-24 | — | C4：v2 ≤10KB、门禁记录 ≤2KB、issue 摘要 ≤400B、brief ≤1KB、PR 正文 ≤3KB | `--artifact` |
 | AC-25 | — | §2.3 上游复核：v1 字节数与 32 条 US 未变；互链与活版本标记完整 | 哈希+issue 检查 |
@@ -54,13 +54,13 @@
 
 | AC | 阶段 | 落地检查 |
 |---|---|---|
-| AC-01…14、16…19、21、22 | S2 | `unittest discover -s tests` + `scripts/measure_coverage.py`（门限 80） |
+| AC-01…14、16…19、21、22 | S2 | `unittest discover -s tests -t .` + `scripts/measure_coverage.py`（门限 80） |
 | AC-15、23、24 | S1 | `check_glossary.py` / 源码扫描 / `check_token_budget.py` |
 | AC-04、12、20 | S1 | `validate_skill.py`（§4.2）+ 文档锚点抽检 |
 | AC-25 | S4 | main 合并后全量合规套件复核互链 |
 | 全 AC | S0 | Conventional Commits、秘密扫描、`checkout_lock.py --check` |
 
-S3 不新增检查；S3/S4 仅 main 触发；推送双通道各试一次即停。
+S3 不新增检查；S3/S4 仅 main 触发；推送双通道各试一次即停
 
 ## 4. 收敛决策（对象图与 seam）
 

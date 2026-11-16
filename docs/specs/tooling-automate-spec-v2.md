@@ -28,7 +28,7 @@
 | AC-16 | 10,16 | 编排层只串联既有门禁脚本，S1/S2 不退化 | `test_no_gate_redefinition`；CI S1/S2 通过 |
 | AC-17 | — | 只读编排：不改证据本体、不回写登记簿、不改写报告 | `test_readonly` 断言无副作用调用 |
 | AC-18 | 29 | 不含攻击逻辑、不调用 PyRIT 对象图 | `grep -rn "from pyrit\|import pyrit" tools/tooling_automate` 空 |
-| AC-19 | — | 全量 `unittest` 通过（0 失败 0 错误） | `python -m unittest discover -s tests` |
+| AC-19 | — | 全量 `unittest` 通过（0 失败 0 错误） | `python -m unittest discover -s tests -t .` |
 | AC-20 | — | 业务代码行覆盖率 ≥80% | `scripts/measure_coverage.py`，门限 80 |
 
 **冲突处理**：AC 之间无互斥；AC-03 与 AC-11 的覆盖率语义一致（手动单列不充数）。
@@ -46,7 +46,7 @@
 
 | AC | CI 阶段 | 落地检查 |
 |---|---|---|
-| AC-01…AC-14,17,18 | S2 | `python -m unittest discover -s tests` |
+| AC-01…AC-14,17,18 | S2 | `python -m unittest discover -s tests -t .` |
 | AC-15,16,18 | S1 | `py_compile` + `grep` 依赖/pyrit 检查 |
 | AC-19 | S1+S2 | `unittest` 全量 |
 | AC-20 | S2 | `scripts/measure_coverage.py`（门限 80） |

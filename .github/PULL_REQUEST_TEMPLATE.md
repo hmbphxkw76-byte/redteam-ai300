@@ -16,4 +16,4 @@
 - [ ] 已在 `GOVERNANCE.md` §4.4 登记（新增技能时）
 - [ ] 术语符合 `GLOSSARY.md`（无 `_Avoid_` 废弃术语）
 - [ ] 本地已通过：`python scripts/validate_skill.py && python scripts/check_glossary.py`
-- [ ] 本地测试通过：`python -m pytest tests/ -q`
+- [ ] 本地测试通过：`python -m unittest discover -s tests -t . -q`

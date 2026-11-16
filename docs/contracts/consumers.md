@@ -3,6 +3,7 @@
 > **性质**：单一事实源（`AGENTS.md` C1）。登记每个 `tools/collect_evidence.py` 契约消费者及其依赖的契约元素；契约元素名以 `docs/contracts/collect_evidence.contract.md` 为准。
 > **维护规则**：新技能落地消费共享工具时新增一行（状态 `未合入`）；合入 `main` 后改状态为 `已合入`。改动共享工具契约时，须保证所有消费者的「依赖契约元素」仍在清单中出现（由 `scripts/check_contract_consumers.py` 断言）。
 > **依赖元素用逗号分隔；元素名必须逐字出现在契约清单中**。
+> **跨包共享 seam**：`tools/recon_ai/evidence.py` 的 `EvidenceWriter` / `load_manifest` 是仓库级公共适配层，`attack-mcp-tool` / `attack-embeddings` / `attack-rag` / `attack-multi-agent` 均通过其 `evidence.py` 复用，物理位置刻意保留在 recon-ai 包内（避免 import 路径扩散）。职责边界见该模块 docstring；格式唯一事实源仍为 `tools/collect_evidence.py`。
 
 | 技能 | 状态 | 消费入口 | 依赖契约元素 |
 |---|---|---|---|

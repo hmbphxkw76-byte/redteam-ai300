@@ -8,16 +8,16 @@
 
 | AC | 来源 US | 布尔验收条件 | 检查命令 / 人工判据 |
 |---|---|---|---|
-| AC-1 | US-1 | `curl <API>/v1/models` 或本地夹具返回模型清单，且含 ≥1 个 embedding 模型条目 | `pytest tests/test_attack_embeddings.py -k test_surface_enumeration` |
+| AC-1 | US-1 | `curl <API>/v1/models` 或本地夹具返回模型清单，且含 ≥1 个 embedding 模型条目 | `pytest tests/attack_embeddings/test_attack_embeddings.py -k test_surface_enumeration` |
 | AC-2 | US-2 | 探测文本提交后返回 JSON 含 `dimensions` 与 `model` 字段；baseline 相似度记录落盘 | `pytest -k test_probe_dimensions`；人工核验 loot 基线文件 |
 | AC-3 | US-3 | `Vec2TextInverter` 对合成 32-token 样本 exact-match 率 ≥ 0.5（本地夹具，记录对照 S-1 的 92%）；输出还原文本 | `pytest -k test_invert_exact_match`；人工核验还原率报告 |
 | AC-4 | US-4 | `MembershipInference.noisy_neighbors` 对 member/non-member 困惑度差的 ROC AUC ≥ 0.65（本地夹具，对照 S-7 的 0.73） | `pytest -k test_membership_auc`；人工核验 AUC 曲线 |
 | AC-5 | US-5 | `AdversarialEmbedder` 扰动后目标查询 top-k 相似度偏移 ≥ 阈值 或 检索排名变化；输出 before/after | `pytest -k test_adversarial_shift`；人工核验偏移量 |
 | AC-6 | US-6 | `VectorLookup.query(store, concept, topk)` 返回 ≥1 文档块含源文本；越权场景返回未授权文档 | `pytest -k test_vector_lookup`；越权命中为人工判据 |
 | AC-7 | US-7 | `RagImpactDiff` 产出 baseline vs manipulated 检索差异，且含 AI 交互日志路径 | `pytest -k test_rag_impact`；人工核验日志路径 |
-| AC-8 | US-8 | emb-08 证据含 `whoami`/`id` + `ai_vector.txt` 内容同屏；flag 双通道一致或可经校验预言机等价 | `pytest tests/test_<name>_evidence_contract.py`；人工核验双通道 |
-| AC-9 | US-9 | 各证据步骤含可 copy/paste 命令；tests 端到端复现无外部依赖（仅本地夹具） | `pytest tests/test_attack_embeddings.py` 全绿 |
-| AC-10 | US-10 | 每步三件套齐全；evidence_contract 断言「命令+输出+截图」三件套与 AI 交互日志 | `pytest tests/test_attack_embeddings_evidence_contract.py` |
+| AC-8 | US-8 | emb-08 证据含 `whoami`/`id` + `ai_vector.txt` 内容同屏；flag 双通道一致或可经校验预言机等价 | `python -m unittest tests/<skill>/test_<name>_evidence_contract`；人工核验双通道 |
+| AC-9 | US-9 | 各证据步骤含可 copy/paste 命令；tests 端到端复现无外部依赖（仅本地夹具） | `pytest tests/attack_embeddings/test_attack_embeddings.py` 全绿 |
+| AC-10 | US-10 | 每步三件套齐全；evidence_contract 断言「命令+输出+截图」三件套与 AI 交互日志 | `pytest tests/attack_embeddings/test_attack_embeddings_evidence_contract.py` |
 | AC-11 | US-11 | 降级路径（无接口/部分生效/被拦截/诱饵机）有对应处理且不空耗（诱饵机 ≤30min 结束） | `pytest -k test_fallback_paths`；人工核验降级日志 |
 
 ## 2. 测试决策（只测外部行为）

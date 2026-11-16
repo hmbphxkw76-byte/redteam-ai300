@@ -29,7 +29,7 @@
 | AC-17 | US-01 | 三件套判定复用登记簿既有实现（以替身断言被调用），本技能不另立判据 | 替身调用计数 |
 | AC-18 | US-19 | `report_exam` 委托调用不破：真实构建日志含 `verify-evidence: passed` | `report-toolchain.yml` 断言 |
 | AC-19 | — | 业务代码行覆盖率 ≥80% | `scripts/measure_coverage.py` |
-| AC-20 | — | 全量 `unittest` 通过（0 失败 0 错误） | `python -m unittest discover -s tests` |
+| AC-20 | — | 全量 `unittest` 通过（0 失败 0 错误） | `python -m unittest discover -s tests -t .` |
 
 **冲突处理**：AC 之间无互斥；AC-12 与 AC-16 的 `passed` 语义一致（`pending` 不计阻断）。
 
@@ -37,16 +37,16 @@
 
 1. **只测外部行为**：断言单位是「输入 → `checks` 布尔表 / `blocking` / `missing` / `pending` / 退出码」，不断言私有函数调用顺序。AC-17 的替身计数是唯一例外，理由是「判据单一事实源」本身是验收对象。
 2. **替身边界**：技能校验器、术语检查器、文件系统 stat、时钟四类经注入点替换；不 mock 标准库 `json`。
-3. **夹具组织**：以 `TemporaryDirectory` 构造「合规包 / 每 AC 一个不合规包」，复用既有 `tests/test_verify_evidence.py` 的构造器风格（`payload()` / `frag()`），新增 `loot` 文本夹具与假时钟。
+3. **夹具组织**：以 `TemporaryDirectory` 构造「合规包 / 每 AC 一个不合规包」，复用既有 `tests/shared_tools/test_verify_evidence.py` 的构造器风格（`payload()` / `frag()`），新增 `loot` 文本夹具与假时钟。
 4. **红—绿—重构**：每条 AC 先写失败用例（红）并保留输出摘要，再最小改动转绿，最后重构复跑。
-5. **既有参考测试**：`tests/test_verify_evidence.py`（10 用例，全部保留且必须继续通过）、`tests/test_report_exam.py`（委托调用回归）、`tests/test_loot_manage.py`（三件套判据同源回归）。
+5. **既有参考测试**：`tests/shared_tools/test_verify_evidence.py`（10 用例，全部保留且必须继续通过）、`tests/report_exam/test_report_exam.py`（委托调用回归）、`tests/loot_manage/test_loot_manage.py`（三件套判据同源回归）。
 6. **不新增 S2 证据契约夹具**：本技能不产生 per-step 攻击证据（S1-only），S2 覆盖即本文件的 AC 用例集。
 
 ## 3. CI 门禁映射
 
 | AC | CI 阶段 | 落地检查 |
 |---|---|---|
-| AC-02/05/06/07/08/09/10/11/12/13/14/15/16/17 | S2 | `python -m unittest discover -s tests` |
+| AC-02/05/06/07/08/09/10/11/12/13/14/15/16/17 | S2 | `python -m unittest discover -s tests -t .` |
 | AC-01/03/04 | S2 | 同上（含注入替身用例） |
 | AC-19 | S2 | `scripts/measure_coverage.py`，门限 80 |
 | AC-18 | S3 构建链（`report-toolchain.yml`） | `grep -q "verify-evidence: passed"` |
@@ -79,6 +79,6 @@
 | VG-2 | 访问证明是否必须含 `whoami`/`id` 无 S3 原文 | AC-07 实现为「可配置必需标记集」，默认 `whoami`/`id`，SKILL 标注为人工判据兜底 |
 | VG-3 | pandoc/7z 未生成时不可提交 | AC-12 pending 语义，`submission_ready=false` |
 | VG-4 | 真实取分不可本地复现 | 人工考试边界，夹具自证；CI 以 dry-run + 假时间戳覆盖 |
-| R-1 | 既有 10 用例回归被新判据打断 | AC-20 + 保留 `tests/test_verify_evidence.py` 全部用例；不顺从不许放宽判据 |
+| R-1 | 既有 10 用例回归被新判据打断 | AC-20 + 保留 `tests/shared_tools/test_verify_evidence.py` 全部用例；不顺从不许放宽判据 |
 
 **NOTE 标记口径**（区别于 VG 核实闸：NOTE 为「机器不可判、须人工确认」的缺口项，只进 `missing`，不阻断 `passed`、也不改变 `submission_ready` 之外的语义）：NOTE-5 提交窗口时间未提供；NOTE-6 目标分值表未提供；NOTE-7 访问证明无内联文本（纯图片）；NOTE-8 归档密码态不可判（无 7z）；NOTE-9 AI 生成内容入正文的人工校验标注（§5.5）；NOTE-10 每主机五段式与 copy/paste 可复现性（§7.2）。VG-3/VG-4 仍按 §6 定义作为 pending 核实闸。

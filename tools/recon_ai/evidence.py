@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""证据落盘 seam（S2）：委托共享收集器，不重实现格式。
+"""证据落盘 seam（S2）：跨包共享公共 seam，委托共享收集器，不重实现格式。
 
-单一事实源：片段结构、件套判定、flag 双通道、证据清单 JSONL 均由
-`tools/collect_evidence.py` 定义；本模块只负责「把一次步骤的执行结果喂给它」。
-这使得 `report-exam` / CI 与本技能消费同一格式，避免两套判据漂移（C1）。
+【公共 seam 职责声明（C1 单一事实源）】
+本模块虽物理位于 `tools/recon_ai/` 包内，但其 `EvidenceWriter` / `load_manifest`
+是**仓库级共享证据适配层**，由以下技能跨包直接复用（保持原 import 路径，不迁移）：
+  - `tools/attack_mcp_tool/evidence.py`
+  - `tools/attack_embeddings/evidence.py`
+  - `tools/attack_rag/evidence.py`
+  - `tools/attack_multi_agent/evidence.py`
+消费者清单以 `docs/contracts/consumers.md` 为准；格式唯一事实源为
+`tools/collect_evidence.py`。修改本模块须按共享文件对待：影响上述 4 个技能，
+须同步契约清单 CHANGELOG 并经 checkout_lock 门禁（ADR-0006）。
+物理位置刻意保留在 recon_ai 包内，不新建公共包，避免 import 路径变更扩散。
 """
 import os
 import subprocess
@@ -15,7 +23,12 @@ DEFAULT_TOOL = os.path.join(ROOT, "tools", "collect_evidence.py")
 
 
 class EvidenceWriter:
-    """证据写入器：子进程调用共享收集器（保证行为与 CLI 完全一致）。"""
+    """证据写入器：子进程调用共享收集器（保证行为与 CLI 完全一致）。
+
+    契约：符合 `tools/_evidence_contract.py#EvidenceWriterContract` 最小接口
+    （describe / fragment_path / emit），由 scripts/check_evidence_contract.py 校验。
+    本类为跨包共享公共 seam，签名与关键字别名保持不变。
+    """
 
     def __init__(self, out_dir, manifest="", tool_path=DEFAULT_TOOL,
                  python=None, timeout=120):

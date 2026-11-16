@@ -22,7 +22,7 @@
 | AC-12 | 影响取证片段同时含 before/after 两段响应；两段完全相同 → 不判「已证明影响」 | US-09 |
 | AC-13 | `infra-07`、`infra-08` 片段缺失 AI 交互日志或 flag 通道之一 → 该步判定失败（非 `EXPLOITED`） | US-09、US-10 |
 | AC-14 | flag 双通道：面板值与截图值一致才判 `EXPLOITED`；不一致判 `BLOCKED` | US-10 |
-| AC-15 | 八个步骤各有可运行入口（`infra-01..infra-08`），每步产出 1 份片段；`tests/test_attack_infra_evidence_contract.py` 保持全绿 | US-11、US-15 |
+| AC-15 | 八个步骤各有可运行入口（`infra-01..infra-08`），每步产出 1 份片段；`tests/attack_infra/test_attack_infra_evidence_contract.py` 保持全绿 | US-11、US-15 |
 | AC-16 | `ABSENT` 结局的报告含转技能建议（`attack-mcp-tool` / `attack-ai-agent` 二者之一或多个），无建议判失败 | US-12 |
 | AC-17 | 输入判据为疑似诱饵机时，报告给出「提前终止 + 判定依据」两项，且不继续发探测请求（假传输断言零请求） | US-13 |
 | AC-18 | 报告中每条命令为可直接执行的完整字符串，且不含未替换占位符（断言不含 `<` 与 `>` 包裹的占位片段） | US-14 |
@@ -39,7 +39,7 @@
 - **替身**：路由表假传输（键=`方法 路径`，值=状态码/`Content-Type`/体）、假执行器（stdout+exit+耗时）、假证据容器（记录入参）。
 - **必测负例**：SPA 回退 → `ABSENT`；代理 `502` → 网络失败；kubelet `401` → `AUTH_REQUIRED`；本机回显 → `BLOCKED(local_echo)`；缺失 `--ai-log` → 该步失败。
 - **必测正例**：Ollama 形态 `/v1/models` → `EXPOSED_NO_AUTH`；推理成功 → `EXPLOITED`；Triton `v2/health/ready` 200 → 命中 `triton`。
-- **参考范式**：`tests/test_recon_ai.py`（假传输 + 判定断言）、`tests/test_attack_mcp_tool_units.py`（模块单测）、`tests/test_attack_infra_evidence_contract.py`（契约）。
+- **参考范式**：`tests/recon_ai/test_recon_ai.py`（假传输 + 判定断言）、`tests/attack_mcp_tool/test_attack_mcp_tool_units.py`（模块单测）、`tests/attack_infra/test_attack_infra_evidence_contract.py`（契约）。
 - **红—绿—重构**：每条 AC 先落一个失败用例并留存失败输出，再最小实现转绿，最后重构复跑。
 
 ### 3. 门禁映射
@@ -48,7 +48,7 @@
 |---|---|---|
 | B1 | AC-22 | `python scripts/validate_skill.py` |
 | B2 | AC-22、AC-24 | `python scripts/check_glossary.py` |
-| B3 | AC-19、AC-20 | `python -m py_compile …`；`python -m unittest discover -s tests` |
+| B3 | AC-19、AC-20 | `python -m py_compile …`；`python -m unittest discover -s tests -t .` |
 | B4 | AC-13、AC-15 | 每步 `collect_evidence.py --step infra-0N --strict`；契约夹具 |
 | B5 | AC-14 | flag 双通道一致性断言 |
 | B6 | AC-20、AC-21 | 覆盖率 + CI S1–S4 |

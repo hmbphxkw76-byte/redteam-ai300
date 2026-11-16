@@ -30,7 +30,12 @@ AI_LOG_NOTE = ("模型：本次走查由确定性判据执行，未调用 LLM �
 
 
 class EvidenceWriter:
-    """证据写入器：子进程调用共享收集器（与 decoy_detect 同一适配模式）。"""
+    """证据写入器：子进程调用共享收集器（与 decoy_detect 同一适配模式）。
+
+    契约：符合 `tools/_evidence_contract.py#EvidenceWriterContract` 最小接口
+    （describe / fragment_path / emit），由 scripts/check_evidence_contract.py 校验。
+    本类为 skill 薄封装，构造签名与关键字别名保持不变。
+    """
 
     def __init__(self, out_dir: str, python: str = None,
                  collector: str = COLLECTOR, root: str = ROOT):

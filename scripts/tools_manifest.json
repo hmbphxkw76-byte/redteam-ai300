@@ -1,0 +1,313 @@
+{
+  "schema_version": "1.0",
+  "note": "S1 编译清单 + S2 覆盖率目标映射的单一来源（C1）。替换 ci.yml 中散落的 py_compile glob 长行；补齐原遗漏的 5 个包与 10 个顶层脚本。覆盖率模块/测试集与原 measure_coverage.py 逐项等价。",
+  "compile": {
+    "packages": [
+      "tools/attack_ai_agent",
+      "tools/attack_embeddings",
+      "tools/attack_infra",
+      "tools/attack_mcp_tool",
+      "tools/attack_multi_agent",
+      "tools/attack_rag",
+      "tools/attack_supply_chain",
+      "tools/capstone_rehearse",
+      "tools/decoy_detect",
+      "tools/loot_manage",
+      "tools/recon_ai",
+      "tools/report_exam",
+      "tools/threat_model",
+      "tools/tooling_automate"
+    ],
+    "scripts": [
+      "tools/_evidence_contract.py",
+      "tools/adv_embed.py",
+      "tools/agent_impersonate.py",
+      "tools/collect_evidence.py",
+      "tools/context_poison.py",
+      "tools/dataset_poison.py",
+      "tools/dep_poison.py",
+      "tools/embed_invert.py",
+      "tools/inject_kb.py",
+      "tools/membership_inference.py",
+      "tools/memory_poison.py",
+      "tools/model_poison.py",
+      "tools/msg_inject.py",
+      "tools/pipeline_poison.py",
+      "tools/scored_targets.py",
+      "tools/serve_malicious_mcp.py",
+      "tools/trigger_poison.py",
+      "tools/vector_lookup.py",
+      "tools/verify_evidence.py",
+      "tools/workflow_disrupt.py"
+    ],
+    "helper_scripts": [
+      "scripts/check_contract_consumers.py",
+      "scripts/check_contract_manifest.py",
+      "scripts/check_evidence_contract.py",
+      "scripts/check_glossary.py",
+      "scripts/check_report_assets.py",
+      "scripts/check_token_budget.py",
+      "scripts/check_tools_compile.py",
+      "scripts/checkout_lock.py",
+      "scripts/ci_cleanup.py",
+      "scripts/mainline_worktree.py",
+      "scripts/measure_coverage.py",
+      "scripts/validate_skill.py"
+    ]
+  },
+  "coverage_targets": [
+    {
+      "name": "attack-ai-agent",
+      "modules": [
+        "tools.attack_ai_agent.runner",
+        "tools.attack_ai_agent.backends",
+        "tools.attack_ai_agent.paths",
+        "tools.attack_ai_agent.steps"
+      ],
+      "tests": [
+        "tests.attack_ai_agent.test_attack_ai_agent_runner",
+        "tests.attack_ai_agent.test_attack_ai_agent_evidence_contract",
+        "tests.attack_ai_agent.test_attack_ai_agent_adapters"
+      ]
+    },
+    {
+      "name": "report-exam",
+      "modules": [
+        "tools.report_exam._types",
+        "tools.report_exam.index",
+        "tools.report_exam.skeleton",
+        "tools.report_exam.sections",
+        "tools.report_exam.ai_appendix",
+        "tools.report_exam.bilingual",
+        "tools.report_exam.package",
+        "tools.report_exam.assemble"
+      ],
+      "tests": [
+        "tests.report_exam.test_report_exam",
+        "tests.report_exam.test_report_exam_evidence_contract"
+      ]
+    },
+    {
+      "name": "recon-ai",
+      "modules": [
+        "tools.recon_ai.model",
+        "tools.recon_ai.transport",
+        "tools.recon_ai.fingerprint",
+        "tools.recon_ai.probes",
+        "tools.recon_ai.shot",
+        "tools.recon_ai.evidence",
+        "tools.recon_ai.policy",
+        "tools.recon_ai.inventory",
+        "tools.recon_ai.runner",
+        "tools.recon_ai.cli"
+      ],
+      "tests": [
+        "tests.recon_ai.test_recon_ai",
+        "tests.recon_ai.test_recon_ai_units"
+      ]
+    },
+    {
+      "name": "attack-mcp-tool",
+      "modules": [
+        "tools.attack_mcp_tool.model",
+        "tools.attack_mcp_tool.transport",
+        "tools.attack_mcp_tool.mcp",
+        "tools.attack_mcp_tool.poison",
+        "tools.attack_mcp_tool.grade",
+        "tools.attack_mcp_tool.evidence",
+        "tools.attack_mcp_tool.shot",
+        "tools.attack_mcp_tool.steps",
+        "tools.attack_mcp_tool.runner",
+        "tools.attack_mcp_tool.cli"
+      ],
+      "tests": [
+        "tests.attack_mcp_tool.test_attack_mcp_tool_runner",
+        "tests.attack_mcp_tool.test_attack_mcp_tool_poison",
+        "tests.attack_mcp_tool.test_attack_mcp_tool_flag",
+        "tests.attack_mcp_tool.test_attack_mcp_tool_units",
+        "tests.attack_mcp_tool.test_attack_mcp_tool_evidence_contract"
+      ]
+    },
+    {
+      "name": "attack-supply-chain",
+      "modules": [
+        "tools.attack_supply_chain.recon_input",
+        "tools.attack_supply_chain.poison_engine",
+        "tools.attack_supply_chain.model_scan",
+        "tools.attack_supply_chain.injector",
+        "tools.attack_supply_chain.evidence",
+        "tools.attack_supply_chain.workflow"
+      ],
+      "tests": [
+        "tests.attack_supply_chain.test_attack_supply_chain_seams",
+        "tests.attack_supply_chain.test_attack_supply_chain_evidence_contract"
+      ]
+    },
+    {
+      "name": "decoy-detect",
+      "modules": [
+        "tools.decoy_detect.model",
+        "tools.decoy_detect.features",
+        "tools.decoy_detect.timebox",
+        "tools.decoy_detect.policy",
+        "tools.decoy_detect.listgen",
+        "tools.decoy_detect.validate",
+        "tools.decoy_detect.evidence",
+        "tools.decoy_detect.runner",
+        "tools.decoy_detect.cli"
+      ],
+      "tests": [
+        "tests.decoy_detect.test_decoy_detect_units",
+        "tests.decoy_detect.test_decoy_detect_evidence_contract"
+      ]
+    },
+    {
+      "name": "loot-manage",
+      "modules": [
+        "tools.loot_manage.registry",
+        "tools.loot_manage.cli"
+      ],
+      "tests": [
+        "tests.loot_manage.test_loot_manage",
+        "tests.loot_manage.test_loot_manage_evidence_contract"
+      ]
+    },
+    {
+      "name": "attack-multi-agent",
+      "modules": [
+        "tools.attack_multi_agent.model",
+        "tools.attack_multi_agent.a2a",
+        "tools.attack_multi_agent.scanner",
+        "tools.attack_multi_agent.steps",
+        "tools.attack_multi_agent.grade",
+        "tools.attack_multi_agent.evidence",
+        "tools.attack_multi_agent.shot",
+        "tools.attack_multi_agent.transport",
+        "tools.attack_multi_agent.runner",
+        "tools.attack_multi_agent.cli",
+        "tools.attack_multi_agent.poc",
+        "tools.msg_inject",
+        "tools.agent_impersonate",
+        "tools.memory_poison",
+        "tools.context_poison",
+        "tools.workflow_disrupt"
+      ],
+      "tests": [
+        "tests.attack_multi_agent.test_attack_multi_agent_units",
+        "tests.attack_multi_agent.test_attack_multi_agent_runner",
+        "tests.attack_multi_agent.test_attack_multi_agent_evidence_contract",
+        "tests.attack_multi_agent.test_attack_multi_agent_tools"
+      ]
+    },
+    {
+      "name": "attack-embeddings",
+      "modules": [
+        "tools.attack_embeddings.model",
+        "tools.attack_embeddings.attacks",
+        "tools.attack_embeddings.harness",
+        "tools.attack_embeddings.runner",
+        "tools.attack_embeddings.evidence",
+        "tools.attack_embeddings.cli"
+      ],
+      "tests": [
+        "tests.attack_embeddings.test_attack_embeddings",
+        "tests.attack_embeddings.test_attack_embeddings_evidence_contract"
+      ]
+    },
+    {
+      "name": "threat-model",
+      "modules": [
+        "tools.threat_model.model",
+        "tools.threat_model.classify",
+        "tools.threat_model.score",
+        "tools.threat_model.boundaries",
+        "tools.threat_model.decoy",
+        "tools.threat_model.graph",
+        "tools.threat_model.render",
+        "tools.threat_model.cli"
+      ],
+      "tests": [
+        "tests.threat_model.test_threat_model",
+        "tests.threat_model.test_threat_model_evidence_contract"
+      ]
+    },
+    {
+      "name": "verify-evidence",
+      "modules": [
+        "tools.verify_evidence"
+      ],
+      "tests": [
+        "tests.shared_tools.test_verify_evidence"
+      ]
+    },
+    {
+      "name": "attack-rag",
+      "modules": [
+        "tools.attack_rag.model",
+        "tools.attack_rag.embedder",
+        "tools.attack_rag.harness",
+        "tools.attack_rag.poisoned_rag",
+        "tools.attack_rag.retrieval_probe",
+        "tools.attack_rag.decision_diff",
+        "tools.attack_rag.xapia",
+        "tools.attack_rag.backends",
+        "tools.attack_rag.evidence",
+        "tools.attack_rag.surface",
+        "tools.attack_rag.ingest",
+        "tools.attack_rag.index_tamper",
+        "tools.attack_rag.steps",
+        "tools.attack_rag.runner",
+        "tools.attack_rag.cli"
+      ],
+      "tests": [
+        "tests.attack_rag.test_attack_rag",
+        "tests.attack_rag.test_attack_rag_evidence_contract"
+      ]
+    },
+    {
+      "name": "attack-infra",
+      "modules": [
+        "tools.attack_infra.model",
+        "tools.attack_infra.transport",
+        "tools.attack_infra.command",
+        "tools.attack_infra.evidence",
+        "tools.attack_infra.shot",
+        "tools.attack_infra.fingerprint",
+        "tools.attack_infra.inventory",
+        "tools.attack_infra.path_a",
+        "tools.attack_infra.path_b",
+        "tools.attack_infra.path_c",
+        "tools.attack_infra.report",
+        "tools.attack_infra.runner",
+        "tools.attack_infra.cli",
+        "tools.attack_infra.provenance"
+      ],
+      "tests": [
+        "tests.attack_infra.test_attack_infra_units",
+        "tests.attack_infra.test_attack_infra_path_a",
+        "tests.attack_infra.test_attack_infra_path_b",
+        "tests.attack_infra.test_attack_infra_path_c",
+        "tests.attack_infra.test_attack_infra_runner",
+        "tests.attack_infra.test_attack_infra_evidence_contract"
+      ]
+    },
+    {
+      "name": "tooling-automate",
+      "modules": [
+        "tools.tooling_automate.manifest",
+        "tools.tooling_automate.runner",
+        "tools.tooling_automate.reuse",
+        "tools.tooling_automate.summary",
+        "tools.tooling_automate.cli"
+      ],
+      "tests": [
+        "tests.tooling_automate.test_tooling_manifest",
+        "tests.tooling_automate.test_tooling_runner",
+        "tests.tooling_automate.test_tooling_reuse",
+        "tests.tooling_automate.test_tooling_summary",
+        "tests.tooling_automate.test_tooling_evidence_contract",
+        "tests.tooling_automate.test_tooling_tdd_contract"
+      ]
+    }
+  ]
+}

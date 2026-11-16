@@ -84,14 +84,13 @@ jobs:
           git fetch --depth=1 origin "$BASE_SHA" || true
           CHANGED="$(git diff --name-only "$BASE_SHA" HEAD 2>/dev/null || true)"
           python scripts/check_contract_manifest.py --pr-body /tmp/osai_pr_body.md --changed $CHANGED
-      - name: 共享工具与新模块语法编译 (S1)
-        run: python -m py_compile tools/collect_evidence.py tools/recon_ai/*.py tools/decoy_detect/*.py tools/loot_manage/*.py tools/attack_embeddings/*.py tools/attack_multi_agent/*.py tools/attack_supply_chain/*.py tools/verify_evidence.py tools/attack_ai_agent/*.py tools/attack_mcp_tool/*.py tools/attack_rag/*.py tools/serve_malicious_mcp.py tools/report_exam/*.py scripts/*.py
-      - name: attack-multi-agent 示意脚本语法编译 (S1)
-        # SKILL.md 攻击路径 A/B/C 点名的 5 个顶层薄壳（独立步骤，避免与并发会话共用长行）
-        run: python -m py_compile tools/msg_inject.py tools/agent_impersonate.py tools/memory_poison.py tools/context_poison.py tools/workflow_disrupt.py
-      - name: attack-rag 注入脚本语法编译 (S1)
-        # SKILL.md 路径 A 点名的 inject_kb.py（独立步骤，避免与并发会话共用长行）
-        run: python -m py_compile tools/inject_kb.py
+      - name: 显式清单语法编译 (S1)
+        # 编译范围唯一来源 scripts/tools_manifest.json；补齐原遗漏 5 包 + 10 脚本。
+        # 独立步骤，不与并发会话共用长行（ADR-0006 去冲突约定）。
+        run: python scripts/check_tools_compile.py
+      - name: EvidenceWriter 契约符合性 (S1)
+        # 4 份适配器最小契约静态校验（tools/_evidence_contract.py）
+        run: python scripts/check_evidence_contract.py
       - name: 阶段后清理 (post, always)
         if: always()
         uses: ./.github/actions/ci-cleanup
@@ -118,7 +117,8 @@ jobs:
           phase: pre
           mode: ${{ env.CI_CLEANUP_MODE }}
       - name: 运行测试
-        run: python -m unittest discover -s tests -q
+        # tests 按 skill 分组后必须指定 top-level 为仓库根，模块名 tests.<group>.test_*。
+        run: python -m unittest discover -s tests -t . -q
       - name: 行覆盖率门禁 (S2, ≥80%)
         run: python scripts/measure_coverage.py --target all --min 80
       - name: 阶段后清理 (post, always)

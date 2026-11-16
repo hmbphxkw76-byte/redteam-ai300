@@ -13,3 +13,5 @@ evidence/
 
 # 本地 LLM 凭据（PyRIT OpenAIChatTarget 读取；含密钥，禁止提交）
 .env
+# attack-infra 运行证据（含目标地址，不入库）
+loot/attack-infra/

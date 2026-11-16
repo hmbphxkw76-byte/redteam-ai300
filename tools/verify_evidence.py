@@ -228,16 +228,37 @@ def _flag_of(raw):
     return hit.group(0) if hit else ""
 
 
+# 双通道明细表由 `tools/collect_evidence.py` 写出（该脚本为格式唯一定义处）。
+_DUAL_TABLE = re.compile(r"\|\s*控制面板提交值\s*\|")
+_DUAL_PANEL = re.compile(r"\|\s*控制面板提交值\s*\|\s*`([^`]+)`\s*\|")
+_DUAL_SHOT = re.compile(r"\|\s*截图/正文中的值\s*\|\s*`([^`]+)`\s*\|")
+
+
+def _fragment_dual(raw):
+    """读片段双通道表，返回 (panel, shot, has_table)。
+
+    通道缺失时返回空串，由下游 `vrf-04` 按 §2.4 失分条款阻断；本层只做归一，
+    不另立一致性判据（C1）。
+    """
+    panel = _DUAL_PANEL.search(raw or "")
+    shot = _DUAL_SHOT.search(raw or "")
+    return ((panel.group(1).strip() if panel else ""),
+            (shot.group(1).strip() if shot else ""),
+            bool(_DUAL_TABLE.search(raw or "")))
+
+
 def from_fragments(fragment_dir, report_md="", appendix_md="", target_points=None,
                    panel_flags=None):
     """由一批 `collect_evidence` 片段文件构造输入（S-1 第三入口，US-03）。
 
     主机归属按片段 `**目标**` 字段，缺省用文件名主干；三件套判据仍委托登记簿实现（C1）。
+    flag 双通道取自片段自带明细表：面板值进 `panel_flags`，报告侧取「截图/正文中的值」；
+    旧式片段（无明细表）沿用取证节首 token，缺面板值时由 `vrf-04` 阻断。
     """
     reg_mod = _loot_registry()
     if not os.path.isdir(fragment_dir):
         raise ValueError("片段目录不存在：%s" % fragment_dir)
-    fragments, hosts = [], []
+    fragments, derived_panel = [], {}
     for name in sorted(os.listdir(fragment_dir)):
         if not name.endswith(".md"):
             continue
@@ -247,6 +268,11 @@ def from_fragments(fragment_dir, report_md="", appendix_md="", target_points=Non
         m = _TARGET_FIELD.search(raw)
         host = (m.group(1).strip() if m else os.path.splitext(name)[0])
         pieces = reg_mod.fragment_pieces(raw)
+        panel, shot, has_table = _fragment_dual(raw)
+        flag = _flag_of(raw)
+        if has_table and panel and shot:
+            derived_panel[host] = panel
+            flag = shot
         fragments.append({
             "step_id": os.path.splitext(name)[0],
             "host": host,
@@ -254,15 +280,16 @@ def from_fragments(fragment_dir, report_md="", appendix_md="", target_points=Non
             "output": "",
             "screenshot": "",
             "ai_log": "",
-            "flag": _flag_of(raw),
+            "flag": flag,
             "raw": raw,
             "pieces": {k: bool(pieces.get(k))
                        for k in ("command", "output", "screenshot")},
         })
-        hosts.append(host)
+    merged = dict(derived_panel)
+    merged.update(panel_flags or {})  # 显式注入优先于片段归一结果
     payload = {"fragments": fragments, "report_md": report_md,
                "appendix_md": appendix_md, "target_points": target_points or {},
-               "panel_flags": dict(panel_flags or {}),
+               "panel_flags": merged,
                "osid": _osid_from_name(fragment_dir)}
     return normalize_payload(payload)
 
@@ -279,6 +306,8 @@ def from_loot(registry_path, evidence_dir=None, report_md="", appendix_md="",
     只消费登记簿既有判据（`parse_registry` / `parse_dual` / `fragment_pieces`），
     不另写三件套或双通道判定（C1）。报告正文与分值表由调用方给出（通常为
     `report-exam` 产物）——单凭登记簿无法判定 vrf-01/02/06，缺省为空则如实阻断。
+    报告侧 flag 取片段双通道表（无表时回退取证节 / 面板值），状态列「失效」不计已取分
+    （#225 J-1/J-2）；不改写登记簿，判定层语义保持不变。
     """
     reg_mod = _loot_registry()
     try:
@@ -301,6 +330,12 @@ def from_loot(registry_path, evidence_dir=None, report_md="", appendix_md="",
                 with open(p, "r", encoding="utf-8") as f:
                     raw = f.read()
         pieces = reg_mod.fragment_pieces(raw) if raw else {}
+        # 报告侧取值：优先片段双通道表的「截图/正文中的值」，其次取证节首 token，
+        # 最后才回退面板值。避免把面板值同时当作两通道造成自比（#225 J-1）。
+        _p, frag_shot, has_table = _fragment_dual(raw)
+        report_flag = (frag_shot if has_table and frag_shot
+                       else (_flag_of(raw) or panel))
+        taken = (getattr(row, "status", "") or "").strip() != "失效"
         fragments.append({
             "step_id": (getattr(row, "id", "") or "").strip(),
             "host": host,
@@ -308,7 +343,8 @@ def from_loot(registry_path, evidence_dir=None, report_md="", appendix_md="",
             "output": "",
             "screenshot": shot or frag_path,
             "ai_log": "",
-            "flag": panel,
+            "flag": report_flag,
+            "taken": taken,
             "raw": raw,
             "pieces": {k: bool(pieces.get(k))
                        for k in ("command", "output", "screenshot")},
@@ -328,7 +364,12 @@ def _result():
 
 
 def _scored(fragments):
-    return [f for f in fragments if (f.get("flag") or "").strip()]
+    """已取分片段：有 flag 且未被登记簿标为失效（#225 J-2）。
+
+    `taken` 缺省 True，保证 `--payload` / `--fragments-dir` 的既有语义不变。
+    """
+    return [f for f in fragments
+            if (f.get("flag") or "").strip() and f.get("taken", True)]
 
 
 def _screenshot_section(raw):
@@ -489,8 +530,9 @@ def check_vrf04(inp):
         elif proof is None:
             r["missing"].append("NOTE-7：%s 访问证明无法机判（%s），同屏性待人工核对（§6.2.2）"
                                 % (f.get("step_id", "?"), reason))
+    scored_hosts = {f.get("host", "") for f in _scored(fragments)}
     for h in {f.get("host", "") for f in fragments}:
-        if not any(f.get("flag") for f in fragments if f.get("host") == h):
+        if h not in scored_hosts:
             r["missing"].append("vrf-04：%s 无 flag 双通道证据（未达成，待补录）" % h)
     r["ok"] = ok
     return r

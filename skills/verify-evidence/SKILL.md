@@ -16,7 +16,7 @@ output: 校验报告（通过/阻断 + 缺失项清单）、可机读校验结�
 
 按 §8.2 八项检查单逐项校验，复用 `loot-manage` 登记簿与各 `collect_evidence.py` 片段作为判定输入；任一阻断项不符即判定不通过、不得进入 `report-exam` 提交动作。
 
-**执行入口**（两种入口共用同一判定层；`--from-loot` 需同时给 `--report`/`--appendix` 才能判定 vrf-01/02/05/06，单凭登记簿不足以判定报告侧事项）：`python tools/verify_evidence.py --from-loot loot/registry.md`（直读登记簿双通道与证据片段）、`--fragments-dir <dir>`（直读一批 `collect_evidence` 片段）或 `--payload <json>`（消费 `report_exam` 产出的载荷）。两者均输出机读 JSON（`schema_version` + 九项 checks + 阻断/缺失/核实闸分级），退出码 0 通过 / 1 阻断 / 2 用法错误；`--no-artifacts` 为 dry-run（记核实闸 VG-3，不可提交），`--summary` 追加人读摘要。
+**执行入口**（两种入口共用同一判定层；`--from-loot` 需同时给 `--report`/`--appendix` 才能判定 vrf-01/02/05/06，单凭登记簿不足以判定报告侧事项）：`python tools/verify_evidence.py --from-loot loot/registry.md`（直读登记簿双通道与证据片段）、`--fragments-dir <dir>`（直读一批 `collect_evidence` 片段）或 `--payload <json>`（消费 `report_exam` 产出的载荷）。两者均输出机读 JSON（`schema_version` + 九项 checks + 阻断/缺失/核实闸分级），退出码 0 通过 / 1 阻断 / 2 用法错误；`--no-artifacts` 为 dry-run（记核实闸 VG-3，不可提交），`--summary` 追加人读摘要。`--fragments-dir` 从片段自带的 flag 双通道明细表取面板值（报告侧取「截图/正文中的值」），无需额外注入；任一通道缺失仍按 §2.4 阻断。
 
 ### vrf-01 五要素与元信息合规（检查单 1，§4.2）
 
@@ -91,3 +91,5 @@ output: 校验报告（通过/阻断 + 缺失项清单）、可机读校验结�
 - 2026-11-15（PR #227）：新增「执行入口」段，明确 `--payload` / `--from-loot` / `--fragments-dir` 三入口共用同一判定层。
 - 2026-11-15（PR #227）：域控 `proof.txt` 判定由「提交次数 == 1 方可通过」改为「记录数不得超过 1」。理由：原口径与「失败与豁免」首条（未取分缺失属预期、不计阻断）冲突。现 ==1 通过、==0 记「未达成」并留 VG-4、>1 阻断；§2.2「仅可提交一次」的实质约束不变。
 - 2026-11-15（记录收口）：补「机读边界」显式声明与本修订记录；不改动任何判据行为。
+- 2026-11-15（入口闭环）：`--fragments-dir` 原未读取片段自带双通道明细表，致任何含 flag 的片段必触发 vrf-04 阻断；现面板值归一进 `panel_flags`、报告侧取「截图/正文中的值」，显式注入仍优先。判据语义不变，仅补全输入归一。
+- 2026-11-15（跟进 #225 收口）：`--from-loot` 报告侧 flag 改取片段双通道表（无表时回退取证节 / 面板值），消除「面板值自比」；登记簿状态「失效」不计已取分，按未取分豁免如实记录。判据未放宽。

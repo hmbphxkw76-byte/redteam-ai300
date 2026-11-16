@@ -114,6 +114,11 @@ CONTRACTS: tuple[tuple[str, str], ...] = (
     (".github/workflows/ci.yml", "Token 预算与规范契约复核 (S4)"),
     (".markdownlint-cli2.jsonc", "ignores"),  # 官方报告模板豁免
     ("scripts/check_token_budget.py", "ARTIFACT_LIMITS"),
+    # 契约漂移防线（docs/operations/contract-drift-prevention.md）：单一事实源清单 +
+    # 消费者登记表 + CI 接线锚点，防「契约变更删锚点而 CI 仍全绿」。
+    ("docs/contracts/collect_evidence.contract.md", "## CHANGELOG"),
+    ("docs/contracts/consumers.md", "report-exam"),
+    (".github/workflows/ci.yml", "check_contract_manifest.py"),
 )
 
 

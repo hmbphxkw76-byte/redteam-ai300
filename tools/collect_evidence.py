@@ -171,6 +171,14 @@ def build_fragment(step_id, command, output="", screenshot=None, shot_cmd=None,
         "关键输出": has_out,
         "截图": has_shot,
     }
+    # F3 修复：截图状态显式化（已提供 / 待补录 / 缺失），供清单与校验表如实标注，
+    # 消除「screenshot="" 却标已提供」的字段不一致（状态可追溯）。
+    if bool(screenshot):
+        shot_status = "已提供"
+    elif bool(shot_cmd):
+        shot_status = "待补录"
+    else:
+        shot_status = "缺失"
     panel, shot_value, flag_status = _flag_dual(flag, flag_panel, flag_shot)
     has_script = bool(script or script_src)
     optional_status = {
@@ -264,7 +272,12 @@ def build_fragment(step_id, command, output="", screenshot=None, shot_cmd=None,
     lines += ["", "#### 证据校验（五件套 / 三件套）", "",
               "| 证据项 | 必需 | 状态 |", "|---|---|---|"]
     for k in REQUIRED_PIECES:
-        lines.append("| %s | 是 | %s |" % (k, "已提供" if required_status[k] else "缺失"))
+        if k == "截图":
+            label = {"已提供": "已提供", "待补录": "待补录（钩子命令已记录）",
+                     "缺失": "缺失"}[shot_status]
+        else:
+            label = "已提供" if required_status[k] else "缺失"
+        lines.append("| %s | 是 | %s |" % (k, label))
     for k in OPTIONAL_PIECES:
         lines.append("| %s | 否 | %s |" % (k, "已提供" if optional_status[k] else "未提供"))
     lines.append("| %s | 否 | %s |" % (SCRIPT_PIECE, "已提供" if has_script else "未使用脚本"))
@@ -280,6 +293,7 @@ def build_fragment(step_id, command, output="", screenshot=None, shot_cmd=None,
         "missing": missing,
         "required_status": required_status,
         "optional_status": optional_status,
+        "shot_status": shot_status,
         "avoid_terms": terms_found,
         "shot_missing": shot_missing,
         "script": has_script,
@@ -311,6 +325,7 @@ def build_manifest_record(step_id, command, report, timestamp, profile="",
         "screenshot": screenshot,
         "screenshot_sha256": report["hashes"]["screenshot"],
         "shot_kind": shot_kind,
+        "shot_status": report["shot_status"],
         "script": script,
         "script_sha256": report["hashes"]["script"],
         "pieces": {

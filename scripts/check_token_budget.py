@@ -51,7 +51,13 @@ BUDGETS: dict[str, int] = {
     # ADR-0006「合并后实际内容 + 余量」重算，留 ~314B。
     "GLOSSARY.md": 17500,
     "docs/governance/GOVERNANCE.md": 17000,
-    "docs/operations/skill-mainline-workflow.md": 28000,
+    # 28000 → 30000：并入 feat/framework-docs-recovery 的 v1.2 框架选型规范
+    # （§1.4 固定阅读要求 + §2.1 B9 + 阶段 1/2/3/8 输入引用 + §5 第 5 条），
+    # 实测 28815（+815）。已先压缩重复表述（框架资料全称改 §1.4 指针、§1.4③
+    # 指向 §5/B9，减 ~546B）；剩余为必要增量。按 ADR-0006「取并集后按合并实际
+    # 内容 + 余量重算」上调至 30000，留 ~1185B；属 ADR-0005「基线 + 必要增量」，
+    # 不删除既有内容。
+    "docs/operations/skill-mainline-workflow.md": 30000,
     "docs/standards/cross-ide-mainline-workflow.md": 30000,
     # 11000 → 12000：S1 由 4 项扩为 6 项、S4 增加契约复核，均为已记录的合法增量；
     # 压缩后实测 10,971 字节，保留约 1KB 余量以容纳后续门禁条目。

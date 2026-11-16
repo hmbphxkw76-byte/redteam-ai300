@@ -36,6 +36,8 @@ class RequestSpec:
     json_body: Optional[dict] = None
     timeout: int = 30
     path_fn: Optional[Callable[[dict], str]] = None
+    body_fn: Optional[Callable[[dict], dict]] = None
+    when: Optional[Callable[[dict], bool]] = None
     collect: Optional[Callable[[object], dict]] = None
     tag: str = ""    # 请求标签（如 port-probe），供判据区分主动端口探测
 
@@ -134,37 +136,66 @@ def curl_command(method, url, json_body=None):
 # --------------------------------------------------------------------------
 # 判据（recon-01..07）
 # --------------------------------------------------------------------------
+def _json_chat_text(body):
+    """OpenAI 兼容 JSON 聊天响应 → 文本；非该结构返回 None。"""
+    try:
+        data = json.loads(body or "")
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(data, dict) or "choices" not in data:
+        return None
+    try:
+        return str(data["choices"][0]["message"]["content"])
+    except (KeyError, IndexError, TypeError):
+        return ""
+
+
+def _response_text(result):
+    sse = parse_sse(result.body)
+    if sse.text:
+        return sse.text
+    return _json_chat_text(result.body) or ""
+
+
 def judge_engine(results, ctx):
-    """recon-01：从运行时响应命名模型；模型清单缺失时记「不存在」。"""
-    conf = results[0] if results else None
+    """recon-01：从任意运行时响应命名模型；模型清单缺失时记「不存在」。"""
+    if not results:
+        return Judgement(Existence.UNDETERMINED, note="无可用响应",
+                         basis="未执行模型面请求")
+    conf = results[0]
     catalog = results[1] if len(results) > 1 else None
-    if conf is None or conf.error:
-        return Judgement(Existence.UNDETERMINED,
-                         note="部署配置不可达：%s"
-                              % (conf.error if conf else "无响应"),
-                         basis="部署配置请求未获得响应")
-    hit = fingerprint.primary(conf, Category.LLM_ENGINE)
-    notes = []
-    if hit:
-        notes.append("部署配置暴露默认模型 `%s`" % hit.product)
+    for result in results:
+        if result is None or result.error:
+            continue
+        hit = fingerprint.primary(result, Category.LLM_ENGINE)
+        if not hit:
+            continue
+        notes = ["命中运行时指纹 `%s`" % hit.signature[:80]]
         if catalog is not None:
             if getattr(catalog, "existence", None) == Existence.ABSENT:
                 notes.append("模型清单端点（/v1/models）判定不存在（SPA 回退页），"
                              "不据此新增资产")
             elif catalog.ok:
                 notes.append("模型清单端点可用（HTTP %d）" % catalog.status)
+        if result.url.split("?")[0].rstrip("/").endswith("/api/llm/status"):
+            notes.append("模型状态端点暴露 provider/model")
         return Judgement(
             Existence.PRESENT, product=hit.product or "不可判定",
             version=hit.version or "不可判定", signature=hit.signature,
-            note="；".join(notes), basis="部署配置响应含 `llm_model_default` 字段",
-            context={"model": hit.product})
+            note="；".join(notes), basis="运行时响应命中 LLM 引擎指纹",
+            context={"model": hit.product, "endpoint": result.url})
+    if conf is None or conf.error:
+        return Judgement(Existence.UNDETERMINED,
+                         note="部署配置不可达：%s"
+                              % (conf.error if conf else "无响应"),
+                         basis="部署配置请求未获得响应")
     plan = ctx.get("plan")
     if plan is not None and getattr(plan, "family", "unknown") != "unknown":
         basis = ("应用族=%s，基路径=`%s`；运行时配置端点未暴露模型名"
                  % (plan.family, plan.base_path or "/"))
         note = "未见 LLM 引擎运行时指纹（发现阶段识别为 %s）" % plan.family
     else:
-        basis = "部署配置与模型清单均未命中 LLM 引擎运行时指纹"
+        basis = "部署配置、模型清单与模型状态端点均未命中 LLM 引擎运行时指纹"
         note = "未见 LLM 引擎运行时指纹（被动面）"
     return Judgement(Existence.UNDETERMINED, note=note, basis=basis)
 
@@ -192,34 +223,71 @@ def judge_model_service(results, ctx):
                          note="聊天端点不可达：%s" % (chat.error if chat else "无响应"),
                          basis="聊天端点请求未获得响应")
     sse = parse_sse(chat.body)
-    if not sse.events:
-        catalog, product, why = _model_catalog(results)
-        if catalog is not None:
-            return Judgement(Existence.PRESENT, product=product,
-                             version="不可判定", signature=catalog.url,
-                             note="%s（HTTP %d）" % (why, catalog.status),
-                             basis="%s 返回 %s" % (catalog.url, why))
-        basis = ("聊天端点返回 SPA 回退页（非 SSE）" if is_spa_fallback(chat)
-                 else "聊天响应未含 SSE 事件")
-        return Judgement(Existence.UNDETERMINED, product="不可判定",
-                         note="未发现模型服务端点：%s（HTTP %d）"
-                              % (basis, chat.status), basis=basis)
-    notes = []
-    if sse.meta.get("request_id"):
-        notes.append("request_id 可见（%s…）" % str(sse.meta["request_id"])[:8])
-    for key in ("lab_id", "phase", "control_mode", "artifact_replay"):
-        if key in sse.meta:
-            notes.append("%s=%s" % (key, sse.meta[key]))
-    if runs is not None and not runs.error:
-        notes.append("运行遥测端点 HTTP %d（%s）"
-                     % (runs.status, "可匿名读取" if runs.ok else "受限"))
-    notes.insert(0, "SSE 事件类型：%s" % "、".join(sse.events))
-    return Judgement(Existence.PRESENT, product="SSE 流式聊天面",
-                     version="不可判定", signature="event: %s" % sse.events[0],
-                     note="；".join(notes),
-                     basis="聊天端点返回 SSE 事件（%s）" % "、".join(sse.events),
-                     context={"sse": sse, "chat": chat, "runs": runs,
-                              "phase": str(sse.meta.get("phase", "") or "")})
+    if sse.events:
+        notes = []
+        if sse.meta.get("request_id"):
+            notes.append("request_id 可见（%s…）" % str(sse.meta["request_id"])[:8])
+        for key in ("lab_id", "phase", "control_mode", "artifact_replay"):
+            if key in sse.meta:
+                notes.append("%s=%s" % (key, sse.meta[key]))
+        if runs is not None and not runs.error:
+            notes.append("运行遥测端点 HTTP %d（%s）"
+                         % (runs.status, "可匿名读取" if runs.ok else "受限"))
+        notes.insert(0, "SSE 事件类型：%s" % "、".join(sse.events))
+        return Judgement(Existence.PRESENT, product="SSE 流式聊天面",
+                         version="不可判定", signature="event: %s" % sse.events[0],
+                         note="；".join(notes),
+                         basis="聊天端点返回 SSE 事件（%s）" % "、".join(sse.events),
+                         context={"sse": sse, "chat": chat, "runs": runs,
+                                  "phase": str(sse.meta.get("phase", "") or ""),
+                                  "endpoint": chat.url})
+
+    chat_text = _json_chat_text(chat.body)
+    if chat_text is not None:
+        notes = ["聊天端点为 OpenAI 兼容 JSON 响应（非 SSE）"]
+        if ECHO_MARKER in chat_text:
+            notes.append("无害回显被原样返回")
+        return Judgement(Existence.PRESENT,
+                         product="OpenAI 兼容聊天 API（JSON）",
+                         version="不可判定", signature="object: chat.completion",
+                         note="；".join(notes),
+                         basis="聊天端点返回 `choices[].message.content`",
+                         context={"chat": chat, "runs": runs,
+                                  "endpoint": chat.url})
+
+    catalog, product, why = _model_catalog(results)
+    if catalog is not None:
+        return Judgement(Existence.PRESENT, product=product,
+                         version="不可判定", signature=catalog.url,
+                         note="%s（HTTP %d）" % (why, catalog.status),
+                         basis="%s 返回 %s" % (catalog.url, why),
+                         context={"endpoint": catalog.url})
+
+    plan = ctx.get("plan")
+    if plan is not None and getattr(plan, "family", "") == "streamlit":
+        health_ok = any(r is not None and r.ok and
+                        (r.body or "").strip().lower() == "ok" for r in results)
+        entry_ok = any(r is not None and r.ok and
+                       re.search(r"streamlit|_stcore|static/js", r.body or "", re.I)
+                       for r in results)
+        if health_ok and entry_ok:
+            chat_note = "健康端点返回 `ok`，聊天前端入口可匿名访问；模型名未在被动面暴露"
+            if "chat_entry" in getattr(plan, "signals", []):
+                chat_note += "；入口页含独立聊天按钮/iframe（指向该基路径）"
+            return Judgement(
+                Existence.PRESENT, product="Streamlit 聊天前端",
+                version=getattr(plan, "version", "") or "不可判定",
+                signature="streamlit+_stcore/health",
+                note=chat_note,
+                basis="Streamlit 健康检查通过且 `/chat` 前端可访问",
+                context={"chat": chat, "runs": runs,
+                         "endpoint": getattr(plan, "entry_url", "") or chat.url})
+
+    basis = ("聊天端点返回 SPA 回退页（非 SSE）" if is_spa_fallback(chat)
+             else "聊天响应未含 SSE 事件或 JSON 聊天结构")
+    return Judgement(Existence.UNDETERMINED, product="不可判定",
+                     note="未发现模型服务端点：%s（HTTP %d）"
+                          % (basis, chat.status), basis=basis)
 
 
 def judge_rag(results, ctx):
@@ -273,8 +341,72 @@ def judge_vector(results, ctx):
                      basis="主动探测 %d 个定向端口全部不可达" % len(ports))
 
 
+def _agent_inventory(results):
+    """从 /agents 或 /health 响应识别多智能体编排清单。"""
+    for result in results:
+        if result is None or result.error or not result.ok:
+            continue
+        if is_spa_fallback(result):
+            continue
+        path = result.url.split("?")[0].rstrip("/")
+        body = result.body or ""
+        if path.endswith("/agents"):
+            try:
+                data = json.loads(body)
+            except (TypeError, ValueError):
+                continue
+            if isinstance(data, list) and data and all(
+                    isinstance(item, dict) for item in data) and any(
+                    "securityLevel" in item or "protocol" in item
+                    for item in data):
+                return data, result
+        if path.endswith("/health"):
+            try:
+                data = json.loads(body)
+            except (TypeError, ValueError):
+                continue
+            if isinstance(data, dict) and isinstance(data.get("agents"), int) \
+                    and data["agents"] > 0:
+                return data, result
+    return None, None
+
+
 def judge_agent(results, ctx):
     """recon-05：识别编排 / 多智能体痕迹。"""
+    inventory, source = _agent_inventory(results)
+    if inventory is not None:
+        if isinstance(inventory, list):
+            count = len(inventory)
+            protocols = {}
+            mcp = 0
+            for item in inventory:
+                proto = str(item.get("protocol") or "unknown")
+                protocols[proto] = protocols.get(proto, 0) + 1
+                if proto.lower() == "mcp":
+                    mcp += 1
+            ctx["agent_inventory"] = {
+                "count": count, "mcp_count": mcp,
+                "ids": [str(item.get("id") or "") for item in inventory
+                        if item.get("id")]}
+            note = ("`%s` 暴露 %d 个 agent（协议分布：%s；MCP agent %d 个）"
+                    % (source.url, count,
+                       "、".join("%s=%d" % kv for kv in sorted(protocols.items())), mcp))
+            return Judgement(Existence.PRESENT,
+                             product="多智能体编排面（%d agents）" % count,
+                             version="不可判定", signature="agent inventory JSON",
+                             note=note, basis="`/agents` 返回 agent 清单",
+                             context={"agent_inventory": ctx["agent_inventory"],
+                                      "endpoint": source.url})
+        count = inventory.get("agents")
+        ctx["agent_inventory"] = {"count": count, "mcp_count": 0, "ids": []}
+        return Judgement(Existence.PRESENT,
+                         product="多智能体运行时（%d agents）" % count,
+                         version="不可判定", signature="health agents count",
+                         note="`%s` 报告 %d 个 agent 在线" % (source.url, count),
+                         basis="`/health` 返回 agents 计数",
+                         context={"agent_inventory": ctx["agent_inventory"],
+                                  "endpoint": source.url})
+
     schema = results[0] if results else None
     runs = results[1] if len(results) > 1 else None
     if schema is None or schema.error:
@@ -318,6 +450,60 @@ def _openapi_surface(results):
 
 def judge_mcp(results, ctx):
     """recon-06：工具面与凭据校验预言机（含 200+success:false 语义）。"""
+    for result in results:
+        if result is None or result.error or not result.ok:
+            continue
+        body = result.body or ""
+        match = re.search(r'"x-streamlit-agent-api"\s*:\s*"(\w+)"', body)
+        if match:
+            status = match.group(1)
+            note = ["agent API 文档可匿名读取（HTTP %d）" % result.status]
+            if status != "enabled":
+                note.append("实际不可调用：interact/MCP 均返回 `not_available`")
+            note.append("可用工具清单不可得（API %s）" % status)
+            return Judgement(Existence.PRESENT,
+                             product="Streamlit agent MCP（%s）" % status,
+                             version="不可判定",
+                             signature=match.group(0),
+                             note="；".join(note),
+                             basis="OpenAPI 文档声明 agent API 状态",
+                             context={"endpoint": result.url})
+
+    for result in results:
+        if result is None or result.error or not result.ok:
+            continue
+        if not result.url.split("?")[0].rstrip("/").endswith("/mcp/tools"):
+            continue
+        if is_spa_fallback(result):
+            continue
+        try:
+            data = json.loads(result.body or "")
+        except (TypeError, ValueError):
+            continue
+        tools = data.get("tools") if isinstance(data, dict) else None
+        if not isinstance(tools, list):
+            continue
+        names = [str(tool.get("name")) for tool in tools
+                 if isinstance(tool, dict) and tool.get("name")]
+        note = ["`/mcp/tools` 匿名返回 %d 个工具：%s"
+                % (len(names), "、".join(names[:8]))]
+        allow = "、".join("%s: %s" % (k, v) for k, v in (result.headers or {}).items()
+                          if k.lower().startswith("access-control-"))
+        if allow:
+            note.append("CORS 头：%s" % allow)
+        note.append("工具定义含 `vulnerable` 标记（靶场语义）")
+        return Judgement(Existence.PRESENT, product="MCP 工具清单（DVAA agent）",
+                         version="不可判定", signature="tools JSON array",
+                         note="；".join(note),
+                         basis="`/mcp/tools` 返回工具清单",
+                         context={"endpoint": result.url})
+
+    declared = ctx.get("agent_inventory") or {}
+    declared_note = ""
+    if declared.get("mcp_count"):
+        declared_note = "；agent 清单声明 %d 个 MCP agent（本步未取得其工具清单）" \
+                        % declared["mcp_count"]
+
     oracle = results[0] if results else None
     body = (oracle.body or "") if oracle is not None else ""
     explicit = re.search(r'"success"\s*:\s*(true|false)', body)
@@ -339,37 +525,45 @@ def judge_mcp(results, ctx):
                      % (oracle.status, explicit.group(1)))
     if oracle.status == 422:
         notes.append("参数校验 422 暴露字段名，可枚举工具面契约")
-    if not explicit and oracle.status != 422:
+    if not explicit and oracle.status != 422 and not declared_note:
         return Judgement(Existence.UNDETERMINED, note="未见 MCP 工具面痕迹",
                          basis="校验端点无 success 语义且无 OpenAPI 工具面")
-    notes.append("身份边界：匿名可调用校验接口")
-    return Judgement(Existence.PRESENT, product="凭据校验预言机（MCP 信任边界面）",
-                     version="不可判定", signature=explicit.group(0) if explicit else "422 schema",
-                     note="；".join(notes),
-                     basis=("校验端点返回 `%s`" % explicit.group(0)) if explicit
-                     else "校验端点返回 422 schema")
+    if explicit or oracle.status == 422:
+        notes.append("身份边界：匿名可调用校验接口")
+        return Judgement(Existence.PRESENT,
+                         product="凭据校验预言机（MCP 信任边界面）",
+                         version="不可判定",
+                         signature=explicit.group(0) if explicit else "422 schema",
+                         note="；".join(notes),
+                         basis=("校验端点返回 `%s`" % explicit.group(0)) if explicit
+                         else "校验端点返回 422 schema",
+                         context={"endpoint": oracle.url})
+    return Judgement(Existence.UNDETERMINED, product="不可判定",
+                     note=("未见可达 MCP 端点" + declared_note) if declared_note
+                     else "未见 MCP 工具面痕迹",
+                     basis="已试端点无 MCP 工具清单或校验语义")
 
 
 def judge_guardrail(results, ctx):
     """recon-07：护栏行为与安全响应头（复用 recon-02 的聊天响应，不重复请求）。"""
     chat = ctx.get("reuse_chat")
-    headers = ctx.get("headers") or {}
+    headers = (chat.headers if chat is not None else None) or ctx.get("headers") or {}
     if chat is None or chat.error:
         return Judgement(Existence.UNDETERMINED, note="无聊天响应可判读",
                          basis="未获得聊天端点响应")
-    sse = parse_sse(chat.body)
-    if not sse.events or is_spa_fallback(chat):
+    text = _response_text(chat)
+    if not text or is_spa_fallback(chat):
         missing = missing_security_headers(headers)
-        note = "聊天端点未返回 SSE（HTTP %d），无法判读护栏行为" % chat.status
+        note = "聊天端点未返回可判读内容（HTTP %d），无法判读护栏行为" % chat.status
         if missing:
             note += "；缺失安全响应头：%s" % "、".join(missing)
         return Judgement(Existence.UNDETERMINED, product="不可判定",
-                         note=note, basis="聊天响应非 SSE（SPA 回退页或无事件）")
+                         note=note, basis="聊天响应非 SSE/JSON（SPA 回退页或无事件）")
     notes, behavior = [], ""
-    if ECHO_MARKER in sse.text:
+    if ECHO_MARKER in text:
         behavior = "放行原样回显"
         notes.append("无害回显探针被原样返回（%s）" % ECHO_MARKER)
-    elif re.search(r"(can't|cannot|unable|抱歉|无法|拒绝)", sse.text, re.I):
+    elif re.search(r"(can't|cannot|unable|抱歉|无法|拒绝)", text, re.I):
         behavior = "拒答"
         notes.append("无害回显探针被拒答")
     else:
@@ -380,12 +574,14 @@ def judge_guardrail(results, ctx):
         notes.append("缺失安全响应头：%s" % "、".join(missing))
     else:
         notes.append("安全响应头齐全")
+    sse = parse_sse(chat.body)
     notes.append("control_mode=%s" % (sse.meta.get("control_mode") or "未知"))
     return Judgement(Existence.PRESENT, product="护栏（%s）" % behavior,
                      version="不可判定", signature=behavior,
-                     note="；".join(notes), basis="聊天响应 SSE 文本可判读",
+                     note="；".join(notes), basis="聊天响应文本可判读",
                      context={"behavior": behavior,
-                              "missing_headers": missing})
+                              "missing_headers": missing,
+                              "endpoint": chat.url})
 
 
 
@@ -414,6 +610,28 @@ def _port(port, label):
                        tag="port-probe")
 
 
+def _family(ctx, name):
+    plan = ctx.get("plan")
+    return plan is not None and getattr(plan, "family", "") == name
+
+
+def _chat_path(ctx):
+    plan = ctx.get("plan")
+    if plan is not None and getattr(plan, "family", "") == "dvaa" \
+            and getattr(plan, "chat_agent_id", ""):
+        return "/api/agents/%s/chat" % plan.chat_agent_id
+    return "/api/labs/{lab}/chat"
+
+
+def _chat_body(ctx):
+    plan = ctx.get("plan")
+    if plan is not None and getattr(plan, "family", "") == "dvaa":
+        return {"model": "dvaa",
+                "messages": [{"role": "user",
+                              "content": "Reply with exactly: " + ECHO_MARKER}]}
+    return {"prompt": "Reply with exactly: " + ECHO_MARKER}
+
+
 STEP_SPECS: Tuple[StepSpec, ...] = (
     StepSpec(
         step_id="recon-01", title="LLM 引擎识别", category=Category.LLM_ENGINE,
@@ -431,8 +649,14 @@ STEP_SPECS: Tuple[StepSpec, ...] = (
         requests=(
             RequestSpec("聊天端点（无害回显）", "POST", "/api/labs/{lab}/chat",
                         json_body={"prompt": "Reply with exactly: " + ECHO_MARKER},
-                        timeout=120),
-            RequestSpec("运行遥测", "GET", "/api/me/runs?limit=1", timeout=10),
+                        path_fn=_chat_path, body_fn=_chat_body, timeout=120,
+                        when=lambda ctx: not _family(ctx, "streamlit")),
+            RequestSpec("运行遥测", "GET", "/api/me/runs?limit=1", timeout=10,
+                        when=lambda ctx: not _family(ctx, "streamlit")),
+            RequestSpec("聊天前端入口", "GET", "",
+                        path_fn=lambda ctx: (
+                            getattr(ctx.get("plan"), "entry_url", "") or ""),
+                        when=lambda ctx: _family(ctx, "streamlit"), timeout=15),
         ),
     ),
     StepSpec(

@@ -13,6 +13,7 @@ from tools.recon_ai.transport import FakeTransport, HttpResponse  # noqa: E402
 
 TARGET_LEGACY = "http://t"
 TARGET_STREAMLIT = "http://st.test"
+TARGET_DVAA = "http://dvaa.test:9000"
 SPA = "<!doctype html><html><body><div id='root'></div></body></html>"
 SSE_OK = ('event: meta\ndata: {"request_id": "r-001", "lab_id": "MM_04", '
           '"phase": 3, "control_mode": "off", "artifact_replay": true}\n\n'
@@ -87,6 +88,45 @@ def streamlit_routes(target=TARGET_STREAMLIT):
             404, '{"detail":"Not Found"}', {}, "application/json"),
     })
     return routes
+
+
+def dvaa_routes(target=TARGET_DVAA):
+    """DVAA 式多智能体靶场：/agents 清单 + 低门槛 agent 聊天 + MCP 工具面。"""
+    agents = (
+        '{"id":"securebot","name":"SecureBot","protocol":"api",'
+        '"securityLevel":"hardened"},'
+        '{"id":"helperbot","name":"HelperBot","protocol":"api",'
+        '"securityLevel":"weak"},'
+        '{"id":"toolbot","name":"ToolBot","protocol":"mcp",'
+        '"securityLevel":"vulnerable","port":7011},'
+        '{"id":"proxybot","name":"ProxyBot","protocol":"mcp",'
+        '"securityLevel":"vulnerable","port":7012}'
+    )
+    chat = ('{"id":"chatcmpl-helperbot-1","object":"chat.completion",'
+            '"model":"helperbot","choices":[{"index":0,"message":'
+            '{"role":"assistant","content":"RECON-PROBE-OK"},'
+            '"finish_reason":"stop"}]}')
+    tools = '{"tools":[{"name":"exec_shell","vulnerable":true}]}'
+    return {
+        ("GET", target + "/"):
+            HttpResponse(200, SPA, {}, "text/html"),
+        ("GET", target + "/health"):
+            HttpResponse(200, '{"status":"ok","agents":4}', {},
+                         "application/json"),
+        ("GET", target + "/agents"):
+            HttpResponse(200, "[" + agents + "]", {}, "application/json"),
+        ("GET", target + "/api/llm/status"):
+            HttpResponse(200, '{"provider":"openai-compatible","model":"dvaa-llm"}',
+                         {}, "application/json"),
+        ("POST", target + "/api/agents/helperbot/chat"):
+            HttpResponse(200, chat, {}, "application/json"),
+        ("GET", "http://dvaa.test:7011/mcp/tools"):
+            HttpResponse(200, tools,
+                         {"Access-Control-Allow-Origin": "*"}, "application/json"),
+        ("GET", "http://dvaa.test:7012/mcp/tools"):
+            HttpResponse(200, tools,
+                         {"Access-Control-Allow-Origin": "*"}, "application/json"),
+    }
 
 
 def run_fake(tmp, routes, target=TARGET_LEGACY, writer=None, shot_impl=None,

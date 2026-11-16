@@ -37,7 +37,7 @@ def report_exam_targets():
     import importlib
     names = ("_types", "index", "skeleton", "sections", "ai_appendix",
              "bilingual", "package", "assemble")
-    mods = tuple(importlib.import_module("report_exam." + n) for n in names)
+    mods = tuple(importlib.import_module("tools.report_exam." + n) for n in names)
     return (mods,
             ("tests.test_report_exam", "tests.test_report_exam_evidence_contract"))
 

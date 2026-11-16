@@ -3,7 +3,7 @@
 """演练报告渲染：四件产出 + 明确判定（v2 AC-11）。
 
 按路径引用证据片段，不重复存储证据本体（AC-12）；显式标注演练/仿真，
-引用路径不含 `-real` 段（AC-13，对齐 report_exam/index.py#L13）。
+引用路径不含 `-real` 段（AC-13，对齐 tools/report_exam/index.py#L13）。
 """
 from __future__ import annotations
 

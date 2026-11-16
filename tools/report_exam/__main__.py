@@ -1,8 +1,8 @@
 """report_exam CLI。
 
 用法（可 copy/paste 复现，§6.1）：
-  python -m report_exam index --evidence-dir evidence/attack-ai-agent-real --out host_fragments.json
-  python -m report_exam build --evidence-dir evidence/attack-ai-agent-real \
+  python -m tools.report_exam index --evidence-dir evidence/attack-ai-agent-real --out host_fragments.json
+  python -m tools.report_exam build --evidence-dir evidence/attack-ai-agent-real \
       --out-dir report --osid XXXXX --panel-flags panel.json
 
 `--evidence-dir` 应指向 `-real` 真实证据目录；演练/仿真片段被组装器排除（SKILL §4）。

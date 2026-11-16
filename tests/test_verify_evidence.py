@@ -636,7 +636,7 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
     def test_AC17_scored_keys_have_single_source(self):
         """键集只定义一次：report_exam 与校验器引用同一常量（C1）。"""
         import tools.scored_targets as st
-        from report_exam import _types
+        from tools.report_exam import _types
         self.assertEqual(tuple(_types.SCORED_HOSTS), tuple(st.SCORED_HOSTS))
         self.assertEqual(tuple(VE.SCORED_TARGETS), tuple(st.SCORED_HOSTS))
         self.assertEqual(_types.STANDALONE_KEY, st.STANDALONE_KEY)
@@ -653,7 +653,7 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
     # --- AC-18 下游委托不破 -----------------------------------------------
     def test_AC18_downstream_delegation_intact(self):
         import importlib
-        pkg = importlib.import_module("report_exam.package")
+        pkg = importlib.import_module("tools.report_exam.package")
         shared = pkg._shared()
         # 判据来自同一模块文件：schema 与检查项集合必须一致（同一对象不强求）
         self.assertEqual(shared.SCHEMA_VERSION, VE.SCHEMA_VERSION)

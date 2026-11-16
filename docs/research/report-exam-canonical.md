@@ -89,7 +89,7 @@
 **F-4.1（已核实·S3）** 报告 PDF 命名 `OSAI-OS-XXXXX-Exam-Report.pdf`（`XXXXX`=OSID）。
 **F-4.2（已核实·S3）** 归档 `.7z` 命名 `OSAI-OS-XXXXX-Exam-Report.7z`，**无密码**，≤100MB，档内仅 PDF，报告须含全部 queries 文本，上传后比对 MD5（快照 §6 / §7）。
 **F-4.3（已核实·S3）** 考试 24h + 结束后 24h 提交窗口，逾期自动不及格；提交后不可修改、不可补加（快照 §5 / §6）。
-**F-4.4（已核实·SKILL §6 rpt-05 / T06 实测）** 渲染须带 `--toc`；pandoc 默认 `pdflatex` 在无 LaTeX 环境退出码 47，故须显式 `--pdf-engine`（`report_exam/package.py` 依 `PANDOC_PDF_ENGINE` 或按序探测 typst…pdflatex 注入）。命令：`pandoc --toc --pdf-engine=typst report/*.md -o OSAI-OS-<OSID>-Exam-Report.pdf`。否则 TOC/PDF 不生成（违反 F-1.2）。
+**F-4.4（已核实·SKILL §6 rpt-05 / T06 实测）** 渲染须带 `--toc`；pandoc 默认 `pdflatex` 在无 LaTeX 环境退出码 47，故须显式 `--pdf-engine`（`tools/report_exam/package.py` 依 `PANDOC_PDF_ENGINE` 或按序探测 typst…pdflatex 注入）。命令：`pandoc --toc --pdf-engine=typst report/*.md -o OSAI-OS-<OSID>-Exam-Report.pdf`。否则 TOC/PDF 不生成（违反 F-1.2）。
 
 ---
 

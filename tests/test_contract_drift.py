@@ -3,7 +3,7 @@
 """契约漂移防线夹具（S2 / S6）。
 
 覆盖三层：
-  1. 下游解析契约定点（M6）：golden 片段经 report_exam.index.parse_fragment 解析，
+  1. 下游解析契约定点（M6）：golden 片段经 tools.report_exam.index.parse_fragment 解析，
      断言 step_id / 目标 / 命令 / 输出 / flag / 截图逐字提取正确——共享工具改动任一片段
      节标题即令本测试变红。
   2. 契约清单完整性（M1）：docs/contracts/collect_evidence.contract.md 结构齐全、
@@ -88,7 +88,7 @@ FLAG{recon-ok}
 
 class ParseFragmentGoldenTests(unittest.TestCase):
     def test_golden_fragment_parses_correctly(self):
-        from report_exam.index import parse_fragment
+        from tools.report_exam.index import parse_fragment
         frag = parse_fragment(GOLDEN_FRAGMENT, source_path="recon-01.md")
         self.assertEqual(frag.step_id, "recon-01")
         self.assertEqual(frag.title, "发现资产")

@@ -55,7 +55,7 @@ STAGE_SPECS = (
      ("tests/test_verify_evidence.py",),
      ("evidence/verify-evidence-drill",)),
     ("cr-09", "报告生成", "report-exam", "收敛",
-     ("report-exam",), ("report_exam",),
+     ("report-exam",), ("tools/report_exam",),
      ("tests/test_report_exam.py", "tests/test_report_exam_evidence_contract.py"),
      ("evidence/report-exam-drill",)),
 )

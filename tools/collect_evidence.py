@@ -257,7 +257,7 @@ def build_fragment(step_id, command, output="", screenshot=None, shot_cmd=None,
         lines += ["", "#### AI 交互日志", "", fence(ai_log, "text")]
 
     if flag_status != "未提供":
-        # 标题与 fenced 原值块为下游契约（report_exam.index.parse_fragment 按此解析），
+        # 标题与 fenced 原值块为下游契约（tools.report_exam.index.parse_fragment 按此解析），
         # 双通道明细表附在其后；一致性状态以显式判据行给出，不改标题以免解析失效。
         lines += ["", "#### flag 取证（双通道一致）", "",
                   fence(panel or shot_value, "text"), ""]

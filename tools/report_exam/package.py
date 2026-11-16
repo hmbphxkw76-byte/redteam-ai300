@@ -13,7 +13,7 @@ import subprocess
 
 from ._types import ReportModel
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MAX_ARCHIVE_BYTES = 100 * 1024 * 1024  # §6.4
 PDF_NAME = "OSAI-OS-{osid}-Exam-Report.pdf"
 ZIP_NAME = "OSAI-OS-{osid}-Exam-Report.7z"

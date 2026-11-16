@@ -104,7 +104,7 @@ jobs:
         run: |
           set -euo pipefail
           OUT="$RUNNER_TEMP/osai-report-smoke"
-          python -m report_exam build \
+          python -m tools.report_exam build \
             --evidence-dir "$RUNNER_TEMP/attack-ai-agent-real" \
             --out-dir "$OUT" --osid XXXXX | tee "$OUT-build.log"
           grep -q "AC-12: PASS" "$OUT-build.log"

@@ -39,7 +39,7 @@
 ```
 main → rehearse → { StageInventory(adapter), Clock(adapter), EvidenceSource(既有 adapter) }
                     └→ loot_manage.registry.fragment_pieces（只读判据）
-                    └→ report_exam.index.parse_fragment / MemoryEvidenceSource（只读判据）
+                    └→ tools.report_exam.index.parse_fragment / MemoryEvidenceSource（只读判据）
        └→ render_report / render_summary（只消费 RehearsalResult）
        └→ tools/collect_evidence.py（仅证据片段生产端，走 --step --strict）
 ```

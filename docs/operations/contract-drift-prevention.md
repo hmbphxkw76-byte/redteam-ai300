@@ -26,7 +26,7 @@
 
 - **R1 回归覆盖集是「时点快照」**：PR #250 时的回归对象是 `unittest discover -s tests` 在 `origin/main @ e6a9f24` 的全部用例。attack-infra 的测试当时不在 `main`，故 F3 语义变更对其不可见。契约的「消费者全集」未被显式登记，导致「谁该被回归」无从枚举。
 - **R2 后合入技能的工作树基线落后于契约变更**：attack-infra 由 `mainline_worktree.py create` 从**变更前的** `origin/main` 建干净基线（`D:/_attack-infra_wt`），其实现与测试自然编码旧契约。合并后与 F3 新语义冲突，漂移在「合并到 main」之后才由 CI S2 暴露——成本最高、最晚。
-- **R3 契约缺「机器可读变更清单」与「落后基线检测」**：契约元素（CLI 标志、`build_fragment`/`report` 键、`build_manifest_record` 字段、`report_exam.index.parse_fragment` 依赖的片段标题、退出码语义）无单一事实源；`checkout_lock.py` 的 `DEFAULT_SHARED_FILES` 硬编码四项（`check_token_budget.py` / `measure_coverage.py` / `ci.yml` / `GLOSSARY.md`），**不含** `collect_evidence.py`，也不检测「工作树基线是否落后于某个契约变更 commit」。
+- **R3 契约缺「机器可读变更清单」与「落后基线检测」**：契约元素（CLI 标志、`build_fragment`/`report` 键、`build_manifest_record` 字段、`tools.report_exam.index.parse_fragment` 依赖的片段标题、退出码语义）无单一事实源；`checkout_lock.py` 的 `DEFAULT_SHARED_FILES` 硬编码四项（`check_token_budget.py` / `measure_coverage.py` / `ci.yml` / `GLOSSARY.md`），**不含** `collect_evidence.py`，也不检测「工作树基线是否落后于某个契约变更 commit」。
 
 ---
 
@@ -41,7 +41,7 @@
   - CLI 标志集（`--step/--cmd/--out/--screenshot/--shot-cmd/--shot-kind/--strict/--manifest/--flag-panel/--flag-shot` 等及其语义）；
   - `build_fragment` 参数与 `report` 键（`complete/missing/required_status/optional_status/shot_status/flag_status/hashes` 等）；
   - `build_manifest_record` 字段（`pieces/flag_dual/screenshot_sha256` 等）；
-  - 片段各节标题（`report_exam.index.parse_fragment` 依赖，如 `#### 截图（访问证明）`、`#### flag 取证（双通道一致）` 及其 fenced 原值块）；
+  - 片段各节标题（`tools.report_exam.index.parse_fragment` 依赖，如 `#### 截图（访问证明）`、`#### flag 取证（双通道一致）` 及其 fenced 原值块）；
   - 退出码语义（0/1/2）。
   - 附 `contract_version`（如 `v3`）与 CHANGELOG（逐条记录变更 commit、before→after、兼容性判定）。
 - **依据**：对齐 `AGENTS.md` C1——契约只存一份，消费者与报告器只引 `路径#锚点`，不转抄。
@@ -92,7 +92,7 @@
 
 ### M6 下游解析契约定点（golden 测试）【回归护栏】
 
-- **内容**：`report_exam.index.parse_fragment` 依赖片段标题与 fenced 原值块结构。新增 golden 片段 + 断言，锁定以下契约：`#### 截图（访问证明）`、`#### flag 取证（双通道一致）`（fenced 原值块）、证据校验表列（`| 截图 | 是 | … |`）。共享工具改动任一节标题即令测试变红。
+- **内容**：`tools.report_exam.index.parse_fragment` 依赖片段标题与 fenced 原值块结构。新增 golden 片段 + 断言，锁定以下契约：`#### 截图（访问证明）`、`#### flag 取证（双通道一致）`（fenced 原值块）、证据校验表列（`| 截图 | 是 | … |`）。共享工具改动任一节标题即令测试变红。
 - **触发时机**：CI S2（每次）。
 - **责任方**：`report-exam` 维护者 + 共享工具改动者（改标题须同步 golden）。
 - **生效范围**：`collect_evidence.py` ↔ `report_exam` 之间的下游契约，防止静默漂移。

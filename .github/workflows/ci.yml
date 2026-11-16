@@ -85,7 +85,7 @@ jobs:
           CHANGED="$(git diff --name-only "$BASE_SHA" HEAD 2>/dev/null || true)"
           python scripts/check_contract_manifest.py --pr-body /tmp/osai_pr_body.md --changed $CHANGED
       - name: 共享工具与新模块语法编译 (S1)
-        run: python -m py_compile tools/collect_evidence.py tools/recon_ai/*.py tools/decoy_detect/*.py tools/loot_manage/*.py tools/attack_embeddings/*.py tools/attack_multi_agent/*.py tools/attack_supply_chain/*.py tools/verify_evidence.py tools/attack_ai_agent/*.py tools/attack_mcp_tool/*.py tools/attack_rag/*.py tools/serve_malicious_mcp.py report_exam/*.py scripts/*.py
+        run: python -m py_compile tools/collect_evidence.py tools/recon_ai/*.py tools/decoy_detect/*.py tools/loot_manage/*.py tools/attack_embeddings/*.py tools/attack_multi_agent/*.py tools/attack_supply_chain/*.py tools/verify_evidence.py tools/attack_ai_agent/*.py tools/attack_mcp_tool/*.py tools/attack_rag/*.py tools/serve_malicious_mcp.py tools/report_exam/*.py scripts/*.py
       - name: attack-multi-agent 示意脚本语法编译 (S1)
         # SKILL.md 攻击路径 A/B/C 点名的 5 个顶层薄壳（独立步骤，避免与并发会话共用长行）
         run: python -m py_compile tools/msg_inject.py tools/agent_impersonate.py tools/memory_poison.py tools/context_poison.py tools/workflow_disrupt.py

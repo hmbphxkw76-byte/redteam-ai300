@@ -81,9 +81,9 @@
 |---|---|---|
 | R1 引用可解析 | 报告内 `![]()` / `<img src>` 以报告文件为基准必须存在，PNG 须含 `IEND` | 断图 = 证据不可核 |
 | R2 相对结构 | 整包提交 `report/` + `evidence/`（保持相对路径）；或按 `report-exam` §3.2 直接 include 片段后导出 PDF（图片位图化） | PDF / 解包后不依赖仓库布局 |
-| R3 单一事实源 | 禁止 base64、禁止复制截图字节入报告；图片仅存证据目录 | C1 单一事实源 + C4 预算 |
+| R3 单一事实源 | 禁止 base64、禁止复制截图字节入报告；图片仅存 `evidence/`（不入报告） | C1 单一事实源 + C4 预算 |
 | R4 本地门禁 | 打包前 `python scripts/check_report_assets.py <报告>` 必须 PASS | 机读防断图 |
 | R5 命名与体积 | `OSAI-OS-XXXXX-Exam-Report.pdf` + `.7z`（无密码、≤100MB、MD5 校验） | 考试 §6 |
 
-`evidence/` 属 gitignore、CI 无证据目录，故 R4 定位为**提交前本地门禁**，不接入 CI；
+`evidence/` 属 gitignore、CI 无该目录，故 R4 定位为**提交前本地门禁**，不接入 CI；
 技能开发时不得生成依赖绝对路径、base64 或复制图片字节的报告。

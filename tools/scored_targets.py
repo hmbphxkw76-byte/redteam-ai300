@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """计分目标键集的唯一事实源（GOVERNANCE §2.1/§2.2）。
 
-`report_exam` 与 `tools/verify_evidence.py` 都按这 8 个键组织报告与校验；
+`tools.report_exam` 与 `tools/verify_evidence.py` 都按这 8 个键组织报告与校验；
 键集只在此定义一次，两侧引用（AGENTS.md C1）。门禁侧不得反向依赖下游组装器。
 """
 

@@ -37,7 +37,7 @@ main → verify → check_vrf01..08 / check_proof_single → Toolchain（注入�
 ```
 
 - 不得反向：登记簿与术语检查器**不**感知校验器。
-- `report_exam/package.py` 位于下游，只调 `verify`，不触内部函数。
+- `tools/report_exam/package.py` 位于下游，只调 `verify`，不触内部函数。
 
 ## 4. seam 与注入点（4 处，与规格 v1 §4 一致）
 
@@ -52,7 +52,7 @@ main → verify → check_vrf01..08 / check_proof_single → Toolchain（注入�
 
 | 方案 | 结论 | 理由 |
 |---|---|---|
-| 拆为 `tools/verify_evidence/` 包 | **否决** | CI `py_compile` 路径与 `report_exam/package.py` 的 `spec_from_file_location` 均绑定单文件路径；拆包需同改 CI 与下游，影响半径超出本技能 |
+| 拆为 `tools/verify_evidence/` 包 | **否决** | CI `py_compile` 路径与 `tools/report_exam/package.py` 的 `spec_from_file_location` 均绑定单文件路径；拆包需同改 CI 与下游，影响半径超出本技能 |
 | 判据层内直接 `subprocess` 调 `check_glossary.py` | **否决** | 进程开销 + 输出文本解析易漂移；改为 import 同源 `parse_glossary`（术语判据同源，C1） |
 | 24h 窗口降级为警告 | **否决** | S3 明示超时自动不及格（快照 `#L74`），必须阻断 |
 | 截图 OCR 取 flag 值 | **否决** | 非官方要求，成本高且易误判；改「访问证明同屏」文字断言 + 人工兜底（VG-2） |

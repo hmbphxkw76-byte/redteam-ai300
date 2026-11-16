@@ -336,7 +336,7 @@ class DownstreamContractTests(unittest.TestCase):
     """H1/H2 回归：证据格式必须仍可被 report-exam 解析；质量门失败须显式。"""
 
     def test_flag_fragment_reparsed_by_report_exam(self):
-        from report_exam.index import parse_fragment
+        from tools.report_exam.index import parse_fragment
         with tempfile.TemporaryDirectory() as tmp:
             out = os.path.join(tmp, "f.md")
             subprocess.run(
@@ -393,7 +393,7 @@ class CodeHygieneTests(unittest.TestCase):
     def test_ac23_no_third_party_imports(self):
         """以标准库名单反向判定：任何非标准库顶层模块即违规（不依赖黑名单）。"""
         pkg = os.path.join(ROOT, "tools", "recon_ai")
-        allowed = set(sys.stdlib_module_names) | {"tools", "report_exam"}
+        allowed = set(sys.stdlib_module_names) | {"tools"}
         for name in sorted(os.listdir(pkg)):
             if not name.endswith(".py") or name == "__init__.py":
                 continue

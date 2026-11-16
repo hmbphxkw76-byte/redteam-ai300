@@ -38,7 +38,7 @@ class ReportExamEvidenceContractTests(unittest.TestCase):
 
     def test_public_evidence_steps_match_skill(self):
         # 组装器须公开机读常量，保证实现与规格步骤逐字对齐（B4 证据契约）
-        import report_exam
+        import tools.report_exam as report_exam
         self.assertTrue(hasattr(report_exam, "EVIDENCE_STEPS"),
                         "report_exam 未公开 EVIDENCE_STEPS 常量")
         self.assertEqual(tuple(report_exam.EVIDENCE_STEPS), tuple(STEP_IDS))

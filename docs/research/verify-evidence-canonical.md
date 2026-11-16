@@ -2,7 +2,7 @@
 
 > **性质**：研究/事实文档（非规范正文）。供 `skills/verify-evidence/SKILL.md` 落地为 `tools/verify_evidence.py` 时使用。
 > **核验日期**：2026-11-15（GMT+8）。每条结论附一手来源（条款行号或源码位置）；待核实项逐条命名并给出取证方式。
-> **依据**：`docs/governance/GOVERNANCE.md` v1.1、`docs/standards/CI-CD.md` v1.1、`docs/governance/references/OSAI-Exam-Guide-snapshot.md`（S3 快照）、`skills/verify-evidence/SKILL.md`、`report_exam/_types.py`、`tools/loot_manage/registry.py`、`tools/collect_evidence.py`。
+> **依据**：`docs/governance/GOVERNANCE.md` v1.1、`docs/standards/CI-CD.md` v1.1、`docs/governance/references/OSAI-Exam-Guide-snapshot.md`（S3 快照）、`skills/verify-evidence/SKILL.md`、`tools/report_exam/_types.py`、`tools/loot_manage/registry.py`、`tools/collect_evidence.py`。
 
 ---
 
@@ -39,8 +39,8 @@
 
 | 输入 | 权威定义 | 本技能读取的字段 |
 |---|---|---|
-| 证据片段 | `report_exam/_types.py#Fragment`（`step_id`/`command`/`output`/`screenshot`/`ai_log`/`flag`/`host`） | 三件套齐全性、flag 值、AI 日志 |
-| 片段解析 | `report_exam/index.py#parse_fragment`（`#### 确切命令`/`#### 关键输出`/`#### 截图`/`#### AI 交互日志`/`#### flag 取证（双通道一致）`） | 段落定位（契约：改段落结构须回归该解析器） |
+| 证据片段 | `tools/report_exam/_types.py#Fragment`（`step_id`/`command`/`output`/`screenshot`/`ai_log`/`flag`/`host`） | 三件套齐全性、flag 值、AI 日志 |
+| 片段解析 | `tools/report_exam/index.py#parse_fragment`（`#### 确切命令`/`#### 关键输出`/`#### 截图`/`#### AI 交互日志`/`#### flag 取证（双通道一致）`） | 段落定位（契约：改段落结构须回归该解析器） |
 | 战利品登记簿 | `tools/loot_manage/registry.py#parse_dual`（`面板=<值>；截图=<路径>`）、`#fragment_pieces`（三件套布尔） | 双通道值、三件套判据 |
 | 采集器 | `tools/collect_evidence.py`（`--step`/`--cmd`/`--out`/`--flag-panel`/`--flag-shot`） | 片段生产端，本技能不调用 |
 
@@ -48,7 +48,7 @@
 
 ## 4. 现状核实（代码级，2026-11-15）
 
-已落地：`tools/verify_evidence.py`（203 行，纯标准库，退出码 0/1/2）、`tests/test_verify_evidence.py`（165 行，10 用例）、`report_exam/package.py` 委托调用（`#L115` `verify()`）、CI 注册 `ci.yml#L55`（py_compile）与 `report-toolchain.yml#L92`（`verify-evidence: passed` 断言）。工单 #51–#54 已关闭。
+已落地：`tools/verify_evidence.py`（203 行，纯标准库，退出码 0/1/2）、`tests/test_verify_evidence.py`（165 行，10 用例）、`tools/report_exam/package.py` 委托调用（`#L115` `verify()`）、CI 注册 `ci.yml#L55`（py_compile）与 `report-toolchain.yml#L92`（`verify-evidence: passed` 断言）。工单 #51–#54 已关闭。
 
 **缺口（按条款归类，构成本次主线的实现目标）**：
 
@@ -72,7 +72,7 @@
 |---|---|---|
 | VG-1 | 报告章节名 `Target Inventory & Point Allocation` 是否官方模板用语 | 比对 `report_exam` 骨架 `skeleton.py` 与 S1 报告 PDF 第 5 页；不一致则改为按 `SCORED_HOSTS` 键集判定，不依赖标题 |
 | VG-2 | 「访问证明」是否必须含 `whoami`/`id` 当屏 | S1 官方报告示例截图；无原文支撑时降级为人工判据并在 SKILL 注明 |
-| VG-3 | pandoc/typst 与 7z 是否在目标环境可用（产物真跑） | `python -m report_exam build`；已在 `report-toolchain.yml` 真跑，本技能 dry-run 记 pending |
+| VG-3 | pandoc/typst 与 7z 是否在目标环境可用（产物真跑） | `python -m tools.report_exam build`；已在 `report-toolchain.yml` 真跑，本技能 dry-run 记 pending |
 | VG-4 | 真实取分（OSID、真实 flag、24h 窗口） | 人工考试边界，本地仅以夹具自证 |
 
 **已排除**：PyRIT 对象映射（本技能零 PyRIT 依赖）；截图 OCR 值级比对（不在 S1/S3 要求内，成本过高，改为同屏文字断言 + 人工判据）。

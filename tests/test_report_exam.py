@@ -18,15 +18,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from report_exam import (  # noqa: E402
+from tools.report_exam import (  # noqa: E402
     Fragment, MemoryEvidenceSource, DirEvidenceSource, build_index,
     parse_fragment, render_skeleton, render_host_section,
     render_all_host_sections, collect_ai_logs, render_bilingual,
     extract_facts, verify_report, render_pdf, make_archive,
     assemble_report, package,
 )
-from report_exam._types import SCORED_HOSTS  # noqa: E402
-from report_exam.bilingual import (  # noqa: E402
+from tools.report_exam._types import SCORED_HOSTS  # noqa: E402
+from tools.report_exam.bilingual import (  # noqa: E402
     LONG_POC_THRESHOLD, long_poc_fragments, render_appendix_a,
 )
 
@@ -330,7 +330,7 @@ class VerifyTests(unittest.TestCase):
 
 class PackagingTests(unittest.TestCase):
     def test_AC12_naming_and_size_rules(self):
-        from report_exam.package import check_naming_and_size, MAX_ARCHIVE_BYTES
+        from tools.report_exam.package import check_naming_and_size, MAX_ARCHIVE_BYTES
         with tempfile.TemporaryDirectory() as d:
             pdf = os.path.join(d, "OSAI-OS-12345-Exam-Report.pdf")
             z = os.path.join(d, "OSAI-OS-12345-Exam-Report.7z")
@@ -385,7 +385,7 @@ class PackagingTests(unittest.TestCase):
         """无任何引擎时交 pandoc 默认（明确报 VG-3），不静默改命令语义。"""
         from unittest import mock
         import importlib
-        pkg = importlib.import_module("report_exam.package")
+        pkg = importlib.import_module("tools.report_exam.package")
         with mock.patch.dict(os.environ, {"PANDOC_PDF_ENGINE": ""}), \
                 mock.patch.object(pkg.shutil, "which", return_value=None):
             with tempfile.TemporaryDirectory() as d:
@@ -434,7 +434,7 @@ class AssembleTests(unittest.TestCase):
             self.assertIsNotNone(r["package"]["pdf"])
 
     def test_cli_index_and_build(self):
-        from report_exam.__main__ import main
+        from tools.report_exam.__main__ import main
         with tempfile.TemporaryDirectory() as d:
             ev = os.path.join(d, "attack-ai-agent-real")
             os.makedirs(ev)

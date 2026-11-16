@@ -18,8 +18,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from report_exam._types import Fragment  # noqa: E402
-from report_exam.index import MemoryEvidenceSource  # noqa: E402
+from tools.report_exam._types import Fragment  # noqa: E402
+from tools.report_exam.index import MemoryEvidenceSource  # noqa: E402
 from tools.capstone_rehearse import (  # noqa: E402
     BLOCKING, NON_BLOCKING, SCHEMA_VERSION, EvidenceWriter, FixedClock,
     MemoryStageInventory, StageEvidence, rehearse, render_report,

@@ -3,7 +3,7 @@
 """走查编排：`rehearse(...)` 是唯一深层入口与对象图构造收敛点（设计 §5）。
 
 三件套判据不重写：证据链贯通只读既有 `EvidenceSource` 产出的 Fragment
-（`report_exam/index.py#parse_fragment`），符合 C1 单一事实源。
+（`tools/report_exam/index.py#parse_fragment`），符合 C1 单一事实源。
 """
 from __future__ import annotations
 

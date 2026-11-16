@@ -80,7 +80,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if args.evidence_dir:
             if not os.path.isdir(args.evidence_dir):
                 raise ValueError("证据片段目录不存在：%s" % args.evidence_dir)
-            from report_exam.index import DirEvidenceSource
+            from tools.report_exam.index import DirEvidenceSource
             evidence_source = DirEvidenceSource([args.evidence_dir], real_only=False)
         result = rehearse(RepoStageInventory(ROOT), FixedClock(measured=measured),
                           evidence_source=evidence_source, closed_gates=closed)

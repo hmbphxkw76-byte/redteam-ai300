@@ -50,7 +50,7 @@ report 键（消费者 / 报告器依赖，字段名与语义即契约）：
 
 `step_id, command, sha256, timestamp, profile, retention, target, screenshot, screenshot_sha256, shot_kind, script, script_sha256, pieces{确切命令, 关键输出, 截图, AI 交互日志, flag 双通道, 脚本/PoC}, flag_dual, complete`
 
-## 4. 片段节标题（report_exam.index.parse_fragment 下游契约）
+## 4. 片段节标题（tools.report_exam.index.parse_fragment 下游契约）
 
 - `### 步骤 <step_id>：<title>`
 - `#### 确切命令`（bash fenced 块）

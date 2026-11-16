@@ -34,7 +34,7 @@
 
 ## 3. 九阶段流水线 → 实现对象映射（B7 / 覆盖度矩阵行集）
 
-顺序以 `GOVERNANCE.md#L145-L148` 为准；就绪判据在阶段 2/3 布尔化。代码落点为 2026-11-15 主分支实况（`tools/`、`report_exam/`、`tests/`）。
+顺序以 `GOVERNANCE.md#L145-L148` 为准；就绪判据在阶段 2/3 布尔化。代码落点为 2026-11-15 主分支实况（`tools/`、`tools/report_exam/`、`tests/`）。
 
 | # | §4.5 阶段 | 技能（能力域） | 代码落点 / 证据契约 | 下游消费者 |
 |---|---|---|---|---|
@@ -43,16 +43,16 @@
 | 3 | 立足点 | `foothold-traditional`(D1) | 证据契约 `tests/test_foothold_traditional_evidence_contract.py`（无独立包） | 4 链式横向、7 战利品 |
 | 4 | 链式横向 + AI 向量利用 | `attack-ai-agent`(D3) / `attack-rag`(D5) / `attack-mcp-tool`(D7) / `attack-embeddings`(D6) / `attack-multi-agent`(D4) / `attack-supply-chain`(D8) / `attack-infra`(D9) | `tools/attack_*/` 各包；`tests/test_attack_*_evidence_contract.py`；`attack-infra` 仅契约测试 | 5 独立机、7 战利品、9 报告主机小节 |
 | 5 | 独立机 | `attack-mcp-tool` / `attack-infra` 等 | 同 #4；S3 快照 `#L51` 独立机 15 分 | 7 战利品、9 报告独立主机小节 |
-| 6 | 战利品沉淀 | `loot-manage` | `tools/loot_manage/registry.py#parse_registry`/`#append_attack_path`；`loot/registry.md` | 8 `tools/verify_evidence.py#from_loot`、9 `report_exam/` High-Level Attack Path |
+| 6 | 战利品沉淀 | `loot-manage` | `tools/loot_manage/registry.py#parse_registry`/`#append_attack_path`；`loot/registry.md` | 8 `tools/verify_evidence.py#from_loot`、9 `tools/report_exam/` High-Level Attack Path |
 | 7 | 域控收敛 | `verify-evidence` 前置 + `proof.txt` 单次 | `GOVERNANCE.md#L57`；`tools/verify_evidence.py#check_proof_single` | 8 全量校验、9 报告 Chain1/Chain2 两处记录 |
 | 8 | 证据校验 | `verify-evidence` | `tools/verify_evidence.py`（`vrf-01…08`）；`tests/test_verify_evidence.py` | 9 提交前置（§7.3） |
-| 9 | 报告生成 | `report-exam` | `report_exam/index.py#parse_fragment`、`assemble.py#assemble_report`、`package.py` | 提交窗口（§6.4） |
+| 9 | 报告生成 | `report-exam` | `tools/report_exam/index.py#parse_fragment`、`assemble.py#assemble_report`、`package.py` | 提交窗口（§6.4） |
 
-**证据链贯通的可机读判据来源**：`tools/collect_evidence.py#main`（`--step`/`--cmd`/`--out`/`--strict` 产出 `#### 确切命令` / `#### 关键输出` / `#### 截图` / `#### AI 交互日志` 段落）→ `report_exam/index.py#L24-L52#parse_fragment`（唯一解析契约，改段落结构须回归）→ `tools/loot_manage/registry.py#fragment_pieces`（三件套布尔）。三者均为既有实现，本技能只读不重写（C1）。
+**证据链贯通的可机读判据来源**：`tools/collect_evidence.py#main`（`--step`/`--cmd`/`--out`/`--strict` 产出 `#### 确切命令` / `#### 关键输出` / `#### 截图` / `#### AI 交互日志` 段落）→ `tools/report_exam/index.py#L24-L52#parse_fragment`（唯一解析契约，改段落结构须回归）→ `tools/loot_manage/registry.py#fragment_pieces`（三件套布尔）。三者均为既有实现，本技能只读不重写（C1）。
 
 ## 4. 演练产物与正式提交的隔离约束（关键）
 
-- `report_exam/index.py#L13-L14` `EXCLUDED_DIR_MARKERS = ("report-exam", "evidence/attack-ai-agent/")`；`#L66-L82` `DirEvidenceSource(real_only=True)` 只接受路径含 `-real` 目录段，注释明确「防止演练/仿真片段与实现日志混入正式提交」。
+- `tools/report_exam/index.py#L13-L14` `EXCLUDED_DIR_MARKERS = ("report-exam", "evidence/attack-ai-agent/")`；`#L66-L82` `DirEvidenceSource(real_only=True)` 只接受路径含 `-real` 目录段，注释明确「防止演练/仿真片段与实现日志混入正式提交」。
 - `skills/report-exam/SKILL.md#L133` 同样要求演练/仿真片段与 `-real` 区分。
 - **结论**：SKILL.md「报告可被 `report-exam` 的演练/附录部分直接引用」只能解释为**考前验收文档被人工引用/复核**，不得解释为把演练片段放入 `-real` 真实证据片段集合或正式提交 PDF。实现须在报告中显式标注「演练/仿真，非 OSAI 正式考试」，并复用 `loot-manage` 的「按路径引用、不重复存储证据本体」习惯（`skills/loot-manage/SKILL.md#L17`）。
 

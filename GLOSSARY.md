@@ -348,7 +348,7 @@ _Avoid_: 缺失清单
 
 **自校验 (self-verification)**:
 运行结束后对证据、清单与报告执行的 C1–C9 布尔检查；结论 `PASS`/`BLOCKED` 由检查派生。
-_Avoid_: 自检、自动检查
+_Avoid_: 自验证
 
 **覆盖矩阵 (coverage matrix)**:
 七类 AI 组件 × 判定/依据/证据引用的报告表格，用于证明侦察覆盖完整。

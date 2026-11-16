@@ -33,12 +33,14 @@ class TestBranchMapping(unittest.TestCase):
 
 
 class TestSharedFileDefaults(unittest.TestCase):
-    """共享文件清单默认值（ADR 三层隔离 ③ 约定的四类）。"""
+    """共享文件清单默认值（ADR 三层隔离 ③ 约定的四类 + 契约漂移新增两项）。"""
 
-    def test_four_defaults(self):
-        self.assertEqual(len(cl.DEFAULT_SHARED_FILES), 4)
+    def test_six_defaults(self):
+        self.assertEqual(len(cl.DEFAULT_SHARED_FILES), 6)
         for f in ("scripts/check_token_budget.py", "scripts/measure_coverage.py",
-                  ".github/workflows/ci.yml", "GLOSSARY.md"):
+                  ".github/workflows/ci.yml", "GLOSSARY.md",
+                  "tools/collect_evidence.py",
+                  "docs/contracts/collect_evidence.contract.md"):
             self.assertIn(f, cl.DEFAULT_SHARED_FILES)
 
 

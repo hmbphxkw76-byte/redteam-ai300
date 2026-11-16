@@ -19,8 +19,12 @@ SECRET_PATTERN = re.compile(r"sk-[A-Za-z0-9]{16,}")
 # ai_vector.txt flag 值形态（考试环境为任意非空串，留给执行时实测；此处仅作兜底命中）
 FLAG_PATTERN = re.compile(r"(?:ai[_-]?vector|flag)[=:\s]+([A-Za-z0-9_\-]{6,})", re.IGNORECASE)
 
-# 拓扑解析：agent / 消息总线 / 共享记忆后端的常见标识
-_AGENT_RE = re.compile(r"(?:agent|智能体|节点)\s*[:：]?\s*([A-Za-z0-9_\-]{2,})", re.IGNORECASE)
+# 拓扑解析：agent / 消息总线 / 共享记忆后端的常见标识。
+# agent 关键字须为独立词（负向后顾排除 targetAgent/agentName 等驼峰词）且后接冒号，
+# 否则会命中 SPA 文案「The AI agent you're supposed to break」这类散文（F1 假阳性）。
+# 冒号前后仅允许水平空白（[ \t]），标签/冒号/值必须同行——空值标签（行尾 "agent:"）
+# 不得跨行借用下一行首词为值（F1-edge：\s* 会跨 \n 使 agent_count 虚增）。
+_AGENT_RE = re.compile(r"(?<![A-Za-z0-9_])(?:agent|智能体|节点)[ \t]*[:：][ \t]*([A-Za-z0-9_\-]{2,})", re.IGNORECASE)
 _BUS_RE = re.compile(r"(kafka|rabbitmq|redis|duckdb|nats|pulsar|消息总线|bus)", re.IGNORECASE)
 _MEMORY_KEY_RE = re.compile(r"(?:key|键|conv:)\s*[:：]?\s*([A-Za-z0-9_:.\-]{2,})", re.IGNORECASE)
 

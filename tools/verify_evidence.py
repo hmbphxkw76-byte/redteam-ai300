@@ -306,6 +306,8 @@ def from_loot(registry_path, evidence_dir=None, report_md="", appendix_md="",
     只消费登记簿既有判据（`parse_registry` / `parse_dual` / `fragment_pieces`），
     不另写三件套或双通道判定（C1）。报告正文与分值表由调用方给出（通常为
     `report-exam` 产物）——单凭登记簿无法判定 vrf-01/02/06，缺省为空则如实阻断。
+    报告侧 flag 取片段双通道表（无表时回退取证节 / 面板值），状态列「失效」不计已取分
+    （#225 J-1/J-2）；不改写登记簿，判定层语义保持不变。
     """
     reg_mod = _loot_registry()
     try:
@@ -328,6 +330,12 @@ def from_loot(registry_path, evidence_dir=None, report_md="", appendix_md="",
                 with open(p, "r", encoding="utf-8") as f:
                     raw = f.read()
         pieces = reg_mod.fragment_pieces(raw) if raw else {}
+        # 报告侧取值：优先片段双通道表的「截图/正文中的值」，其次取证节首 token，
+        # 最后才回退面板值。避免把面板值同时当作两通道造成自比（#225 J-1）。
+        _p, frag_shot, has_table = _fragment_dual(raw)
+        report_flag = (frag_shot if has_table and frag_shot
+                       else (_flag_of(raw) or panel))
+        taken = (getattr(row, "status", "") or "").strip() != "失效"
         fragments.append({
             "step_id": (getattr(row, "id", "") or "").strip(),
             "host": host,
@@ -335,7 +343,8 @@ def from_loot(registry_path, evidence_dir=None, report_md="", appendix_md="",
             "output": "",
             "screenshot": shot or frag_path,
             "ai_log": "",
-            "flag": panel,
+            "flag": report_flag,
+            "taken": taken,
             "raw": raw,
             "pieces": {k: bool(pieces.get(k))
                        for k in ("command", "output", "screenshot")},
@@ -355,7 +364,12 @@ def _result():
 
 
 def _scored(fragments):
-    return [f for f in fragments if (f.get("flag") or "").strip()]
+    """已取分片段：有 flag 且未被登记簿标为失效（#225 J-2）。
+
+    `taken` 缺省 True，保证 `--payload` / `--fragments-dir` 的既有语义不变。
+    """
+    return [f for f in fragments
+            if (f.get("flag") or "").strip() and f.get("taken", True)]
 
 
 def _screenshot_section(raw):
@@ -516,8 +530,9 @@ def check_vrf04(inp):
         elif proof is None:
             r["missing"].append("NOTE-7：%s 访问证明无法机判（%s），同屏性待人工核对（§6.2.2）"
                                 % (f.get("step_id", "?"), reason))
+    scored_hosts = {f.get("host", "") for f in _scored(fragments)}
     for h in {f.get("host", "") for f in fragments}:
-        if not any(f.get("flag") for f in fragments if f.get("host") == h):
+        if h not in scored_hosts:
             r["missing"].append("vrf-04：%s 无 flag 双通道证据（未达成，待补录）" % h)
     r["ok"] = ok
     return r

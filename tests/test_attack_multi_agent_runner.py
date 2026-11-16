@@ -58,6 +58,17 @@ class RunnerTests(unittest.TestCase):
         rep = run(paths=(), step="a2a-01", runtime=make_runtime(body="nothing here"))
         self.assertEqual(rep.by_step("a2a-01").level, "已跳过")
 
+    def test_a2a_04_write_rejected_is_uneffective(self):
+        # F2 回归：写入被拒（404）时不得因 before/after 恒不等而误判「部分生效」
+        client = FakeHttpClient(
+            script={"http://t/set": Response(404, "Not found", "text/plain",
+                                             error="HTTP Error 404")},
+            default=Response(200, "agent: agentA\nbus: kafka", "application/json"))
+        rt = Runtime(client=client, writer=RecordingWriter(), capture=NullCapture(),
+                     scanner=BuiltinAnalyzer(), shot_enabled=False)
+        rep = run(step="a2a-04", runtime=rt)
+        self.assertEqual(rep.by_step("a2a-04").level, "未生效")
+
     def test_local_only_capped(self):
         rep = run(runtime=make_runtime(local_only=True))
         # a2a-02 命中双信号，但 local_only 封顶为部分生效

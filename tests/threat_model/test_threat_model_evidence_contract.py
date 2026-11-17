@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """threat-model 证据契约测试（S2）：产出片段可机读、四节齐全、可按 asset_id 复用。
 
-对齐 v2 TD3。参考 tests/test_recon_evidence_contract.py 的结构与命名。
+对齐 v2 TD3。参考 tests/recon_ai/test_recon_evidence_contract.py 的结构与命名。
 威胁建模为规划技能（无逐步命令取证），契约以「结构化片段可被下游消费」为判据。
 """
 import json

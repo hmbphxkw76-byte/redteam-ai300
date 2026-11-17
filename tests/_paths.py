@@ -12,4 +12,3 @@ from pathlib import Path
 
 ROOT_PATH = Path(__file__).resolve().parent.parent
 ROOT = str(ROOT_PATH)
-FIXTURES = str(ROOT_PATH / "tests" / "fixtures")

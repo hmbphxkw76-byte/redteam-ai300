@@ -10,12 +10,14 @@ CI 与本技能消费同一格式，避免两套判据漂移。
 import os
 import subprocess
 import sys
+from typing import Tuple
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_TOOL = os.path.join(ROOT, "tools", "collect_evidence.py")
+from tools._evidence_contract import EvidenceWriterContract  # noqa: E402
 
 
-class EvidenceWriter:
+class EvidenceWriter(EvidenceWriterContract):
     """证据写入器：子进程调用共享收集器（行为与 CLI 完全一致）。
 
     契约：符合 `tools/_evidence_contract.py#EvidenceWriterContract` 最小接口
@@ -31,15 +33,16 @@ class EvidenceWriter:
         self.python = python or sys.executable
         self.timeout = timeout
 
-    def describe(self):
+    def describe(self) -> str:
         return "collect_evidence.py (%s)" % os.path.basename(self.tool_path)
 
-    def fragment_path(self, step_id):
+    def fragment_path(self, step_id: str) -> str:
         return os.path.join(self.out_dir, "%s.md" % step_id)
 
-    def emit(self, step_id, command, output, target="", title="",
+    def emit(self, step_id: str, command: str, output: str = "",
+             target="", title="",
              screenshot="", shot_kind="", shot_cmd="", profile="",
-             note="", strict=True):
+             note="", strict=True) -> Tuple[str, int, str]:
         """写一份证据片段；返回 (片段路径, 退出码, 标准错误摘要)。"""
         os.makedirs(self.out_dir, exist_ok=True)
         out = self.fragment_path(step_id)

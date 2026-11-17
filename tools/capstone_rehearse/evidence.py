@@ -15,6 +15,7 @@ from typing import Iterable, Tuple
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 COLLECTOR = os.path.join(ROOT, "tools", "collect_evidence.py")
+from tools._evidence_contract import EvidenceWriterContract  # noqa: E402
 
 # (step_id, 标题, 截图捕获钩子)
 STEPS = (
@@ -29,7 +30,7 @@ AI_LOG_NOTE = ("模型：本次走查由确定性判据执行，未调用 LLM �
                "AI 辅助仅用于文档措辞，采纳结果经人工复核（§5.5）。")
 
 
-class EvidenceWriter:
+class EvidenceWriter(EvidenceWriterContract):
     """证据写入器：子进程调用共享收集器（与 decoy_detect 同一适配模式）。
 
     契约：符合 `tools/_evidence_contract.py#EvidenceWriterContract` 最小接口
@@ -50,8 +51,8 @@ class EvidenceWriter:
     def fragment_path(self, step_id: str) -> str:
         return os.path.join(self.out_dir, "%s.md" % step_id)
 
-    def emit(self, step_id: str, command: str, output: str, title: str,
-             shot_cmd: str, strict: bool = True) -> Tuple[str, int, str]:
+    def emit(self, step_id: str, command: str, output: str = "", title: str = "",
+             shot_cmd: str = "", strict: bool = True) -> Tuple[str, int, str]:
         os.makedirs(self.out_dir, exist_ok=True)
         out = self.fragment_path(step_id)
         cmd = [self.python, self.collector,

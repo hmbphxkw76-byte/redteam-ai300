@@ -107,6 +107,26 @@ class ArtifactTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertEqual((size, cap), (500, 400))
 
+    def test_crlf_and_lf_count_identically(self):
+        """回归 D4：同一内容以 CRLF/LF 落盘必须同一判定（口径 = LF 归一化 + UTF-8）。
+
+        构造恰好卡在 issue-summary 400B 上限两侧：LF 口径 390B（PASS），
+        CRLF 原始 420B（修复前的 read_bytes 口径会误判 BLOCKED）。
+        """
+        body = "对齐审计\n" * 30  # 每行 4 全角字符 + 1 换行 = 13B；LF 共 390B
+        expected = len(body.encode("utf-8"))
+        raw_crlf = len(body.replace("\n", "\r\n").encode("utf-8"))
+        self.assertEqual((expected, raw_crlf), (390, 420))
+        with tempfile.TemporaryDirectory() as tmp:
+            lf = Path(tmp) / "lf.md"
+            crlf = Path(tmp) / "crlf.md"
+            lf.write_bytes(body.encode("utf-8"))
+            crlf.write_bytes(body.replace("\n", "\r\n").encode("utf-8"))
+            ok_lf, size_lf, cap = ctb.check_artifact("issue-summary", lf)
+            ok_crlf, size_crlf, _ = ctb.check_artifact("issue-summary", crlf)
+        self.assertEqual((size_lf, size_crlf, cap), (expected, expected, 400))
+        self.assertEqual((ok_lf, ok_crlf), (True, True))
+
     def test_unknown_kind_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(KeyError):

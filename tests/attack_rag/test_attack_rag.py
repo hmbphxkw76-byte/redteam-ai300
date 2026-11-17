@@ -5,7 +5,7 @@
 只测外部行为：检索结果、注入命中率、间接注入回执、决策差异、证据契约参数。
 假后端全程离线，不导入 pyrit、不联网、不调用真实 LLM（ADR-0004）。
 
-运行：python -m unittest tests.test_attack_rag
+运行：python -m unittest tests.attack_rag.test_attack_rag
 """
 import io
 import json

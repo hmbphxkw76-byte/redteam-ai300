@@ -11,7 +11,11 @@
 
 契约本身只约定「最小方法和返回形态」，**不定义证据片段格式**——格式唯一事实源
 仍为 tools/collect_evidence.py（本模块不改变它）。各适配器保留既有构造参数与
-关键字别名，契约一致不代表签名逐字相同。
+关键字别名，契约一致不代表签名逐字相同。最小可调用形态为
+emit(step_id, command[, output])：output 及其后所有选项参数必须带默认值
+（或为 **kwargs），且返回 (片段路径, 退出码, 错误摘要)。
+本契约仅覆盖上述 4 个类；attack_supply_chain 的函数式 emit() 与
+attack_embeddings 的 RecordingWriter(cmd/out/summary) 是另外的形态，不在此列。
 
 校验入口：python scripts/check_evidence_contract.py
 """

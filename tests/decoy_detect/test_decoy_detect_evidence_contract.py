@@ -6,7 +6,7 @@
 断言证据 seam（`tools/decoy_detect/evidence.py`）委托共享 `collect_evidence.py`，
 产出的片段含三件套（确切命令 / 关键输出 / 截图）且判定为「三件套齐全」。
 
-仅依赖标准库（unittest），与 tests/test_collect_evidence.py 同一 subprocess 约定。
+仅依赖标准库（unittest），与 tests/shared_tools/test_collect_evidence.py 同一 subprocess 约定。
 运行：python -m unittest discover -s tests -t .
 """
 import os

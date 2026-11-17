@@ -10,7 +10,7 @@
   ④ flag 双通道一致才通过严格模式，不一致必须退出码 1；
   ⑤ 术语符合 GLOSSARY（无废弃词）。
 
-运行：python -m unittest tests.test_attack_rag_evidence_contract
+运行：python -m unittest tests.attack_rag.test_attack_rag_evidence_contract
 """
 import os
 import tempfile

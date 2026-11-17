@@ -13,9 +13,10 @@ from typing import Dict, List, Tuple
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_TOOL = os.path.join(ROOT, "tools", "collect_evidence.py")
+from tools._evidence_contract import EvidenceWriterContract  # noqa: E402
 
 
-class EvidenceWriter:
+class EvidenceWriter(EvidenceWriterContract):
     """生产实现：子进程调用共享收集器，保证行为与 CLI 完全一致。
 
     契约：符合 `tools/_evidence_contract.py#EvidenceWriterContract` 最小接口
@@ -92,7 +93,7 @@ class EvidenceWriter:
         return self.fragment_path(step_id), proc.returncode, err
 
 
-class FakeEvidence:
+class FakeEvidence(EvidenceWriterContract):
     """测试替身：记录入参，不落盘（AC-19 离线可测）。"""
 
     def __init__(self, exit_code=0, error=""):
@@ -109,7 +110,7 @@ class FakeEvidence:
     def build_argv(self, *args, **kwargs):  # pragma: no cover - 仅接口对齐
         return []
 
-    def emit(self, step_id, command, output="", **kwargs):
+    def emit(self, step_id, command, output="", **kwargs) -> Tuple[str, int, str]:
         record = {"step_id": step_id, "command": command, "output": output}
         record.update({k: v for k, v in kwargs.items() if v})
         self.records.append(record)

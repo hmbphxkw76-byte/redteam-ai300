@@ -17,12 +17,14 @@
 import os
 import subprocess
 import sys
+from typing import Tuple
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_TOOL = os.path.join(ROOT, "tools", "collect_evidence.py")
+from tools._evidence_contract import EvidenceWriterContract  # noqa: E402
 
 
-class EvidenceWriter:
+class EvidenceWriter(EvidenceWriterContract):
     """证据写入器：子进程调用共享收集器（保证行为与 CLI 完全一致）。
 
     契约：符合 `tools/_evidence_contract.py#EvidenceWriterContract` 最小接口
@@ -38,16 +40,17 @@ class EvidenceWriter:
         self.python = python or sys.executable
         self.timeout = timeout
 
-    def describe(self):
+    def describe(self) -> str:
         return "collect_evidence.py (%s)" % os.path.basename(self.tool_path)
 
-    def fragment_path(self, step_id):
+    def fragment_path(self, step_id: str) -> str:
         return os.path.join(self.out_dir, "%s.md" % step_id)
 
-    def emit(self, step_id, command, output, target="", title="",
+    def emit(self, step_id: str, command: str, output: str = "",
+             target="", title="",
              screenshot="", shot_kind="", shot_cmd="", profile="",
              script="", script_src="", script_note="", strict=True,
-             note="", ai_log="", flag_panel="", flag_shot=""):
+             note="", ai_log="", flag_panel="", flag_shot="") -> Tuple[str, int, str]:
         """写一份证据片段；返回 (片段路径, 退出码, 标准错误摘要)。
 
         退出码语义沿用共享工具：0 成功；1 严格模式未过质量门；2 用法错误。

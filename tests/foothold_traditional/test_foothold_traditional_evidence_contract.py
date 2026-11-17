@@ -4,8 +4,8 @@
 
 将 foothold-traditional SKILL.md 的「每步命令 + 输出 + 截图」质量门语义从人工复核
 升级为机器强制：断言声明于 SKILL.md 的 trad-01…trad-08 每个 step_id 均出现一次
-`collect_evidence.py --step trad-0N` 调用模式（镜像 tests/test_recon_evidence_contract.py
-与 tests/test_attack_mcp_tool_evidence_contract.py）。
+`collect_evidence.py --step trad-0N` 调用模式（镜像 tests/recon_ai/test_recon_evidence_contract.py
+与 tests/attack_mcp_tool/test_attack_mcp_tool_evidence_contract.py）。
 
 仅依赖标准库（unittest）。运行：python -m unittest discover -s tests -t .
 """

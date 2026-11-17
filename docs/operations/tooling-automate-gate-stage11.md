@@ -23,3 +23,13 @@
 
 - PR 侧：S1 pass、S2 pass、AC-12 冒烟 pass（S3/S4 仅 main 触发）。
 - 合并后 main CI：S1/S2/S3/S4 全 `success`。
+
+## 推送通道（追溯补录，非当时实测）
+
+> 本节由 2026-11-17 主线对齐审计补录，**不是合并当时的现场记录**，不得作为"当时已留痕"的证据。
+- 事实依据：`git remote -v` 显示 `origin` 的 fetch/push 均为 SSH（`git@github.com:...`）；PR #255 已于
+  2026-11-15T10:42:54Z 合并为 `530dda1`；PR 侧与 main CI 均全绿（见上节）。
+- 可确认结论：本次交付经受保护分支 PR 流程合并，远端 `origin` 为 SSH 通道；当时是否触发过
+  `origin-https` 备通道无客观留痕，**记为证据不可得**，不推测、不补写。
+- 防复发：推送通道的现场记录要求已在 `cross-ide-mainline-workflow.md` §4.11 验收④ 与
+  `prompts/11-pr-push-review.md` G0 自检固化；后续阶段 11 须在现场填写实际通道与结果。

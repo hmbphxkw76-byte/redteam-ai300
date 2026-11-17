@@ -133,11 +133,20 @@ def is_cold(rel: str) -> bool:
 
 
 def check_artifact(kind: str, path: Path) -> tuple[bool, int, int]:
-    """C4 动态产物判定，返回 (是否合格, 实际字节, 上限字节)。"""
+    """C4 动态产物判定，返回 (是否合格, 实际字节, 上限字节)。
+
+    计数口径与静态层 print_report 保持一致：read_text 默认启用通用换行
+    （CRLF → LF），再以 UTF-8 编码计数，即脚本头注声明的「LF 归一化 + UTF-8」。
+    此前用 read_bytes() 直接计原始字节，导致 Windows 上 core.autocrlf=true
+    签出的 CRLF 文本比同一 git blob（LF）多出每行 1 字节，静态层 PASS 的产物
+    在 --artifact 下被误判 BLOCKED（审计 D4）。跨平台同一内容必须同一判定，
+    这正是 B6「本地与 CI 判定一致」的要求。
+    """
     if kind not in ARTIFACT_LIMITS:
         raise KeyError(f"未知产物类型 {kind}；可选：{', '.join(ARTIFACT_LIMITS)}")
     cap = ARTIFACT_LIMITS[kind]
-    size = len(path.read_bytes())
+    text = path.read_text(encoding="utf-8")
+    size = len(text.encode("utf-8"))
     return size <= cap, size, cap
 
 

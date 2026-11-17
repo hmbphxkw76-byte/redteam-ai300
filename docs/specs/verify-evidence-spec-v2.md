@@ -11,7 +11,7 @@
 | AC | 对应 US | 验收条件（布尔） | 判定方式 |
 |---|---|---|---|
 | AC-01 | US-01/02/03 | 同一信息集下 `--payload`、`--from-loot`（含 `--report`/`--appendix`）、`--fragments-dir` 三入口 `checks` 逐键相等；只给证据不给报告时报告侧判据必然阻断 | `unittest` 断言字典相等 + 反例 |
-| AC-02 | US-04 | 载荷文件不存在 / JSON 非法 / 登记簿路径不存在 → 退出码 2 且 stdout 无 `passed` 字段 | `python -m unittest tests.test_verify_evidence` |
+| AC-02 | US-04 | 载荷文件不存在 / JSON 非法 / 登记簿路径不存在 → 退出码 2 且 stdout 无 `passed` 字段 | `python -m unittest tests.shared_tools.test_verify_evidence` |
 | AC-03 | US-05 | 注入的假技能校验器返回错误列表非空 → `vrf-01=false` 且 `blocking` 含 `vrf-01`；返回空 → `vrf-01=true` | 注入替身 + 断言 |
 | AC-04 | US-06 | ① 高杠杆技能（AI向量机/独立机）优先级不得为 P2（ADR-0002）② 8 目标键集齐全且分值合计 == 100 → `vrf-02=true`；任一条不符 → `false`，`blocking` 指名技能或目标键 | 夹具矩阵逐项断言 |
 | AC-05 | US-07 | 已取分步骤缺三件套任一 → `vrf-03=false` + `blocking`；未取分步骤缺件 → 仅入 `missing`，`passed` 不受影响 | 断言 `checks`/`missing` |

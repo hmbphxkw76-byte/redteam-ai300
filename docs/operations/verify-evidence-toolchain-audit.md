@@ -37,5 +37,15 @@
 ## 3. 判定
 
 - SKILL 25 条规范条款：**20 已实现 / 5 部分实现 / 0 未实现**。5 条部分实现均为 SKILL 已显式声明的人机边界（三处人工判据 + proof 口径修订 + 由此产生的「非全部机读」），非功能缺失；`NOTE-6/7/9/10` 均有回归用例锁定。
-- 三入口实跑：payload / from-loot / fragments-dir 全通过。全量 **624 tests OK**，覆盖率 **92.6%（511/552）**，`tests.test_verify_evidence` **39 用例**。
+- 三入口实跑：payload / from-loot / fragments-dir 全通过。全量 **624 tests OK**，覆盖率 **92.6%（511/552）**，`tests.shared_tools.test_verify_evidence` **39 用例**。
 - 未做范围外事项：截图 OCR、报告结构解析（SKILL「校验标准」显式排除）。
+
+## 4. 并行写入回退的等价验证与后续方案
+
+**背景**：曾误入归属另一会话的 `_verify-evidence_wt` 写入门禁文件并即时回退；当时未留存操作前 SHA-256 清单，无法按字面输出「前后 N/N IDENTICAL」。不伪造前指纹，改用等价判据。
+
+**已执行取证**（2026-11-17）：14:11 未跟踪快照（7 文件）对 14:15 工作树快照 → 未受影响的 `gate-stage2` / `gate-stage3` / `mainline` / `spec-v2` 共 4/4 SHA-256 IDENTICAL；受影响的 `research` / `spec-v1` 恢复至 9,177B / 7,994B，与 `.workbuddy/memory/2026-11-15.md` 回退记载逐字节一致；自建 `gate-stage1.md` 仅存于 14:11 快照。误入独有特征 `已与用户核对确认（2026-11-15 本会话选定` 在 `git log --all -S` 及当前 main 均 0 命中；`git log --all -- docs/operations/verify-evidence-gate-stage1.md` 0 提交；`checkout_lock.py --check` PASS 且全部 worktree 0 未提交。
+
+**判定条件**（三项同时满足才等价于「完全回退」）：① 未受影响文件前后 SHA-256 一致；② 误入内容未进入任何 commit 且当前树不含其特征；③ 自建产物从未入库且当前树不存在。
+
+**后续强制留证方案**：跨 worktree 操作前对受影响文件集输出 `sha256sum <files> > <manifest>.before`，操作后输出 `.after` 并 `diff`；受影响文件须同时满足「字节数 == 基线 blob 字节数」与「LF 归一化 SHA-256 == 基线 blob SHA-256」；删除类产物追加 `git log --all -- <path>` 空结果断言。缺前置清单即判取证不足，不得宣称 IDENTICAL。

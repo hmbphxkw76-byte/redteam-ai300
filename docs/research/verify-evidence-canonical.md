@@ -48,7 +48,7 @@
 
 ## 4. 现状核实（代码级，2026-11-15）
 
-已落地：`tools/verify_evidence.py`（203 行，纯标准库，退出码 0/1/2）、`tests/test_verify_evidence.py`（165 行，10 用例）、`tools/report_exam/package.py` 委托调用（`#L115` `verify()`）、CI 注册 `ci.yml#L55`（py_compile）与 `report-toolchain.yml#L92`（`verify-evidence: passed` 断言）。工单 #51–#54 已关闭。
+已落地：`tools/verify_evidence.py`（203 行，纯标准库，退出码 0/1/2）、`tests/shared_tools/test_verify_evidence.py`（165 行，10 用例）、`tools/report_exam/package.py` 委托调用（`#L115` `verify()`）、CI 注册 `ci.yml#L55`（py_compile）与 `report-toolchain.yml#L92`（`verify-evidence: passed` 断言）。工单 #51–#54 已关闭。
 
 **缺口（按条款归类，构成本次主线的实现目标）**：
 

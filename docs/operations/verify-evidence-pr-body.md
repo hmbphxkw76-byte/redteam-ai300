@@ -28,7 +28,7 @@ tools/verify_evidence.py  S-1 输入归一 → S-2 九项判据 → S-3 可注�
 | proof-single | flag 子串匹配 | 按 `domain-controller` 键 | §2.2.3 |
 | 键集 | 两侧各写一份 | `tools/scored_targets.py` 唯一源 | C1 |
 
-- 测试：`tests/test_verify_evidence.py` 10 → 32 用例；全量 `Ran 578 tests, OK`
+- 测试：`tests/shared_tools/test_verify_evidence.py` 10 → 32 用例；全量 `Ran 578 tests, OK`
 - 覆盖率：`measure_coverage.py --target verify-evidence` → 92.1%（门槛 80）
 - 本轮补齐：脚本直跑 `ModuleNotFoundError`（SKILL 文档写法本身不可用）、vrf-02 优先级漏判、`--fragments-dir` 缺入口、NOTE-9/10 人工判据留痕
 - 文档：规格 v1/v2、调研、设计、双轴审查、SKILL 覆盖矩阵、阶段门禁 2–11

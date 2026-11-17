@@ -75,6 +75,6 @@
 | proof.txt 单次 | 部分实现 | SKILL 口径由 `==1` 改为 `≤1`，0 条按未取分豁免；变更理由见 SKILL「修订记录」 |
 | 校验标准①「判定客观、可机读」 | 部分实现 | 九项 boolean 全机读，但上述 3 个子项仅人工 NOTE |
 
-- 实测：`unittest tests.test_verify_evidence` → 32 用例 OK；`measure_coverage.py --target verify-evidence` → 92.1%（488/530）；CLI 退出码 0/1/2 三态实跑。
-- `NOTE-6/7/9/10` 已有回归用例（`tests/test_verify_evidence.py` 338/383/386/396/409 行），人工边界不会静默消失。
+- 实测：`unittest tests.shared_tools.test_verify_evidence` → 32 用例 OK；`measure_coverage.py --target verify-evidence` → 92.1%（488/530）；CLI 退出码 0/1/2 三态实跑。
+- `NOTE-5/6/7/8/9/10` 回归用例以函数名锚定：`test_AC04_point_allocation_matrix` / `test_AC07_access_proof_same_screen` / `test_AC08_ai_log_verbatim` / `test_AC11_submission_window`（`tests/shared_tools/test_verify_evidence.py`），人工边界不会静默消失。
 - **结论**：已实现 20 / 部分实现 5 / 未实现 0；部分实现均为已声明的人机边界，非功能缺失。

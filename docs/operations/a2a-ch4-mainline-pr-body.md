@@ -35,3 +35,10 @@ docs/operations   → 设计/实现/TDD/审查/推送前评审/本 PR
 ## End-to-end demo
 
 `recon-05` 读取 Agent Card → recon-05/07 证据片段 → threat-model 标注模式/边界 → attack-multi-agent 执行六类攻击面并按字段判据取证 → `report-exam` 无损复用。
+
+## 契约变更清单
+
+- 变更元素：无（未改 `collect_evidence.py` / `docs/contracts/**` / step_id / 七字段契约）。
+- before→after：证据片段字段契约不变；recon-05 新增只读 Agent Card 请求但仍复用 recon-05 step_id。
+- 受影响消费者：`report-exam`、`verify-evidence`、`loot-manage` 按既有字段继续消费；attack-multi-agent 改为引用 recon-ai 枚举产物。
+- 兼容：向后兼容；无契约版本变更；`check_contract_manifest --check` 与 `check_contract_consumers --check` PASS。

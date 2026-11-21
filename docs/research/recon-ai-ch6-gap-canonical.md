@@ -5,15 +5,17 @@
 
 ## 1. 差距与一手源映射
 
-| 差距（Ch6 对照） | 一手源（指针） | recon-ai 侧职责 | 非职责（归 attack-embeddings） |
+| 差距（Ch6 对照） | 一手源（课程 HTML，本任务唯一文档依据） | recon-ai 侧职责 | 非职责（归 attack-embeddings，PR #309） |
 |---|---|---|---|
-| 维度指纹 → 模型候选 | 课程 Ch6 §6.2 Listing 5–7；`docs/research/attack-embeddings-ch6-gap-canonical.md` §2 S-4 | recon-04 记录向量库维度（若被动/主动面可得）并写入资产元数据候选字段 | 用候选做反演/probing |
-| 可导出面声明 | 课程 Ch6 §6.2 Listing 3；attack-embeddings `exporter.py` | 资产清单标注向量库「可导出面」与端口（:8080/:8000/:19530/:6333） | 实际导出 .npy/.csv/.parquet |
-| probing 入口声明 | 课程 Ch6 §6.2 Listing 8；attack-embeddings `probing.py` | recon-07 记录 RAG chat 接口存在性，供下游 probing 复用 | 发送 probing 查询并评分 |
+| 维度指纹 → 模型候选 | 课程 Ch6 §6.2 Listing 5–7（维度→模型对照表） | recon-04 记录向量库维度（若被动/主动面可得）写入资产元数据；不可得记「不可判定」 | 用候选做反演/模型推断 |
+| 可导出面声明 | 课程 Ch6 §6.2 Listing 3（Weaviate GraphQL 导出脚本） | 资产清单标注向量库「可导出面」与端口（复用 probes.py recon-04 声明） | 实际导出 .npy/.csv/.parquet |
+| probing 入口声明 | 课程 Ch6 §6.2 Listing 8（inference_probing.py） | recon-03/07 记录 RAG chat 接口存在性供下游复用 | 发送 probing 查询并评分 |
 
-## 2. 已知排除（来自 S-10 canonical）
+> attack-embeddings 侧实现属**并行 PR #309**（尚未合并，不在本 worktree），此处仅作归属说明，不作为可 import 的路径指针。
 
-- AIVP 无独立 embedding 反演 lab；recon-ai 不因此判为缺陷（环境差异）。
+## 2. 已知排除
+
+- AIVP 无独立 embedding 反演 lab（课程 lab ≠ AIVP，属环境差异）；recon-ai 不因此判为缺陷。
 - recon-ai 不改「只读」边界：维度若不可得记「不可判定」，不臆测模型。
 
 ## 3. G0 门禁（阶段 1）

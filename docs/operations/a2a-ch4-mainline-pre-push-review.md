@@ -30,4 +30,4 @@
 - 能力域：D10 / D2 / D4；优先级：P1 / P0 / P1；计分单元：通用 / 通用 / AI向量机。
 - 端到端演示：`recon-05` 读 Agent Card → recon-05/07 证据片段 → threat-model 模式与边界 → attack-multi-agent 六类攻击面与字段判据 → report-exam 复用。
 
-**阶段 11 推送前结论：PASS**。按 SSH → HTTPS 各试一次推送。
+**阶段 11 推送前结论：PASS**。按 SSH → HTTPS 各试一次推送。实际经 SSH 一次成功推送；PR #311 已创建。首次 CI 因 PR 正文缺「契约变更清单」段失败，已补段并通过本地 `--pr-body` 门禁；本次推送触发的复跑用于确认远端 CI 同步。

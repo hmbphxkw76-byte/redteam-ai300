@@ -99,23 +99,23 @@ _Avoid_: 信任等级
 _Avoid_: MCP 遥测、调用遥测
 
 **MCP Apps (MCP 应用)**:
-MCP 扩展能力：工具描述经 `_meta.ui.resourceUri`（`ui://`）关联 UI 资源，host 在双层 iframe 沙箱代理中渲染，app 与 host 经 `postMessage` 上的 JSON-RPC（`tools/call` 等）双向通信；来源 SEP-1865 / 官方 spec 2026-01-26。
+工具经 `_meta.ui.resourceUri`（`ui://`）关联 UI 资源，host 在双层 iframe 沙箱代理渲染，app/host 经 `postMessage` 上的 JSON-RPC（`tools/call`）通信；来源 SEP-1865 / spec 2026-01-26（调研 U-1）。
 _Avoid_: MCP 界面应用
 
 **AppBridge (应用桥)**:
-MCP Apps 官方 SDK 中代理 host 与 iframe 视图通信的模块，转发 tools/resources/prompts 能力并施加安全策略；攻击中用于经 `tools/call` 外泄凭据的通道。
+MCP Apps SDK 中代理 host 与 iframe 视图通信、转发 tools/resources/prompts 的模块；攻击中经 `tools/call` 外泄凭据的通道（U-1）。
 _Avoid_: 应用桥接器
 
 **沙箱逃逸 (sandbox escape)**:
-绕过工具的文件系统边界约束读取/写入目录外资源；本仓库覆盖前缀碰撞绕过（CVE-2025-53110）与符号链接跟随（CVE-2025-53109）两类，修复口径为规范路径加分隔符边界 + `realpath` 二次校验。
+绕过工具文件系统边界读写目录外资源；覆盖前缀碰撞（CVE-2025-53110）与 symlink 跟随（CVE-2025-53109），修复为规范路径加分隔符边界 + `realpath` 二次校验（U-4..U-6）。
 _Avoid_: 路径逃逸
 
 **工具链注入 (tool-chain injection)**:
-把载荷存入早期工具的自由文本字段，经聚合工具传递，在后期渲染/执行工具处被解释执行（store→aggregate→render）；是间接提示注入在 MCP 工具链上的具体形态。
+载荷存入早期工具自由文本、经聚合工具传递、在渲染/执行工具处解释执行（store→aggregate→render）；间接提示注入的 MCP 形态（U-7/U-8）。
 _Avoid_: 链式工具投毒
 
 **目标侧差分 (target-side diff)**:
-对同一 lab 在投毒前后各取一次工具面快照并做结构化对照，区别于仅用我方 server 基线的「本地自证」；前者可判完全生效，后者封顶部分生效。
+同一 lab 投毒前后各取工具面快照做结构化对照；区别于我方 server 基线的「本地自证」，前者可判完全生效、后者封顶部分生效（调研 §6 闸 A）。
 _Avoid_: 前后对照基线
 
 **校验预言机 (validation oracle)**:

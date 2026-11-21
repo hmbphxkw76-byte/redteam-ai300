@@ -7,6 +7,7 @@
   py tools/recon_ai/cli.py run --target http://192.168.40.189 --no-shots
   py tools/recon_ai/cli.py inventory --path evidence/recon-ai/ai-assets.json
   py tools/recon_ai/cli.py verify --run evidence/recon-ai/runs/<run_id>
+  py tools/recon_ai/cli.py analyze --input observations.json --out ch2-analysis.json
 
 退出码：0 = 完成且 C1–C9 门禁 PASS；1 = 完成但门禁 BLOCKED；
 2 = 用法/参数错误。单步骤失败属失败隔离（记 failed_steps），
@@ -21,9 +22,9 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(os.path.dirname(_HERE))
 if __package__ in (None, ""):
     sys.path.insert(0, _ROOT)
-    from tools.recon_ai import policy, runner, verifier
+    from tools.recon_ai import ch2, policy, runner, verifier
 else:
-    from . import policy, runner, verifier
+    from . import ch2, policy, runner, verifier
 
 
 def _build_parser():
@@ -48,6 +49,12 @@ def _build_parser():
     verify = sub.add_parser("verify", help="对已有运行目录复算 C1–C9 门禁")
     verify.add_argument("--run", required=True, help="运行目录（含 run.json）")
     verify.add_argument("--json", action="store_true", help="以 JSON 打印门禁结果")
+
+    analyze = sub.add_parser(
+        "analyze", help="Ch2 对齐旁路分析（离线，零网络，不改 7 步门禁）")
+    analyze.add_argument("--input", required=True,
+                         help="观测 JSON 文件（含 observations 数组）")
+    analyze.add_argument("--out", default="", help="分析 JSON 落盘路径；缺省仅打印摘要")
     return ap
 
 
@@ -113,7 +120,8 @@ def _print_summary(report, as_json=False):
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
-    if not argv or argv[0] not in ("run", "inventory", "verify", "-h", "--help"):
+    if not argv or argv[0] not in ("run", "inventory", "verify", "analyze",
+                                   "-h", "--help"):
         argv = ["run"] + argv
     args = _build_parser().parse_args(argv)
 
@@ -128,6 +136,33 @@ def main(argv=None):
                 print("%s %-16s %s" % ("PASS" if check.ok else "FAIL",
                                        check.name, check.detail))
         return 0 if result.verdict == "PASS" else 1
+
+    if args.cmd == "analyze":
+        try:
+            with open(args.input, encoding="utf-8") as f:
+                observations = json.load(f)
+        except (OSError, ValueError) as exc:
+            print("ERROR: 无法读取观测文件：%s" % exc, file=sys.stderr)
+            return 2
+        result = ch2.analyze(observations)
+        violations = ch2.validate_analysis(result)
+        if args.out:
+            try:
+                with open(args.out, "w", encoding="utf-8") as f:
+                    json.dump(result, f, ensure_ascii=False, indent=2)
+            except OSError as exc:
+                print("ERROR: 无法写入分析结果：%s" % exc, file=sys.stderr)
+                return 2
+        print("旁路分析：分层 %d 层，信号 %d 条，结论 %d 项，"
+              "端点判定 %d 条，仓库工件 %d 类，校验违规 %d 项"
+              % (len(result["taxonomy"]), len(result["signals"]),
+                 len(result["findings"]), len(result["endpoints"]),
+                 len(result["repository"]), len(violations)))
+        for item in violations:
+            print("  - 违规：%s" % item)
+        if args.out:
+            print("分析产物：%s" % args.out)
+        return 1 if violations else 0
 
     if args.cmd == "inventory":
         try:

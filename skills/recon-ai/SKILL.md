@@ -26,6 +26,7 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
 4. **向量库发现（recon-04）**：发现向量数据库（Milvus :19530、Weaviate :8080、Qdrant :6333、Chroma、pgvector）及其健康检查/接口暴露。
    - 证据：`python tools/collect_evidence.py --step recon-04 --out loot/recon-04-vector-db.md --strict`
    - 命令：`curl -s <VECTOR_ENDPOINT>/healthz`（active 档对 6333/8080/19530/8000 各一次只读 GET；全关记 ABSENT）
+   - Ch6：资产可选 `emb_metadata`（export_surface/dim/probing_entry，只读、维度不可得记「不可判定」；执行归 attack-embeddings）。
 5. **agent 系统识别（recon-05）**：识别 agent 框架（AutoGen、CrewAI、LangGraph 等）与编排/多智能体痕迹。
    - 证据：`python tools/collect_evidence.py --step recon-05 --out loot/recon-05-agent-sys.md --strict`
    - 命令：`curl -s <AGENT_ENDPOINT>/<agent_probe>`

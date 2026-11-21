@@ -107,6 +107,7 @@ class Asset:
     credential_hint: str
     evidence_step: str
     phase: str = ""      # 可选附加字段（不在七字段契约内）：编排阶段标识
+    emb_metadata: dict | None = None  # 可选附加字段：Ch6 嵌入面只读元数据
 
     def missing_fields(self):
         """返回缺失或占位为空的契约字段名列表（AC-13）。"""
@@ -121,6 +122,8 @@ class Asset:
         data = {name: getattr(self, name) for name in ASSET_FIELDS}
         if self.phase:
             data["phase"] = self.phase
+        if self.emb_metadata:
+            data["emb_metadata"] = self.emb_metadata
         return data
 
 

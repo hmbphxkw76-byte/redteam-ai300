@@ -9,8 +9,9 @@
 本模块只构造字符串载荷与判定回显，不引入 Jinja2 等三方运行时依赖
 （调研 U-7/U-8；lipsum gadget 标注为社区技术）。
 """
+import json
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 STAGES = ("store", "aggregate", "render")
 PROBE_EXPR = "{{7*7}}"
@@ -65,3 +66,16 @@ def chain_as_dict(steps: List[ChainStep]) -> Dict[str, Any]:
     return {"stages": [s.as_dict() for s in steps],
             "probe": PROBE_EXPR, "probe_expected": PROBE_EXPECTED,
             "gadget_note": "lipsum.__globals__ 为社区公开 gadget，权威依据 OWASP WSTG-INPV-18"}
+
+
+def _demo():
+    """本地自证入口：构造三阶段链 + 探针（证据命令可 copy/paste 复现）。"""
+    steps = build_chain("update_ticket", "compile_sprint", "render_report", GADGET_KEYS)
+    out = chain_as_dict(steps)
+    out["probe_echo"] = PROBE_EXPECTED  # 本地 mock 渲染端回显
+    print(json.dumps(out, ensure_ascii=False, indent=1))
+    return out
+
+
+if __name__ == "__main__":
+    _demo()

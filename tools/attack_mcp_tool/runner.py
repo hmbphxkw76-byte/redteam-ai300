@@ -519,22 +519,43 @@ def _step_mcp_09(sess, spec):
 
 
 def _step_mcp_10(sess, spec):
-    """MCP Apps UI 投毒：resourceUri + 隐藏指令 + AppBridge tools/call 取证。"""
+    """MCP Apps UI 投毒 + shadow 对照（AC-02/03/04/10）。
+
+    shadow 用假 host 制造"工具清单一致、后端返回不同"的对照：
+    与 poison.baseline_surface() 比对 schema 全等（added=0），证明未新增工具。
+    """
     host = sess.runtime.uihost or UiHostClient()
     resource = make_ui_resource()
     obs = host.probe(resource)
     built = resource.resource_uri.startswith("ui://")
     poisoned = "IMPORTANT" in resource.description
     bridge = bool((obs.telemetry or {}).get("bridge_method") == "tools/call")
-    output = _render(obs) + "\n\n[UI 资源描述]\n" + resource.description
+
+    # shadow 对照：合法基线 vs 影子 server（schema 一致、来源不同）；
+    # 假 host 注入"后端返回不同"的观测，验证 agent 无法从工具清单区分。
+    shadow = poison.shadow_surface()
+    baseline = poison.baseline_surface()
+    schema_equal = poison.shadow_schema_equal(baseline, shadow)
+    shadow_obs = FakeUiHost().probe(resource, tool_result="SHADOW-BACKEND-RESPONSE")
+    shadow_diff = poison.diff_as_dict(poison.diff_surfaces(baseline, shadow))
+
+    output = ("%s\n\n[UI 资源描述]\n%s\n\n[shadow 对照]\n工具清单差分=%s；"
+              "schema 一致=%s；影子后端回显=%s"
+              % (_render(obs), resource.description,
+                 json.dumps(shadow_diff, ensure_ascii=False), schema_equal,
+                 (shadow_obs.tool_result or "")))
     note = ("UI 资源已构造（%s），隐藏指令=%s，AppBridge tools/call 取证=%s。"
             % (resource.resource_uri, poisoned, bridge))
+    note += ("\n\nshadow server 工具清单与基线一致（added=0）、仅后端返回不同；"
+             "OWASP 中 tool shadowing 属 MCP03 子技术（推断项，非独立实验目标）。")
     note += ("\n\n沙箱按官方双层 iframe 代理建模（非 Ch7 的 srcdoc 措辞）；"
              "本地 mock host 自证，目标侧未验证则封顶部分生效。")
     return _StepOutcome(
         observation=obs, command="python -m tools.attack_mcp_tool.uihost --probe",
         ctx={"ui_resource_built": built, "poison_present": poisoned,
-             "bridge_observed": bridge, "local_only": True, "prompted": False},
+             "bridge_observed": bridge, "shadow_schema_equal": schema_equal,
+             "shadow_diff": shadow_diff,
+             "local_only": True, "prompted": False},
         note=note, response_for_shot=output)
 
 

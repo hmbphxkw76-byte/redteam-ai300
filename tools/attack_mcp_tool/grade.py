@@ -139,23 +139,27 @@ def derive(step_id, observation, ctx=None):
         judge = bool(ctx.get("flag_value")) and bool(_secrets(observation))
         detail = ctx.get("flag_reason") or ""
     elif step_id == "mcp-09":
-        # 沙箱逃逸：两类缺陷命中任一即目标侧信号；realpath 修复对照为自有判据
+        # 沙箱逃逸：本地 mock 判据不计目标侧信号（J3 诚实性）；realpath 修复对照为自有判据
         hits = ctx.get("escape_hits") or {}
-        det = bool(hits.get("prefix_bypass") or hits.get("symlink_escape"))
+        det = bool(hits.get("prefix_bypass") or hits.get("symlink_escape")) and not bool(
+            ctx.get("local_only"))
         judge = bool(ctx.get("realpath_fix_confirmed")) or bool(_secrets(observation))
-        detail = "前缀缺陷=%s；symlink 逃逸=%s" % (
+        detail = "前缀缺陷=%s；symlink 逃逸=%s（本地 mock，非目标侧）" % (
             bool(hits.get("prefix_bypass")), bool(hits.get("symlink_escape")))
     elif step_id == "mcp-10":
-        # UI 投毒：资源构造 + 隐藏指令为自有判据；AppBridge tools/call 取证为目标侧信号
-        det = bool(ctx.get("bridge_observed"))
-        judge = bool(ctx.get("ui_resource_built")) and bool(ctx.get("poison_present"))
-        detail = "UI 资源=%s；AppBridge 取证=%s" % (
-            bool(ctx.get("ui_resource_built")), bool(ctx.get("bridge_observed")))
+        # UI 投毒：资源构造 + 隐藏指令 + shadow 一致性为自有判据；
+        # AppBridge tools/call 仅在目标侧实测时算目标侧信号（本地 mock 不冒称，J3）。
+        det = bool(ctx.get("bridge_observed")) and not bool(ctx.get("local_only"))
+        judge = (bool(ctx.get("ui_resource_built")) and bool(ctx.get("poison_present"))
+                 and bool(ctx.get("shadow_schema_equal")))
+        detail = "UI 资源=%s；AppBridge 取证=%s；shadow schema 一致=%s" % (
+            bool(ctx.get("ui_resource_built")), bool(ctx.get("bridge_observed")),
+            bool(ctx.get("shadow_schema_equal")))
     elif step_id == "mcp-11":
-        # 工具链：探针回显确认执行面为目标侧信号；三阶段串联为自有判据
-        det = bool(ctx.get("probe_confirmed"))
+        # 工具链：本地 mock 探针回显不计目标侧信号（J3）；三阶段串联为自有判据
+        det = bool(ctx.get("probe_confirmed")) and not bool(ctx.get("local_only"))
         judge = bool(ctx.get("chain_complete"))
-        detail = "三阶段串联=%s；{{7*7}} 探针回显 49=%s" % (
+        detail = "三阶段串联=%s；{{7*7}} 探针回显 49=%s（本地 mock，非目标侧）" % (
             bool(ctx.get("chain_complete")), bool(ctx.get("probe_confirmed")))
     else:
         return Signals(step_id=step_id, capability_missing=True,

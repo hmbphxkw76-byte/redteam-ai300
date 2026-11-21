@@ -71,7 +71,7 @@ cli.py ──▶ runner.py ──▶ steps.py（新增 mcp-09/10/11 StepSpec）
 
 - ADR-0003（零外部依赖）：新模块均标准库实现，无 Jinja2/MCP SDK 运行时导入。
 - ADR-0004（PyRIT 对象图基准）：仅声明式记录，不导入框架。
-- ADR-0006（三层隔离）：本阶段在 worktree `D:/_attack-mcp-tool_wt` + `feat/attack-mcp-tool` 落地。
+- ADR-0006（三层隔离）：本阶段在独立 worktree + `feat/attack-mcp-tool` 分支落地（worktree 路径依环境而定）。
 - B9 框架选型：组合取自矩阵 §②，PyRIT 仅 HTTPTarget 补位。
 
 ## 7. 门禁记录（阶段 6 / G0）

@@ -8,7 +8,7 @@
 
 ## 1. 结论摘要（先读）
 
-1. 本次补强的 4 类缺口均来自 OffSec AI-300 Ch7 一手源（课程文档：`D:\视频\OffSec   AI-300 Advanced AI Red Teaming\Ch7-Attacking-MCP-and-Tool-Surfaces.html`），逐项映射到 §7.1/§7.2/§7.3 章节与 Listing；它们**扩充攻击技术覆盖面**，不改变既有 `mcp-01..08` 步骤契约、双形态 seam 与证据片段结构。
+1. 本次补强的 4 类缺口均来自 OffSec AI-300 Ch7 一手源（课程文档 `Ch7-Attacking-MCP-and-Tool-Surfaces.html`，§7.1/§7.2/§7.3 章节与 Listing；由任务方提供，路径依环境而定，故不落盘绝对路径），逐项映射；它们**扩充攻击技术覆盖面**，不改变既有 `mcp-01..08` 步骤契约、双形态 seam 与证据片段结构。
 2. 缺口 D1（目标侧真实差分）、D2（MCP Apps UI 渲染凭据窃取）、D3（路径穿越/symlink 沙箱逃逸）、D4（工具链 SSTI→RCE）在 Ch7 有明确原文与实验步骤；D5（shadow server 变体）标注为**合理推断**，不作为文档明确要求。
 3. 框架组合沿用矩阵条目 `attack-mcp-tool`（D7/P0）：`promptfoo(MCP) + mcp-scan/agentic-radar + PyRIT HTTPTarget`（矩阵 §②，`docs/research/osai-skill-framework-matrix.md`）。PyRIT 仅深度补位，非主角（B9 合规）。
 4. 新增能力用新步骤标识（`mcp-09`/`mcp-10`/`mcp-11`），不改写既有 8 步；这与 `report-exam` Attack Walkthrough 与 S2 证据契约夹具兼容（既有契约见 `tools/attack_mcp_tool/steps.py#STEP_SPECS`）。

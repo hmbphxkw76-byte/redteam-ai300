@@ -6,9 +6,7 @@
 """
 
 import json
-import os
 import sys
-import tempfile
 import unittest
 
 from tests._paths import ROOT  # noqa: E402
@@ -18,6 +16,7 @@ if ROOT not in sys.path:
 from tools.attack_mcp_tool import (STEP_IDS, AttackRequest, Runtime, run_attack)  # noqa: E402
 from tools.attack_mcp_tool import chain as chain_build  # noqa: E402
 from tools.attack_mcp_tool import escape as escape_judge  # noqa: E402
+from tools.attack_mcp_tool import poison as poison_mod  # noqa: E402
 from tools.attack_mcp_tool.evidence import RecordingWriter  # noqa: E402
 from tools.attack_mcp_tool.shot import NullCapture  # noqa: E402
 from tools.attack_mcp_tool.transport import FakeHttpClient  # noqa: E402
@@ -139,11 +138,20 @@ class TestAc09CmdInject(unittest.TestCase):
 
 
 class TestAc10ShadowInferred(unittest.TestCase):
-    def test_shadow_step_marked_inferred_in_note(self):
+    def test_shadow_schema_equal_to_baseline(self):
+        base = poison_mod.baseline_surface()
+        shadow = poison_mod.shadow_surface()
+        self.assertTrue(poison_mod.shadow_schema_equal(base, shadow))
+        diff = poison_mod.diff_as_dict(poison_mod.diff_surfaces(base, shadow))
+        self.assertEqual(diff["added"], [])
+        self.assertEqual(diff["changed"], [])
+        self.assertNotEqual(base.source, shadow.source)  # 仅后端来源不同
+
+    def test_shadow_step_records_schema_equality(self):
         report = run_attack(AttackRequest(target="http://t.example", step="mcp-10", emit=False),
                             _offline(FakeUiHost()))
-        # 推断项在调研/规格标注；本步骤 note 含"推断"或 shadow 语义由 uihost 路径承载
         self.assertEqual(report.verdicts[0].step_id, "mcp-10")
+        self.assertIn("shadow", report.verdicts[0].reason + report.verdicts[0].observation.text)
 
 
 class TestAc11EvidenceContract(unittest.TestCase):

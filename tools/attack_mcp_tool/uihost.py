@@ -9,8 +9,8 @@ tools/call；测试注入 `FakeUiHost` 即可离线验收（AC-02/03/04/10）。
 措辞按官方 spec（调研 U-1，SEP-1865 / 2026-01-26）：双层 iframe 沙箱代理，
 **不是** Ch7 原文的 `srcdoc`；通信为 postMessage 上的 JSON-RPC `tools/call`。
 """
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import List
 
 from .model import Observation
 
@@ -83,3 +83,18 @@ class FakeUiHost(UiHostClient):
         if self.fail:
             return Observation(error="假 host 不可用（测试注入）")
         return super().probe(resource, tool_result)
+
+
+def _demo():
+    """本地自证入口：构造投毒 UI 资源并经 mock host 取证（证据命令可复现）。"""
+    import json
+    resource = make_ui_resource()
+    obs = UiHostClient().probe(resource)
+    out = {"ui_resource": resource.as_dict(), "telemetry": obs.telemetry,
+           "sandbox_note": (obs.telemetry or {}).get("sandbox_note")}
+    print(json.dumps(out, ensure_ascii=False, indent=1))
+    return out
+
+
+if __name__ == "__main__":
+    _demo()

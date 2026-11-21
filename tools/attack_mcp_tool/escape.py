@@ -9,6 +9,7 @@
 修复口径（调研 U-6）：规范路径 + 分隔符边界（防前缀碰撞）+
 realpath 解析后二次校验（防 symlink 逃逸）。
 """
+import json
 import os
 import posixpath
 from dataclasses import dataclass
@@ -85,3 +86,19 @@ def realpath_fix_check(allowed: str, candidate: str, fs: Optional[Any] = None) -
 def collect_results(results: List[EscapeResult]) -> Dict[str, Any]:
     """汇总为可序列化结构（含三判据，便于断言与报告渲染）。"""
     return {r.kind: r.as_dict() for r in results}
+
+
+def _demo():
+    """本地自证入口：渲染三判据结论（证据命令可 copy/paste 复现）。"""
+    allowed = "/data/documents"
+    out = collect_results([
+        prefix_bypass(allowed),
+        symlink_escape(allowed, "vendor-docs", "/data/secrets/prod.env"),
+        realpath_fix_check(allowed, "/data/documents/../.secrets/credentials.json"),
+    ])
+    print(json.dumps(out, ensure_ascii=False, indent=1))
+    return out
+
+
+if __name__ == "__main__":
+    _demo()

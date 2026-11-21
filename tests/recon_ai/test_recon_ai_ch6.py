@@ -12,6 +12,7 @@ sys.path.insert(0, ROOT)
 from tests.support import recon_ai_fixtures as fx  # noqa: E402
 from tools.recon_ai import runner, shot  # noqa: E402
 from tools.recon_ai.transport import FakeTransport  # noqa: E402
+from tools.recon_ai.transport import HttpResponse  # noqa: E402
 
 from tools.recon_ai.emb_surface import build_emb_metadata
 from tools.recon_ai.model import Asset, Existence
@@ -73,6 +74,37 @@ class Ch6EmbSurfaceTests(unittest.TestCase):
             assets = data.get("assets", data) if isinstance(data, dict) else data
             joined = json.dumps(assets, ensure_ascii=False)
             self.assertIn("emb_metadata", joined)
+
+    def test_runner_vector_db_emb_metadata_active(self):
+        """AC-R1: active 档向量库存活 → 资产含 emb_metadata（向量路径生产验证）。"""
+        target = fx.TARGET_LEGACY
+        routes = dict(fx.legacy_routes(target))
+        routes[("GET", "http://t:8080/")] = HttpResponse(
+            200, '{"status":"healthy"}', {}, "application/json")
+        with tempfile.TemporaryDirectory() as tmp:
+            report = runner.run_recon(
+                target=target, profile="active", out_dir=tmp,
+                transport=FakeTransport(routes),
+                shot=shot.FakeShot(), capture_shots=True)
+            with open(os.path.join(report.run_dir, "ai-assets.json"), encoding="utf-8") as f:
+                data = json.load(f)
+            assets = data.get("assets", data) if isinstance(data, dict) else data
+            vassets = [a for a in assets if a.get("evidence_step") == "recon-04"]
+            self.assertTrue(vassets, "active 档应产出向量库资产")
+            self.assertIn("emb_metadata", vassets[0])
+            self.assertIn("dim", vassets[0]["emb_metadata"])
+
+    def test_readonly_no_export_artifacts(self):
+        """AC-R4: 真实 run_recon 不产生 .npy/.csv/.parquet 导出。"""
+        target = fx.TARGET_LEGACY
+        with tempfile.TemporaryDirectory() as tmp:
+            runner.run_recon(target=target, out_dir=tmp,
+                             transport=FakeTransport(fx.legacy_routes(target)),
+                             shot=shot.FakeShot(), capture_shots=True)
+            for root, _dirs, files in os.walk(tmp):
+                for f in files:
+                    self.assertFalse(f.endswith((".npy", ".csv", ".parquet")),
+                                     "recon 不应导出向量：%s" % f)
 
     def test_inventory_accepts_emb_meta(self):
         """AC-R1: build() 将 emb_meta 填入对应 step 的资产。"""

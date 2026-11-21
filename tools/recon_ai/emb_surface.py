@@ -13,20 +13,12 @@ from __future__ import annotations
 
 from typing import Dict, Optional
 
-from .probes import STEP_SPECS
+from .probes import _port_list
 
 
 def _vector_ports():
-    """从 recon-04 声明取端口（唯一事实源），返回字符串集合。"""
-    out = set()
-    for spec in STEP_SPECS:
-        if spec.step_id == "recon-04":
-            for req in getattr(spec, "active_requests", []):
-                url = getattr(req, "url", "") or ""
-                seg = url.rsplit(":", 1)
-                if len(seg) == 2 and seg[1].split("/")[0].isdigit():
-                    out.add(seg[1].split("/")[0])
-    return out
+    """从 recon-04 声明取端口（唯一事实源，复用 probes._port_list）。"""
+    return set(p for p in _port_list().split("/") if p.isdigit())
 
 
 def build_emb_metadata(category: str, endpoint: str = "",

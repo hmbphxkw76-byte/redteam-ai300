@@ -15,6 +15,7 @@ import unittest
 from tests._paths import ROOT  # noqa: E402
 SKILL = os.path.join(ROOT, "skills", "attack-embeddings", "SKILL.md")
 STEP_IDS = ["emb-0%d" % i for i in range(1, 9)]
+CH6_STEP_IDS = ["emb-c%d" % i for i in range(1, 9)]
 AVOID_TERMS = ("蜜罐", "rabbit hole", "AI 攻击向量")
 
 
@@ -53,6 +54,11 @@ class AttackEmbeddingsEvidenceContractTests(unittest.TestCase):
                 matches += 1
         self.assertEqual(matches, 8,
                          "应恰好 8 个 step 各有一次 collect_evidence 调用，实得 %d" % matches)
+
+    def test_all_ch6_steps_declared_with_evidence_calls(self):
+        for sid in CH6_STEP_IDS:
+            with self.subTest(step=sid):
+                self._assert_step_has_evidence_call(sid)
 
     def test_no_avoid_terms_in_skill(self):
         for bad in AVOID_TERMS:

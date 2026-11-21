@@ -207,11 +207,21 @@
         "tools.attack_embeddings.harness",
         "tools.attack_embeddings.runner",
         "tools.attack_embeddings.evidence",
-        "tools.attack_embeddings.cli"
+        "tools.attack_embeddings.cli",
+        "tools.attack_embeddings.exporter",
+        "tools.attack_embeddings.fingerprint",
+        "tools.attack_embeddings.probing",
+        "tools.attack_embeddings.triage",
+        "tools.attack_embeddings.slotfill",
+        "tools.attack_embeddings.beamsearch",
+        "tools.attack_embeddings.decision",
+        "tools.attack_embeddings.envelope"
       ],
       "tests": [
         "tests.attack_embeddings.test_attack_embeddings",
-        "tests.attack_embeddings.test_attack_embeddings_evidence_contract"
+        "tests.attack_embeddings.test_attack_embeddings_evidence_contract",
+        "tests.attack_embeddings.test_attack_embeddings_ch6",
+        "tests.attack_embeddings.test_attack_embeddings_ch6_cli"
       ]
     },
     {

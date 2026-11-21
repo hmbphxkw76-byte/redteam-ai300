@@ -96,3 +96,32 @@ def probe_model(vectors: Sequence[Sequence[float]],
             "identified": first["model"], "separation": round(separation, 4),
             "confidence": confidence, "pairs_path": pairs_path or None,
             "segments": len(segments)}
+
+
+def _main() -> int:
+    import argparse
+    from . import entry
+    from .fingerprint import DIM_CATALOG
+    from .harness import DeterministicEmbedder, fixture_corpus
+    ap = argparse.ArgumentParser(description="emb-c3 推断探测")
+    ap.add_argument("--vec", default="", help="导出向量文件")
+    ap.add_argument("--rag-url", default="", help="RAG 端点（未接线用夹具回显）")
+    ap.add_argument("--pairs", default="")
+    args = ap.parse_args()
+    try:
+        h = DeterministicEmbedder()
+        vecs = [h.embed(t) for t in fixture_corpus().values()]
+        def q(p): return " ".join(fixture_corpus().values())
+        def emb(model, text): return h.embed(text)
+        cands = list(DIM_CATALOG.get(len(vecs[0]), [])) or ["victim"]
+        r = probe_model(vecs, q, cands[:7], emb, deep=False, pairs_path=args.pairs)
+        r["mode"] = "fixture" if not args.rag_url else "live-unwired"
+        entry.emit(r)
+        return 0
+    except (ValueError, OSError) as exc:
+        return entry.fail(str(exc))
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(_main())

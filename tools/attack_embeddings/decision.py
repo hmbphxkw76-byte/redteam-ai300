@@ -63,3 +63,29 @@ def select_method(model_known: bool = True, has_gpu: bool = False,
                 "env_dependent": has_gpu is False}
     return {"step": "emb-c7", "method": "fixture", "reason": "模型已知、CPU 可行、时间紧默认起步",
             "env_dependent": False}
+
+
+def _main() -> int:
+    import argparse
+    from . import entry
+    ap = argparse.ArgumentParser(description="emb-c7 决策门禁")
+    ap.add_argument("--model-known", action="store_true")
+    ap.add_argument("--time-tight", action="store_true")
+    ap.add_argument("--unknown-model", action="store_true")
+    ap.add_argument("--tokens", type=int, default=32)
+    ap.add_argument("--quantized", action="store_true")
+    args = ap.parse_args()
+    try:
+        lim = check_limits(chunk_tokens=args.tokens, quantized=args.quantized)
+        r = select_method(model_known=not args.unknown_model,
+                          has_gpu=False, can_write_store=False, has_rag=False,
+                          prep_hours=0.0, limits=lim)
+        entry.emit(r)
+        return 0
+    except (ValueError, OSError) as exc:
+        return entry.fail(str(exc))
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(_main())

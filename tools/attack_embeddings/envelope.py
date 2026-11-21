@@ -30,3 +30,25 @@ def assess_env(capability: str, has_lab: bool = False, has_gpu: bool = False,
             "status": "applicable" if applicable else "NOT_APPLICABLE",
             "reason": reason, "c1_evidence": c1_evidence,
             "delivered": "capability stub" if applicable else "not-applicable annotation"}
+
+
+def _main() -> int:
+    import argparse
+    from . import entry
+    ap = argparse.ArgumentParser(description="emb-c8 环境标注")
+    ap.add_argument("--capability", default="ALGEN", choices=["ALGEN", "Vec2Text"])
+    ap.add_argument("--no-lab", action="store_true")
+    ap.add_argument("--no-gpu", action="store_true")
+    args = ap.parse_args()
+    try:
+        r = assess_env(args.capability, has_lab=not args.no_lab,
+                       has_gpu=not args.no_gpu)
+        entry.emit(r)
+        return 0
+    except (ValueError, OSError) as exc:
+        return entry.fail(str(exc))
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(_main())

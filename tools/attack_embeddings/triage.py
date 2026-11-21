@@ -69,8 +69,9 @@ def triage_chunks(harness: EmbeddingHarness,
     for i in pw_ranked:
         txt = invert(docs[i]["vec"], harness)["text"]
         has_cred = any(t in txt.lower() for t in ("password", "secret", "token", "key"))
-        entropy_like = len(set(txt)) / max(len(txt), 1)
-        recon.append((i, (1.0 if has_cred else 0.0) + entropy_like))
+        # 字符类多样性代理指标（非 Shannon 熵；仅作确定性排序信号）
+        char_diversity = len(set(txt)) / max(len(txt), 1)
+        recon.append((i, (1.0 if has_cred else 0.0) + char_diversity))
     recon_ranked = [i for i, _ in sorted(recon, key=lambda x: x[1], reverse=True)]
 
     # 加权 RRF；未进入后续阶段的块在该阶段名次靠后（惩罚）
@@ -89,3 +90,27 @@ def triage_chunks(harness: EmbeddingHarness,
             "stages": {"density": len(d_ranked), "pw": len(pw_ranked),
                        "recon": len(recon_ranked)},
             "weights": RRF_WEIGHTS}
+
+
+def _main() -> int:
+    import argparse
+    from . import entry
+    from .harness import EmbeddingHarness, DeterministicEmbedder, fixture_corpus
+    ap = argparse.ArgumentParser(description="emb-c4 块分选")
+    ap.add_argument("--vec", default="")
+    ap.add_argument("--top", type=int, default=10)
+    args = ap.parse_args()
+    try:
+        h = EmbeddingHarness(DeterministicEmbedder())
+        h.ingest(fixture_corpus())
+        r = triage_chunks(h, top_density=max(3, args.top), top_pw=max(2, args.top // 2))
+        r["mode"] = "fixture"
+        entry.emit(r)
+        return 0
+    except (ValueError, OSError) as exc:
+        return entry.fail(str(exc))
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(_main())

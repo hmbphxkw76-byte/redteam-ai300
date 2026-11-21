@@ -116,6 +116,18 @@ class TestSlotBeam(unittest.TestCase):
         self.assertIn("API_KEY", kinds)
         self.assertIn("JWT", kinds)
 
+    def test_dual_embedder_query_reduction(self):
+        """AC-C6: dual-embedder 模式本地评分 + ridge 投影 → victim 查询计数下降。"""
+        target = self.h.embed("salary executive package secret")
+        local = lambda t: self.h.embed(t)  # 夹具下 local 与 victim 同几何（投影为恒等）
+        project = lambda v: list(v)
+        r = beamsearch.beam_recover(target, self.h, beam_width=3, steps=3,
+                                    local_embedder=local, projection_fn=project)
+        self.assertTrue(r["dual_embedder"])
+        self.assertGreater(r["local_queries"], 0)
+        self.assertLess(r["victim_queries"], r["direct_queries"])
+        self.assertGreater(r["query_reduction"], 0.5)
+
 
 class TestDecisionLimits(unittest.TestCase):
     def test_decision_matrix(self):
@@ -143,10 +155,22 @@ class TestEnvAndContract(unittest.TestCase):
         self.assertEqual(v["status"], "NOT_APPLICABLE")
 
     def test_spec_wording(self):
-        """AC-C12: 夹具反演与真实 Vec2Text 名称可区分。"""
-        import tools.attack_embeddings as pkg
-        self.assertIn("beamsearch", pkg.__all__)
-        self.assertIn("envelope", pkg.__all__)
+        """AC-C12: 夹具反演与真实 Vec2Text 名称可区分；#158 AC-3 冲突已声明。"""
+        import os
+        from tests._paths import ROOT
+        # 1) 夹具反演实现名 invert 不含 Vec2TextInverter 误导名
+        import inspect
+        from tools.attack_embeddings import attacks
+        src = inspect.getsource(attacks.invert)
+        self.assertNotIn("Vec2TextInverter", src)
+        # 2) 设计与调研显式声明区分
+        with open(os.path.join(ROOT, "docs/operations/attack-embeddings-ch6-design.md"),
+                  encoding="utf-8") as df:
+            design = df.read()
+        self.assertIn("FixtureInverter", design)
+        self.assertIn("措辞修正", design)
+        # 3) #158 AC-3 冲突声明在已落盘的设计记录（避免依赖 gitignore 临时文件）
+        self.assertIn("#158 AC-3 措辞修正", design)
 
 
 if __name__ == "__main__":

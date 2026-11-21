@@ -16,7 +16,6 @@
 from __future__ import annotations
 
 import csv
-import json
 import os
 import struct
 from typing import Callable, Dict, List, Optional, Sequence
@@ -145,3 +144,35 @@ def export_vectors(out_dir: str,
     return {"step": "emb-c1", "count": len(matrix), "dim": len(matrix[0]),
             "npy": npy, "csv": csv_res, "parquet": pq_res,
             "all_formats_ok": pq_res.get("status") == "OK"}
+
+
+def _main() -> int:
+    """CLI 入口（SKILL.md emb-c1 证据命令）：无真实 store 时用内置夹具演示。"""
+    import argparse
+    from . import entry
+    ap = argparse.ArgumentParser(description="emb-c1 向量导出")
+    ap.add_argument("--store", default="", help="向量库端点（未接线时用夹具）")
+    ap.add_argument("--out", default="./export", help="输出目录")
+    ap.add_argument("--rows", default="", help="夹具向量 JSON 文件 {id: [vector]}")
+    args = ap.parse_args()
+    try:
+        if args.rows:
+            from . import entry as _e
+            data = _e.load_json(args.rows)
+            matrix = [list(v) for v in data.values()]
+        else:
+            from .harness import DeterministicEmbedder, fixture_corpus
+            emb = DeterministicEmbedder()
+            matrix = [emb.embed(t) for t in fixture_corpus().values()]
+        res = export_vectors(args.out, matrix=matrix)
+        res["mode"] = "fixture" if not args.rows else "corpus"
+        res["store"] = args.store or "(fixture)"
+        entry.emit(res)
+        return 0
+    except (ValueError, OSError) as exc:
+        return entry.fail(str(exc))
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(_main())

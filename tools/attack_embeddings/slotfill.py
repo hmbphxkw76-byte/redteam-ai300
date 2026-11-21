@@ -34,6 +34,8 @@ def fill_slots(target: Sequence[float], templates: Sequence[str], wordlist: Sequ
                harness=None, neutral: str = "XXXXXX",
                consensus_threshold: float = 0.5) -> Dict[str, object]:
     """对目标向量做填槽，返回命中值、票数与置信度。"""
+    if embed_fn is None and harness is None:
+        raise ValueError("须提供 embed_fn 或 harness 之一（无嵌入能力无法填槽）")
     embed = embed_fn or (lambda t: harness.embed(t))
     templates = list(templates) or DEFAULT_TEMPLATES
     if not wordlist:
@@ -67,3 +69,32 @@ def fill_slots(target: Sequence[float], templates: Sequence[str], wordlist: Sequ
             "vote_ratio": round(vote_ratio, 3), "gap": gap,
             "margin": round(float(margins.get(winner, 0.0)), 6),
             "all_votes": votes}
+
+
+def _main() -> int:
+    import argparse
+    from . import entry
+    from .harness import EmbeddingHarness, DeterministicEmbedder
+    ap = argparse.ArgumentParser(description="emb-c5 填槽反演")
+    ap.add_argument("--vec", default="")
+    ap.add_argument("--wordlist", default="")
+    ap.add_argument("--slot", default="PASSWORD")
+    args = ap.parse_args()
+    try:
+        h = EmbeddingHarness(DeterministicEmbedder())
+        tpl = "The password is {PASSWORD} today"
+        target = h.embed(tpl.replace("{PASSWORD}", "secret"))
+        words = ["secret", "salary", "alpha", "beta"]
+        if args.wordlist:
+            words = [w.strip() for w in open(args.wordlist, encoding="utf-8") if w.strip()][:5000]
+        r = fill_slots(target, [tpl], words, args.slot, harness=h, neutral="XXXX")
+        r["mode"] = "fixture"
+        entry.emit(r)
+        return 0
+    except (ValueError, OSError) as exc:
+        return entry.fail(str(exc))
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(_main())

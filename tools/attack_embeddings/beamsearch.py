@@ -41,25 +41,76 @@ def detect_high_entropy(text: str, vocab: Sequence[str] | None = None) -> List[D
 
 def beam_recover(target: Sequence[float], harness: EmbeddingHarness,
                  vocab: Sequence[str] | None = None,
-                 beam_width: int = 5, steps: int = 12) -> Dict[str, object]:
-    """确定性 beam search：从词表逐 token 扩展，按余弦保留最优 beam。"""
+                 beam_width: int = 5, steps: int = 12,
+                 local_embedder=None,
+                 projection_fn=None) -> Dict[str, object]:
+    """确定性 beam search：从词表逐 token 扩展，按余弦保留最优 beam。
+
+    dual-embedder 模式（课程 §6.3 `--local-model`）：给定 ``local_embedder`` 与
+    ``projection_fn``（local→victim 空间的 ridge 映射，由调用方注入），候选评分走
+    local 模型，victim 端点仅在最后验证一次，从而把受害模型查询从「每步每候选」
+    降到「每步一次 + 最终一次」。输出两侧查询计数对比（AC-C6）。
+    """
     vocab = list(vocab or harness.embedder.vocab)
+    dual = local_embedder is not None and projection_fn is not None
+    victim_queries = 0
+    local_queries = 0
     beams: List[List[str]] = [[]]
     for _ in range(steps):
         candidates = []
         for b in beams:
             for tok in vocab:
                 trial = b + [tok]
-                sim = cosine(harness.embed(" ".join(trial)), target)
+                txt = " ".join(trial)
+                if dual:
+                    lv = local_embedder(txt)
+                    local_queries += 1
+                    vec = projection_fn(lv)
+                else:
+                    vec = harness.embed(txt)
+                    victim_queries += 1
+                sim = cosine(vec, target)
                 candidates.append((sim, trial))
         candidates.sort(key=lambda x: x[0], reverse=True)
         beams = [c[1] for c in candidates[:beam_width]]
+        if dual:
+            victim_queries += 1  # 每步用 victim 验证一次最优 beam
         if candidates and candidates[0][0] >= 0.999:
             break
     best = beams[0] if beams else []
     text = " ".join(best)
     sim = cosine(harness.embed(text), target) if text else 0.0
+    victim_queries += 1  # 最终受害者验证
+    # 直接模式的等价查询数（用于对比降幅）
+    direct_queries = beam_width * len(vocab) * steps + 1
     return {"step": "emb-c6", "text": text, "similarity": round(float(sim), 4),
             "high_entropy": detect_high_entropy(text, vocab),
-            "dual_embedder": False,
+            "dual_embedder": dual,
+            "victim_queries": victim_queries,
+            "local_queries": local_queries,
+            "direct_queries": direct_queries,
+            "query_reduction": round(1.0 - victim_queries / max(direct_queries, 1), 4),
             "note": "课程近似实现（C-5），不宣称与 Zero2Text 论文等价"}
+
+
+def _main() -> int:
+    import argparse
+    from . import entry
+    from .harness import EmbeddingHarness, DeterministicEmbedder
+    ap = argparse.ArgumentParser(description="emb-c6 beam 结构恢复")
+    ap.add_argument("--vec", default="")
+    ap.add_argument("--steps", type=int, default=12)
+    args = ap.parse_args()
+    try:
+        h = EmbeddingHarness(DeterministicEmbedder())
+        target = h.embed("salary executive package secret")
+        r = beam_recover(target, h, beam_width=5, steps=max(1, args.steps))
+        entry.emit(r)
+        return 0
+    except (ValueError, OSError) as exc:
+        return entry.fail(str(exc))
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(_main())

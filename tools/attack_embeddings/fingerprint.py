@@ -38,3 +38,28 @@ def candidates_for_dim(dim: int, catalog: Dict[int, List[str]] | None = None) ->
         "needs_confirmation": len(models) != 1,
         "note": "维度仅为初步指示；共享维度须经推断探测确认" if len(models) != 1 else "唯一候选（仍需实证）",
     }
+
+
+def _main() -> int:
+    import argparse
+    from . import entry
+    ap = argparse.ArgumentParser(description="emb-c2 维度指纹")
+    ap.add_argument("--vec", default="", help="向量文件（读取首向量定维）")
+    ap.add_argument("--dim", type=int, default=0)
+    args = ap.parse_args()
+    try:
+        dim = args.dim
+        if not dim:
+            if not args.vec:
+                return entry.fail("需 --vec 或 --dim")
+            v = entry.load_vector(args.vec)
+            dim = len(v) if isinstance(v, list) else int(v)
+        entry.emit(candidates_for_dim(dim))
+        return 0
+    except (ValueError, OSError) as exc:
+        return entry.fail(str(exc))
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(_main())

@@ -20,16 +20,18 @@
 
 ## 2. 模块职责（新增模块）
 
-| 模块 | 单一职责 | 依赖 |
+| 模块 | 单一职责 | 实际依赖（阶段 10 审查后按代码校正） |
 |---|---|---|
-| `exporter.py` | S5：游标分页拉取 + .npy/.csv/.parquet 三格式写出 + 精度往返 | `entry.py`（读写）、`live.py`（适配器）、`model.py`（纯计算） |
-| `fingerprint.py` | 维度→候选模型表 + 多模型共享维度时输出候选列表 | `model.py` |
-| `probing.py` | S6：多策略查询 + 多粒度分段 + top5_avg 评分 + 分离度置信 + pairs 落盘 | `fingerprint.py`、`live.py`（RAG 接口）、`entry.py` |
-| `triage.py` | chunk triage 三级级联 + 加权 RRF + sensitivity probes + 索引追溯 | `harness.py`、`model.py` |
-| `slotfill.py` | 域检测 + 模板扩展 + 成员推断填槽 + margin-aware + consensus | `attacks.py`（复用成员推断）、`harness.py` |
-| `beamsearch.py` | beam search 结构恢复 + 高熵检测 + dual-embedder ridge | `harness.py`、`model.py` |
-| `decision.py` | S7：Table1/2 择路 + 五项限制可行性门禁 | `model.py`、常量表 |
-| `envelope.py` | 环境相关能力标注（ALGEN/Vec2Text 不适用判定 + C-1 依据） | `model.py` |
+| `exporter.py` | S5：游标分页拉取 + .npy/.csv/.parquet 三格式写出 + 精度往返 | 仅标准库（csv/os/struct）；parquet 经可选 `pyarrow` 延迟导入，不可用标 `NOT_AVAILABLE` |
+| `fingerprint.py` | 维度→候选模型表 + 共享维度输出候选 | 仅标准库 + 常量表（`DIM_CATALOG`） |
+| `probing.py` | S6：多策略查询 + 多粒度分段 + top5_avg + 分离度置信 + pairs 落盘 | `model.cosine`；RAG 接口 `query_iface` 与 `embed_fn` 经参数注入（不依赖 live/fingerprint 实体） |
+| `triage.py` | chunk triage 三级级联 + 加权 RRF + 索引追溯 | `attacks.invert`、`harness.EmbeddingHarness`、`model.cosine` |
+| `slotfill.py` | 填槽 + margin-aware + consensus | `model.cosine`；embedder 经 `embed_fn`/`harness` 注入 |
+| `beamsearch.py` | beam 结构恢复 + 高熵检测 + dual-embedder（local + 注入的 `projection_fn`） | `model.cosine`、`harness.EmbeddingHarness`；ridge 投影由调用方注入（C-5 近似） |
+| `decision.py` | S7：Table1/2 择路 + 五项限制门禁 | 仅标准库 + 常量表（`METHODS`） |
+| `envelope.py` | 环境相关能力标注 + C-1 依据 | 仅标准库（纯判定函数） |
+
+> 阶段 10 双轴审查发现设计初稿的依赖列比实现更重（预期经 `entry`/`live` 接线）；实际实现用参数注入把外部依赖推到 CLI 层，解耦更彻底。本表按代码实况校正，不改变 §3 单向依赖结论。
 
 ## 3. 依赖方向（单向，无环）
 
@@ -44,7 +46,7 @@ cli.py / runner.py（编排）
 
 ## 4. 对象图（S4 扩展）
 
-`Runtime(embedder→store→harness, target, evidence, query_iface, catalog, policy)` → `run_attack`（原 emb-01..08）→ 新增 `run_ch6(req, runtime)` 编排 `export→fingerprint→probe→triage→slotfill/beam→decision` → `StepVerdict[]`（step_id 用 emb-c1..c8 区分增量步骤）。
+原 `Runtime` → `run_attack`（emb-01..08）保持不变。Ch6 增量（emb-c1..c8）为**独立可组合函数**（`exporter.export_vectors` → `fingerprint.candidates_for_dim` → `probing.probe_model` → `triage.triage_chunks` → `slotfill.fill_slots`/`beamsearch.beam_recover` → `decision.select_method`/`envelope.assess_env`），各经自身 `-m` CLI 入口调用并由 SKILL.md 编排顺序，证据经 `collect_evidence.py --step emb-cN` 落盘。未新增 `run_ch6` 聚合入口（阶段 10 审查后按实现校正：独立函数更契合深层模块与零依赖纪律）。
 
 ## 5. 测试替身策略
 

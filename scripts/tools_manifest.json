@@ -220,7 +220,8 @@
       "tests": [
         "tests.attack_embeddings.test_attack_embeddings",
         "tests.attack_embeddings.test_attack_embeddings_evidence_contract",
-        "tests.attack_embeddings.test_attack_embeddings_ch6"
+        "tests.attack_embeddings.test_attack_embeddings_ch6",
+        "tests.attack_embeddings.test_attack_embeddings_ch6_cli"
       ]
     },
     {

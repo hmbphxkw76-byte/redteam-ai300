@@ -52,14 +52,14 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、反演/提取前�
 
 > 课程 Ch6 §6.2–§6.4；一手源见 `docs/research/attack-embeddings-ch6-gap-canonical.md`。与 emb-01..08 互补：已知向量库时先把攻击面从全库缩到高价值块再反演。每步证据统一 `python tools/collect_evidence.py --step <id> --cmd "<命令>" --out loot/<id>.md --shot-cmd "screenshot --region <id>" --strict`（emb-c3 另加 `--ai-log`）；命令均可 copy/paste。
 
-1. **emb-c1 导出向量**：游标分页导出 `.npy/.csv/.parquet`（无 pyarrow 标 `NOT_AVAILABLE` 不伪造）。`python tools/attack_embeddings/exporter.py --store <VDB> --out ./export`
-2. **emb-c2 维度指纹**：共享维度输出候选非唯一。`python tools/attack_embeddings/fingerprint.py --vec export/embeddings.npy`
-3. **emb-c3 推断探测**：多粒度分段 + top5_avg≥0.85 + 保存 pairs（带 `--ai-log`）。`python tools/attack_embeddings/probing.py --vec export/embeddings.npy --rag-url <RAG_API>`
-4. **emb-c4 块分选**：三级级联 + 加权 RRF 1.0/1.5/2.0 + chunk 索引可追溯。`python tools/attack_embeddings/triage.py --vec export/embeddings.npy --top 10`
-5. **emb-c5 填槽反演**：域检测 + 成员推断 + margin-aware + 共识；随机串标不可恢复。`python tools/attack_embeddings/slotfill.py --vec chunk.npy --wordlist passwords.txt`
-6. **emb-c6 beam 恢复**：模板弱置信时；课程近似非论文等价。`python tools/attack_embeddings/beamsearch.py --vec chunk.npy --steps 32`
-7. **emb-c7 决策门禁**：方法矩阵择路 + 五项限制可行性判定。`python tools/attack_embeddings/decision.py --model-known --time-tight`
-8. **emb-c8 环境标注**：无 lab/GPU 输出「不适用 + C-1 依据」，不静默降级。`python tools/attack_embeddings/envelope.py --capability ALGEN --no-lab`
+1. **emb-c1 导出向量**：游标分页导出 `.npy/.csv/.parquet`（无 pyarrow 标 `NOT_AVAILABLE` 不伪造）。`python -m tools.attack_embeddings.exporter --store <VDB> --out ./export`
+2. **emb-c2 维度指纹**：共享维度输出候选非唯一。`python -m tools.attack_embeddings.fingerprint --vec export/embeddings.npy`
+3. **emb-c3 推断探测**：多粒度分段 + top5_avg≥0.85 + 保存 pairs（带 `--ai-log`）。`python -m tools.attack_embeddings.probing --vec export/embeddings.npy --rag-url <RAG_API>`
+4. **emb-c4 块分选**：三级级联 + 加权 RRF 1.0/1.5/2.0 + chunk 索引可追溯。`python -m tools.attack_embeddings.triage --vec export/embeddings.npy --top 10`
+5. **emb-c5 填槽反演**：域检测 + 成员推断 + margin-aware + 共识；随机串标不可恢复。`python -m tools.attack_embeddings.slotfill --vec chunk.npy --wordlist passwords.txt`
+6. **emb-c6 beam 恢复**：模板弱置信时；课程近似非论文等价。`python -m tools.attack_embeddings.beamsearch --vec chunk.npy --steps 32`
+7. **emb-c7 决策门禁**：方法矩阵择路 + 五项限制可行性判定。`python -m tools.attack_embeddings.decision --model-known --time-tight`
+8. **emb-c8 环境标注**：无 lab/GPU 输出「不适用 + C-1 依据」，不静默降级。`python -m tools.attack_embeddings.envelope --capability ALGEN --no-lab`
 
 证据契约（每步三件套，各自独立行）：
 

@@ -138,6 +138,25 @@ def derive(step_id, observation, ctx=None):
         # 判据只认「本步自己取得的实测值」，不借用其它步骤的凭据（防跨步错归属）
         judge = bool(ctx.get("flag_value")) and bool(_secrets(observation))
         detail = ctx.get("flag_reason") or ""
+    elif step_id == "mcp-09":
+        # 沙箱逃逸：两类缺陷命中任一即目标侧信号；realpath 修复对照为自有判据
+        hits = ctx.get("escape_hits") or {}
+        det = bool(hits.get("prefix_bypass") or hits.get("symlink_escape"))
+        judge = bool(ctx.get("realpath_fix_confirmed")) or bool(_secrets(observation))
+        detail = "前缀缺陷=%s；symlink 逃逸=%s" % (
+            bool(hits.get("prefix_bypass")), bool(hits.get("symlink_escape")))
+    elif step_id == "mcp-10":
+        # UI 投毒：资源构造 + 隐藏指令为自有判据；AppBridge tools/call 取证为目标侧信号
+        det = bool(ctx.get("bridge_observed"))
+        judge = bool(ctx.get("ui_resource_built")) and bool(ctx.get("poison_present"))
+        detail = "UI 资源=%s；AppBridge 取证=%s" % (
+            bool(ctx.get("ui_resource_built")), bool(ctx.get("bridge_observed")))
+    elif step_id == "mcp-11":
+        # 工具链：探针回显确认执行面为目标侧信号；三阶段串联为自有判据
+        det = bool(ctx.get("probe_confirmed"))
+        judge = bool(ctx.get("chain_complete"))
+        detail = "三阶段串联=%s；{{7*7}} 探针回显 49=%s" % (
+            bool(ctx.get("chain_complete")), bool(ctx.get("probe_confirmed")))
     else:
         return Signals(step_id=step_id, capability_missing=True,
                        detail="未知步骤标识，未执行")

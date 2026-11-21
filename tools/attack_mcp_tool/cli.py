@@ -35,7 +35,7 @@ def build_parser():
                     help="形态：agent-sse=会话 SSE；jsonrpc=裸 MCP JSON-RPC")
     ap.add_argument("--lab", action="append", default=None,
                     help="agent-sse 形态的 lab 标识（可重复）；缺省 MCP_01")
-    ap.add_argument("--path", action="append", choices=("A", "B", "C"), default=None,
+    ap.add_argument("--path", action="append", choices=("A", "B", "C", "D", "E", "F"), default=None,
                     help="攻击路径（可重复）；缺省全选")
     ap.add_argument("--step", default="", help="仅执行单步：%s" % ", ".join(STEP_IDS))
     ap.add_argument("--evidence-dir", default=DEFAULT_EVIDENCE_DIR, help="证据片段输出目录")

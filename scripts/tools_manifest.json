@@ -257,11 +257,13 @@
         "tools.attack_rag.index_tamper",
         "tools.attack_rag.steps",
         "tools.attack_rag.runner",
-        "tools.attack_rag.cli"
+        "tools.attack_rag.cli",
+        "tools.attack_rag.ch6_adapter"
       ],
       "tests": [
         "tests.attack_rag.test_attack_rag",
-        "tests.attack_rag.test_attack_rag_evidence_contract"
+        "tests.attack_rag.test_attack_rag_evidence_contract",
+        "tests.attack_rag.test_attack_rag_ch6"
       ]
     },
     {

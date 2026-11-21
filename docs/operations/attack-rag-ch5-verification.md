@@ -72,6 +72,7 @@ python tools/attack_rag/ch5_cli.py --target rag-ch5 --evidence-dir <dir>
 
 ## 7. 收尾结论
 
-- 提交：`feat/attack-rag` 分支主线提交 `8462805`（Ch5 增量）+ 本文档后续提交；推送通道：SSH 一次成功；PR #308；CI S1–S4 见 PR checks。
+- 提交：`feat/attack-rag` 分支主线提交 `8462805`（Ch5 增量）+ 验证文档 `ca7bc57`；推送通道：SSH 一次成功（两次推送均未用回退通道）；PR #308；CI S1–S4 见 PR checks。
+- CI 收敛记录：首次 S1 因 PR 正文缺「契约变更清单」段 BLOCKED → 补齐后重跑因 C4 正文 3192/3000 字节 BLOCKED → 压缩正文至 2347 字节并本地复验契约门禁 PASS。
 - `SKILL.md` 引用的工具/模块逐项核对：`capability.py`/`readchain.py`/`obfuscation.py`/`extract.py`/`blend.py`/`architecture.py`/`slow_drip.py`/`ch5.py`/`ch5_cli.py` 均存在。
 - 未改共享长行；工作区无遗留未提交变更。

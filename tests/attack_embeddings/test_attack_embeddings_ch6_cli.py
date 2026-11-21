@@ -33,8 +33,12 @@ class Ch6CliTests(unittest.TestCase):
     def test_all_eight_cli_commands_reproducible(self):
         for mod, extra in MODULES:
             with self.subTest(module=mod):
+                argv = list(extra)
+                if mod == "exporter":
+                    argv = ["--store", "X", "--out",
+                            os.path.join(tempfile.gettempdir(), "ch6_cli_export")]
                 proc = subprocess.run(
-                    [sys.executable, "-m", "tools.attack_embeddings." + mod] + extra,
+                    [sys.executable, "-m", "tools.attack_embeddings." + mod] + argv,
                     cwd=str(ROOT), capture_output=True, text=True, timeout=30)
                 self.assertEqual(proc.returncode, 0,
                                  "%s 非零退出：%s" % (mod, proc.stderr[-200:]))

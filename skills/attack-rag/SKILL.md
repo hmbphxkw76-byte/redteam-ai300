@@ -59,7 +59,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、检索层操纵前
 
 ## Ch6 复用接口
 
-`tools/attack_rag/ch6_adapter.py` 把既有 `RagHarness.retrieve` + `Backend.respond` 适配为 `build_query_iface(harness, backend) -> (prompt -> text)`，供 `attack-embeddings` 的推断探测注入消费；仅做接口适配，不含探测评分/投毒语义。
+`tools/attack_rag/ch6_adapter.py` 把既有 `RagHarness.retrieve` + `Backend.respond` 适配为 `build_query_iface(harness, backend) -> (prompt -> text)`，供 `attack-embeddings` 的模型识别探测注入消费；仅做接口适配，不含探测评分/投毒语义。
 
 ## 校验标准
 

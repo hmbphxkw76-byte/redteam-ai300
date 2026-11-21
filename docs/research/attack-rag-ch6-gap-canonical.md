@@ -1,6 +1,7 @@
 # attack-rag Ch6 复用侧差距调研（一手源指针）
 
 > 版本 v1.0 · 2026-11-21 · 主线阶段 1（复用已核实事实，C3/T6 不重复检索）
+> 一手源锚点：`D:\视频\OffSec   AI-300 Advanced AI Red Teaming\Ch6-Attacking-Embeddings.html` §6.2 Listing 8（inference_probing.py），本地课件可直接定位。
 > 边界：本调研只覆盖「供 Ch6 inference probing 复用的 RAG 查询接口」，不扩展 attack-rag 的投毒主题。
 
 ## 1. 差距与一手源映射

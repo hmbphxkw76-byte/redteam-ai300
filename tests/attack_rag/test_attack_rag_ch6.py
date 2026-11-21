@@ -35,20 +35,21 @@ class Ch6AdapterTests(unittest.TestCase):
             iface("q")
 
     def test_no_side_effect_artifacts(self):
-        """AC-A3: 调用不产生文件；harness 文档数不变。"""
-        before = len(self.harness._docs) if hasattr(self.harness, "_docs") else -1
+        """AC-A3: 调用不产生文件；harness 文档数不变（公开接口断言）。"""
+        before = len(self.harness)
+        backend = FakeBackend()
         with tempfile.TemporaryDirectory() as td:
             cwd = os.getcwd()
             try:
                 os.chdir(td)
-                iface = build_query_iface(self.harness, FakeBackend(), k=2)
+                iface = build_query_iface(self.harness, backend, k=2)
                 iface("password reset?")
                 self.assertEqual(os.listdir(td), [])
             finally:
                 os.chdir(cwd)
-        if before >= 0:
-            after = len(self.harness._docs)
-            self.assertEqual(after, before)
+        self.assertEqual(len(self.harness), before)
+        # backend 自身记录调用属其既有行为，适配层不额外改其状态
+        self.assertEqual(len(backend.calls), 1)
 
 
 if __name__ == "__main__":

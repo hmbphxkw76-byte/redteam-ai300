@@ -371,6 +371,28 @@ def _agent_inventory(results):
     return None, None
 
 
+def _agent_card(results):
+    """从 recon-05 结果中识别合法 A2A Agent Card（纯函数，不推断）。"""
+    for result in results or ():
+        if result is None or result.error or not result.ok or is_spa_fallback(result):
+            continue
+        if not result.url.split("?")[0].rstrip("/").endswith("/.well-known/agent.json"):
+            continue
+        try:
+            data = json.loads(result.body or "")
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        if not all(isinstance(data.get(k), str) and data.get(k)
+                   for k in ("name", "description")):
+            continue
+        if not isinstance(data.get("skills"), list):
+            continue
+        return data, result
+    return None, None
+
+
 def judge_agent(results, ctx):
     """recon-05：识别编排 / 多智能体痕迹。"""
     inventory, source = _agent_inventory(results)
@@ -409,6 +431,41 @@ def judge_agent(results, ctx):
 
     schema = results[0] if results else None
     runs = results[1] if len(results) > 1 else None
+    schema_ok = schema is not None and not schema.error and not is_spa_fallback(schema)
+    has_param = schema_ok and "request_id" in (schema.body or "")
+    runs_ok = (runs is not None and not runs.error and runs.ok
+               and not is_spa_fallback(runs))
+    if has_param or runs_ok:
+        notes = []
+        if has_param:
+            notes.append("实验面接口暴露 `request_id` 语义（HTTP %d）" % schema.status)
+        if runs_ok:
+            notes.append("运行遥测端点 HTTP %d" % runs.status)
+        notes.append("依据为编排面 schema + 遥测端点；具体 agent 框架不可判定（推断）")
+        return Judgement(Existence.PRESENT, product="agent 编排面（推断，框架不可判定）",
+                         version="不可判定", signature="request_id schema",
+                         note="；".join(notes),
+                         basis="实验面 schema 暴露 `request_id` 或遥测端点可读")
+
+    card, card_source = _agent_card(results)
+    if card is not None:
+        skills = [str(s.get("id") or s.get("name") or "")
+                  for s in card["skills"] if isinstance(s, dict)]
+        ctx["agent_card"] = {
+            "name": card["name"],
+            "protocol_version": str(card.get("protocolVersion") or ""),
+            "skills": [s for s in skills if s],
+        }
+        return Judgement(Existence.PRESENT,
+                         product="A2A Agent Card（%s）" % card["name"],
+                         version=str(card.get("protocolVersion") or "不可判定"),
+                         signature="well-known/agent.json",
+                         note="`%s` 返回 Agent Card，skills=%s"
+                              % (card_source.url, ",".join(ctx["agent_card"]["skills"]) or "空"),
+                         basis="`/.well-known/agent.json` 返回 name/description/skills",
+                         context={"agent_card": ctx["agent_card"],
+                                  "endpoint": card_source.url})
+
     if schema is None or schema.error:
         return Judgement(Existence.UNDETERMINED, note="编排面不可达",
                          basis="编排面请求未获得响应")
@@ -417,22 +474,8 @@ def judge_agent(results, ctx):
                          note="编排面返回 SPA 回退页（HTTP %d），无 schema 证据"
                               % schema.status,
                          basis="编排面响应为 SPA 回退页，不构成编排证据")
-    has_param = "request_id" in (schema.body or "")
-    notes = []
-    if has_param:
-        notes.append("实验面接口暴露 `request_id` 语义（HTTP %d）" % schema.status)
-    runs_ok = (runs is not None and not runs.error and runs.ok
-               and not is_spa_fallback(runs))
-    if runs_ok:
-        notes.append("运行遥测端点 HTTP %d" % runs.status)
-    if not has_param and not runs_ok:
-        return Judgement(Existence.UNDETERMINED, note="未见编排/智能体痕迹",
-                         basis="编排面 schema 与遥测端点均无编排痕迹")
-    notes.append("依据为编排面 schema + 遥测端点；具体 agent 框架不可判定（推断）")
-    return Judgement(Existence.PRESENT, product="agent 编排面（推断，框架不可判定）",
-                     version="不可判定", signature="request_id schema",
-                     note="；".join(notes),
-                     basis="实验面 schema 暴露 `request_id` 或遥测端点可读")
+    return Judgement(Existence.UNDETERMINED, note="未见编排/智能体痕迹",
+                     basis="编排面 schema 与遥测端点均无编排痕迹")
 
 
 def _openapi_surface(results):
@@ -716,6 +759,7 @@ STEP_SPECS: Tuple[StepSpec, ...] = (
         requests=(
             RequestSpec("agentic 实验面", "GET", "/api/labs/DE_01/summary", timeout=10),
             RequestSpec("运行遥测", "GET", "/api/me/runs?limit=1", timeout=10),
+            RequestSpec("A2A Agent Card", "GET", "/.well-known/agent.json", timeout=10),
         ),
     ),
     StepSpec(

@@ -108,13 +108,18 @@ def _command(request: AttackRequest, spec: StepSpec) -> str:
 
 
 def _emit(request: AttackRequest, rt: Runtime, spec: StepSpec, run: _StepRun,
-          flag: Optional[FlagProof] = None) -> str:
-    """落盘一步证据；严格模式失败即抛错（证据链断裂不得静默）。"""
+          flag: Optional[FlagProof] = None,
+          command: str = "") -> str:
+    """落盘一步证据；严格模式失败即抛错（证据链断裂不得静默）。
+
+    `command` 可选覆盖：独立步骤契约（如 Ch5 rag-06..09）须传自身 CLI 命令，
+    保证证据「确切命令」可 copy/paste 复现；缺省仍用主链 `_command`，既有行为不变。
+    """
     if not request.emit:
         return ""
     shot = rt.capture.describe(spec.step_id, request.target, request.evidence_dir)
     path, code, err = rt.writer.emit(
-        step_id=spec.step_id, command=_command(request, spec), output=run.output,
+        step_id=spec.step_id, command=command or _command(request, spec), output=run.output,
         target=request.target, title=spec.title, shot_cmd=shot,
         ai_log=run.ai_log, note=run.note, strict=True,
         flag_panel=(flag.panel if flag else ""),

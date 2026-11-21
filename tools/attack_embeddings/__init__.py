@@ -15,6 +15,8 @@ from .live import LiveEmbeddingClient, LiveError, LiveVectorStoreClient
 from .model import (LEVELS, STEP_IDS, AttackReport, AttackRequest, Finding,
                     StepVerdict)
 from .runner import OBJECT_GRAPH, Runtime, run_attack
+# Ch6 增量（阶段 8）：7 个新 seam/能力模块
+from . import beamsearch, decision, envelope, exporter, fingerprint, probing, slotfill, triage
 
 __all__ = [
     "run_attack", "Runtime", "OBJECT_GRAPH",
@@ -25,4 +27,7 @@ __all__ = [
     "LiveEmbeddingClient", "LiveVectorStoreClient", "LiveError",
     "invert", "membership_inference", "membership_auc", "adversarial_shift",
     "vector_lookup", "rag_impact",
+    # Ch6 增量模块（按模块名引用，公开入口见各模块）
+    "exporter", "fingerprint", "probing", "triage", "slotfill",
+    "beamsearch", "decision", "envelope",
 ]

@@ -18,6 +18,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、检索层操纵前
 
 ### 前置：定位 RAG 攻击面
 
+0. **交战规则（Rules of Engagement）确认**：任何上传/注入动作前，先确认该行为未被 Rules of Engagement 排除；未确认不得上传。对每一份上传文件登记 `upload_manifest`（文件名、内容 SHA-256、时间戳、目标系统、关联 embedding 清理状态）五项，写入证据「关键输出」，供客户在收尾时验证上传数据及其 embedding 已完全清除（Ch5 §5.2 Warning）。
 1. 复用 `recon-ai` 资产清单，确认 RAG 组件：向量库（Milvus / Weaviate / Qdrant / Chroma / pgvector）、embedding 模型、检索接口、内容摄取通道（文件上传 / API / 数据库 / 网页抓取）。
 2. 识别消费检索结果的下游 agent：其输入是否拼接检索上下文、是否对检索内容执行指令、是否有工具调用能力。
 3. 记录护栏基线：检索过滤、输出审查、对检索内容的信任边界，作为投毒效果的对照。
@@ -57,6 +58,10 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、检索层操纵前
 - `ai_vector.txt` flag 的「面板提交 + 截图」双通道一致。
 - 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 GOVERNANCE §质量门），保证五件套/三件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。
 
+## Ch6 复用接口
+
+`tools/attack_rag/ch6_adapter.py` 把既有 `RagHarness.retrieve` + `Backend.respond` 适配为 `build_query_iface(harness, backend) -> (prompt -> text)`，供 `attack-embeddings` 的模型识别探测注入消费；仅做接口适配，不含探测评分/投毒语义。
+
 ## 校验标准
 
 - 攻击过程可被技术读者 **copy/paste 逐步复现**（§6.1）。
@@ -68,3 +73,6 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、检索层操纵前
 - 若目标 RAG 只读/无写入通道：记录判定依据后改走间接投毒（内容源污染）或降级，不阻塞其余路径。
 - 若下游 agent 与检索结果解耦（操纵不影响决策）：如实记录「未产生影响」，不夸大；据以评估改走 D3/D4。
 - 若仅部分生效（检索被操纵但决策未变）：记录效果等级，不得夸大。
+- 若目标温度 >0 使输出不确定：同一查询多次取证、提示词显式要求「include all」，以最完整响应为准并记录次数，不以单次结果定级（Ch5 §5.2 Info）。
+- 若读取的文件使上下文超限（vLLM 中止防 OOM）：改为按行分批读取，仅取所需区段，不整文件读入（Ch5 §5.2）。
+- 若已上传文档后需重传改名：如实标注混合检索库可能残留脏数据；实验室可重置索引，真实评估通常无此控制，不宣称已彻底清除（Ch5 §5.2 Info）。

@@ -48,6 +48,32 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、反演/提取前�
    - 命令：`curl -s <RAG_API>/query -H "Content-Type: application/json" -d '{"q":"<poisoned concept>"}'`
    - 证据：`python tools/collect_evidence.py --step emb-07 --cmd "curl -s <RAG_API>/query -d '<poisoned query>'" --out loot/emb-07-rag-impact.md --shot-cmd "screenshot --region rag_impact" --ai-log "见 loot/emb-07-rag-impact.md" --target <RAG_API> --strict`
 
+### Ch6 增量执行体（向量库反演实战链）
+
+> 课程 Ch6 §6.2–§6.4；一手源见 `docs/research/attack-embeddings-ch6-gap-canonical.md`。与 emb-01..08 互补：已知向量库时先把攻击面从全库缩到高价值块再反演。每步证据统一 `python tools/collect_evidence.py --step <id> --cmd "<命令>" --out loot/<id>.md --shot-cmd "screenshot --region <id>" --strict`（emb-c3 另加 `--ai-log`）；命令均可 copy/paste。
+
+1. **emb-c1 导出向量**：游标分页导出 `.npy/.csv/.parquet`（无 pyarrow 标 `NOT_AVAILABLE` 不伪造）。`python -m tools.attack_embeddings.exporter --store <VDB> --out ./export`
+2. **emb-c2 维度指纹**：共享维度输出候选非唯一。`python -m tools.attack_embeddings.fingerprint --vec export/embeddings.npy`
+3. **emb-c3 推断探测**：多粒度分段 + top5_avg≥0.85 + 保存 pairs（带 `--ai-log`）。`python -m tools.attack_embeddings.probing --vec export/embeddings.npy --rag-url <RAG_API>`
+4. **emb-c4 块分选**：三级级联 + 加权 RRF 1.0/1.5/2.0 + chunk 索引可追溯。`python -m tools.attack_embeddings.triage --vec export/embeddings.npy --top 10`
+5. **emb-c5 填槽反演**：域检测 + 成员推断 + margin-aware + 共识；随机串标不可恢复。`python -m tools.attack_embeddings.slotfill --vec chunk.npy --wordlist passwords.txt`
+6. **emb-c6 beam 恢复**：模板弱置信时；课程近似非论文等价。`python -m tools.attack_embeddings.beamsearch --vec chunk.npy --steps 32`
+7. **emb-c7 决策门禁**：方法矩阵择路 + 五项限制可行性判定。`python -m tools.attack_embeddings.decision --model-known --time-tight`
+8. **emb-c8 环境标注**：无 lab/GPU 输出「不适用 + C-1 依据」，不静默降级。`python -m tools.attack_embeddings.envelope --capability ALGEN --no-lab`
+
+证据契约（每步三件套，各自独立行）：
+
+- `python tools/collect_evidence.py --step emb-c1 --out loot/emb-c1.md --strict`
+- `python tools/collect_evidence.py --step emb-c2 --out loot/emb-c2.md --strict`
+- `python tools/collect_evidence.py --step emb-c3 --out loot/emb-c3.md --ai-log "见 loot/emb-c3.md" --strict`
+- `python tools/collect_evidence.py --step emb-c4 --out loot/emb-c4.md --strict`
+- `python tools/collect_evidence.py --step emb-c5 --out loot/emb-c5.md --strict`
+- `python tools/collect_evidence.py --step emb-c6 --out loot/emb-c6.md --strict`
+- `python tools/collect_evidence.py --step emb-c7 --out loot/emb-c7.md --strict`
+- `python tools/collect_evidence.py --step emb-c8 --out loot/emb-c8.md --strict`
+
+各步 `--cmd`/`--shot-cmd` 按上方统一模板补齐。
+
 ### 收尾：flag 取证
 
 1. **emb-08 flag 取证（AI向量机）**：取得 embedding 面代码执行/数据访问后定位并读取 `ai_vector.txt`；向独立机延伸 embedding 工具滥用重复上述流程。
@@ -65,6 +91,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、反演/提取前�
 - **反演/提取前后对照**证据（向量/文档块 before/after 或命中列表）。
 - **下游 RAG/检索被操纵取证**（检索结果差异，含 AI 交互日志 §6.3）。
 - `ai_vector.txt` flag 的「面板提交 + 截图」双通道一致。
+- Ch6 增量步骤 emb-c1..c8 同样满足三件套；导出须有三格式清单（parquet 不可用注明）、分选须有 chunk 索引追溯、填槽须有票数与 margin、环境相关须有「不适用 + 依据」。
 - 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 §质量门），保证三件套/五件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。
 
 ## 校验标准
@@ -79,3 +106,4 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、反演/提取前�
 - 若反演仅部分生效（还原出片段但非完整语料），如实记录命中率与置信度，不得夸大。
 - 若对抗样本被护栏拦截，记录拦截行为与原因，评估改走其它扰动策略；不反复重试同一被拦截动作。
 - 若目标为疑似诱饵机（0 分、无 AI 向量面），记录判定依据后 ≤30 分钟内结束，不在 0 分主机空耗。
+- Ch6 实战风险：付费闭源 embedding API 的迭代查询成本高（填槽/beam 可数百至数千次/块），优先 CPU 路径并计数；真随机字符串无语义信号，填槽不保证还原，须如实标「不可恢复」；canary 注入（ALGEN）在协作式演练须登记插入文档并在结束后清理， stealth 场景 3,000–5,000 条即近最优且分散插入；上述课程脚本均为 PoC，须按目标调参与定制模板库，不得当 turnkey。

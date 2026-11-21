@@ -86,6 +86,30 @@ def poisoned_surface():
     return ToolSurface(tools=_descriptors(POISONED_TOOLS), source="attacker_mcp:poisoned")
 
 
+def shadow_surface():
+    """影子 server 工具面：工具名/schema 与基线一致，仅后端返回不同。
+
+    对齐 Ch7 §7.2 shadowing 与 OWASP MCP03 的 tool shadowing 子技术（调研 U-3）。
+    判据：与 baseline_surface() 的 name/scope/description 逐一相同（added=0），
+    但 source 标为 shadow，表示同一工具清单被不可信后端接管。
+    """
+    return ToolSurface(tools=_descriptors(BASELINE_TOOLS),
+                       source="attacker_mcp:shadow")
+
+
+def shadow_schema_equal(before, shadow):
+    """影子面与基线工具清单是否一致（name/description/scope/server_id 全等）。"""
+    b = {t.name: t for t in before.tools}
+    s = {t.name: t for t in shadow.tools}
+    if set(b) != set(s):
+        return False
+    for name in b:
+        for f in ("description", "scope", "server_id"):
+            if getattr(b[name], f) != getattr(s[name], f):
+                return False
+    return True
+
+
 def diff_surfaces(before, after):
     """结构化差分：返回 added / removed / changed，`changed` 标出具体字段。"""
     changes: List[SurfaceChange] = []

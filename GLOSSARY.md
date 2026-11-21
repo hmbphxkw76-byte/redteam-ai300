@@ -98,6 +98,26 @@ _Avoid_: 信任等级
 目标侧随工具调用结果下发的结构化判定数据（被调工具/所需权限/策略决定/影响半径/是否成功）；本仓库以其为确定性评分信号替代 LLM 判定。
 _Avoid_: MCP 遥测、调用遥测
 
+**MCP Apps (MCP 应用)**:
+工具经 `_meta.ui.resourceUri`（`ui://`）关联 UI 资源，host 在双层 iframe 沙箱代理渲染，app/host 经 `postMessage` 上的 JSON-RPC（`tools/call`）通信；来源 SEP-1865 / spec 2026-01-26（调研 U-1）。
+_Avoid_: MCP 界面应用
+
+**AppBridge (应用桥)**:
+MCP Apps SDK 中代理 host 与 iframe 视图通信、转发 tools/resources/prompts 的模块；攻击中经 `tools/call` 外泄凭据的通道（U-1）。
+_Avoid_: 应用桥接器
+
+**沙箱逃逸 (sandbox escape)**:
+绕过工具文件系统边界读写目录外资源；覆盖前缀碰撞（CVE-2025-53110）与 symlink 跟随（CVE-2025-53109），修复为规范路径加分隔符边界 + `realpath` 二次校验（U-4..U-6）。
+_Avoid_: 路径逃逸
+
+**工具链注入 (tool-chain injection)**:
+载荷存入早期工具自由文本、经聚合工具传递、在渲染/执行工具处解释执行（store→aggregate→render）；间接提示注入的 MCP 形态（U-7/U-8）。
+_Avoid_: 链式工具投毒
+
+**目标侧差分 (target-side diff)**:
+同一 lab 投毒前后各取工具面快照做结构化对照；区别于我方 server 基线的「本地自证」，前者可判完全生效、后者封顶部分生效（调研 §6 闸 A）。
+_Avoid_: 前后对照基线
+
 **校验预言机 (validation oracle)**:
 以「标识 + 答案」为输入的判定接口；目标无 `ai_vector.txt` 时，以「提交成功 + 值原文同屏」构成等价 flag 双通道。
 _Avoid_: 答案校验器

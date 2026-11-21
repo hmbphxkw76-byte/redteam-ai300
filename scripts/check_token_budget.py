@@ -52,7 +52,11 @@ BUDGETS: dict[str, int] = {
     # 17500 → 18000：attack-embeddings Ch6 增量并入 #275 的 2 条术语（推断探测 /
     # 块分选）+ 扩展 embedding 反演条目后实测 17871（+380），按 ADR-0005
     # 「基线 + 必要增量」与 ADR-0006「并集后 + 余量」上调，留 ~129B。
-    "GLOSSARY.md": 18000,
+    # 18000 → 19500：attack-mcp-tool Ch7 增量并入 5 条 MCP 工具面术语（MCP Apps /
+    # AppBridge / 沙箱逃逸 / 工具链注入 / 目标侧差分，+~1288B），与 embedding
+    # 术语块合并后实测 19158（+158）。术语为阶段 7 质量门与 check_glossary 必需
+    # 规范词，已先压缩措辞（减 ~127B），按 ADR-0005/0006 上调，留 ~342B。
+    "GLOSSARY.md": 19500,
     "docs/governance/GOVERNANCE.md": 17000,
     # 28000 → 30000：并入 feat/framework-docs-recovery 的 v1.2 框架选型规范
     # （§1.4 固定阅读要求 + §2.1 B9 + 阶段 1/2/3/8 输入引用 + §5 第 5 条），

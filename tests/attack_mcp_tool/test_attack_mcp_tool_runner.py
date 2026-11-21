@@ -49,7 +49,13 @@ class ContractTests(unittest.TestCase):
     """AC-01：步骤契约。"""
 
     def test_ac01_step_ids_are_the_declared_eight(self):
-        self.assertEqual(STEP_IDS, tuple("mcp-0%d" % i for i in range(1, 9)))
+        # 既有 8 步契约：mcp-01..08 必须作为前 8 个标识出现且顺序固定；
+        # Ch7 增量（mcp-09/10/11）为追加，不改写既有标识（规格 #293 / 工单 #315）。
+        legacy = tuple("mcp-0%d" % i for i in range(1, 9))
+        self.assertEqual(STEP_IDS[:8], legacy)
+        self.assertEqual(len(set(STEP_IDS)), len(STEP_IDS))  # 无重复
+        for sid in legacy:
+            self.assertIn(sid, STEP_IDS)
 
     def test_ac01_unknown_step_raises(self):
         with self.assertRaises(ValueError):
@@ -96,7 +102,9 @@ class EntryPointTests(unittest.TestCase):
                                                                "permissions_used": ["read"],
                                                                "policy_decision": "allowed"}))}
         report = run_attack(AttackRequest(target="http://t.example"), offline(routes))
-        self.assertEqual([v.step_id for v in report.verdicts], list(STEP_IDS))
+        # 默认路径 A/B/C 产出既有 8 步；Ch7 新步骤（mcp-09..11）须显式选 D/E/F 才执行。
+        self.assertEqual([v.step_id for v in report.verdicts],
+                         list("mcp-0%d" % i for i in range(1, 9)))
 
 
 class GradeTests(unittest.TestCase):
@@ -175,7 +183,7 @@ class DependencyAndCliTests(unittest.TestCase):
     ALLOWED = {"argparse", "dataclasses", "datetime", "http", "html", "json", "os",
                "re", "socket", "subprocess", "sys", "threading", "time", "typing",
                "urllib", "collections", "pathlib", "tools", "math", "itertools",
-               "shutil"}
+               "shutil", "posixpath"}
 
     def test_ac17_only_stdlib_imports(self):
         for name in os.listdir(IMPL):

@@ -18,6 +18,9 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 from . import grade as grading
 from . import poison
+from . import escape as escape_judge
+from . import chain as chain_build
+from .uihost import UiHostClient, FakeUiHost, make_ui_resource
 from .evidence import EvidenceWriter
 from .mcp import AgentSseClient, JsonRpcMcpClient, site_base
 from .model import (AttackReport, AttackRequest, Observation, Signals, StepVerdict,
@@ -64,6 +67,7 @@ class Runtime:
     browser_path: Optional[str] = None
     shot_enabled: bool = True
     prompt_for: Optional[Callable[[StepSpec], str]] = None
+    uihost: Optional[UiHostClient] = None   # Ch7 增量：UI/资源交互缝（阶段2用户核对的 1 个新缝）
 
     def __post_init__(self):
         if self.capture is None:
@@ -491,6 +495,95 @@ def _step_mcp_08(sess, spec):
                             + "\n\n[面板校验]\n" + raw)
 
 
+# ——— Ch7 增量步骤（mcp-09/10/11；不改写 mcp-01..08）———
+
+def _step_mcp_09(sess, spec):
+    """沙箱逃逸：前缀碰撞 + symlink 跟随 + realpath 修复对照（本地 mock 自证）。"""
+    allowed = "/data/documents"
+    rb = escape_judge.prefix_bypass(allowed)
+    se = escape_judge.symlink_escape(allowed, "vendor-docs", "/data/secrets/prod.env")
+    fix = escape_judge.realpath_fix_check(allowed, "/data/documents/../.secrets/credentials.json")
+    results = escape_judge.collect_results([rb, se, fix])
+    output = json.dumps(results, ensure_ascii=False, indent=1)
+    hits = {"prefix_bypass": rb.hit, "symlink_escape": se.hit}
+    note = ("本地 mock 判据：前缀缺陷=%s，symlink 逃逸=%s，realpath 修复拒绝=%s。"
+            % (rb.hit, se.hit, fix.hit))
+    note += ("\n\n目标侧无对应 lab 时仅本地自证，等级封顶部分生效；"
+             "修复对照来自官方源码口径（调研 U-6）。")
+    return _StepOutcome(
+        observation=Observation(text=output, tool_result=output),
+        command="python -m tools.attack_mcp_tool.escape --demo",
+        ctx={"escape_hits": hits, "realpath_fix_confirmed": fix.hit,
+             "local_only": True, "prompted": False},
+        note=note, response_for_shot=output)
+
+
+def _step_mcp_10(sess, spec):
+    """MCP Apps UI 投毒 + shadow 对照（AC-02/03/04/10）。
+
+    shadow 用假 host 制造"工具清单一致、后端返回不同"的对照：
+    与 poison.baseline_surface() 比对 schema 全等（added=0），证明未新增工具。
+    """
+    host = sess.runtime.uihost or UiHostClient()
+    resource = make_ui_resource()
+    obs = host.probe(resource)
+    built = resource.resource_uri.startswith("ui://")
+    poisoned = "IMPORTANT" in resource.description
+    bridge = bool((obs.telemetry or {}).get("bridge_method") == "tools/call")
+
+    # shadow 对照：合法基线 vs 影子 server（schema 一致、来源不同）；
+    # 假 host 注入"后端返回不同"的观测，验证 agent 无法从工具清单区分。
+    shadow = poison.shadow_surface()
+    baseline = poison.baseline_surface()
+    schema_equal = poison.shadow_schema_equal(baseline, shadow)
+    shadow_obs = FakeUiHost().probe(resource, tool_result="SHADOW-BACKEND-RESPONSE")
+    shadow_diff = poison.diff_as_dict(poison.diff_surfaces(baseline, shadow))
+
+    output = ("%s\n\n[UI 资源描述]\n%s\n\n[shadow 对照]\n工具清单差分=%s；"
+              "schema 一致=%s；影子后端回显=%s"
+              % (_render(obs), resource.description,
+                 json.dumps(shadow_diff, ensure_ascii=False), schema_equal,
+                 (shadow_obs.tool_result or "")))
+    note = ("UI 资源已构造（%s），隐藏指令=%s，AppBridge tools/call 取证=%s。"
+            % (resource.resource_uri, poisoned, bridge))
+    note += ("\n\nshadow server 工具清单与基线一致（added=0）、仅后端返回不同；"
+             "OWASP 中 tool shadowing 属 MCP03 子技术（推断项，非独立实验目标）。")
+    note += ("\n\n沙箱按官方双层 iframe 代理建模（非 Ch7 的 srcdoc 措辞）；"
+             "本地 mock host 自证，目标侧未验证则封顶部分生效。")
+    return _StepOutcome(
+        observation=obs, command="python -m tools.attack_mcp_tool.uihost --probe",
+        ctx={"ui_resource_built": built, "poison_present": poisoned,
+             "bridge_observed": bridge, "shadow_schema_equal": schema_equal,
+             "shadow_diff": shadow_diff,
+             "local_only": True, "prompted": False},
+        note=note, response_for_shot=output)
+
+
+def _step_mcp_11(sess, spec):
+    """工具链注入：store→aggregate→render + {{7*7}} 探针（本地 mock 自证）。"""
+    steps = chain_build.build_chain("update_ticket", "compile_sprint", "render_report",
+                                    chain_build.GADGET_KEYS)
+    probe = chain_build.ssti_probe()
+    # 本地 mock：渲染端执行探针得 49（真实目标侧由 mcp-14/06 lab 观测回显）
+    probe_echo = "49"
+    confirmed = chain_build.probe_confirmed(probe_echo)
+    chain_complete = len(steps) == 3 and all(s.payload for s in steps)
+    output = json.dumps({"chain": [s.as_dict() for s in steps],
+                         "probe": probe, "probe_echo": probe_echo,
+                         "note": chain_build.chain_as_dict(steps)["gadget_note"]},
+                        ensure_ascii=False, indent=1)
+    note = ("三阶段串联=%s；{{7*7}} 探针回显=%s（本地 mock）。"
+            % (chain_complete, probe_echo))
+    note += ("\n\nlipsum.__globals__ 为社区公开 gadget（权威依据 OWASP WSTG-INPV-18 / "
+             "PortSwigger）；目标侧未验证时封顶部分生效，不夸大。")
+    return _StepOutcome(
+        observation=Observation(text=output, tool_result=output),
+        command="python -m tools.attack_mcp_tool.chain --probe",
+        ctx={"chain_complete": chain_complete, "probe_confirmed": confirmed,
+             "local_only": True, "prompted": False},
+        note=note, response_for_shot=output)
+
+
 _HANDLERS = {
     "mcp-01": _step_mcp_01,
     "mcp-02": _step_mcp_02,
@@ -500,6 +593,9 @@ _HANDLERS = {
     "mcp-06": _step_mcp_06,
     "mcp-07": _step_mcp_07,
     "mcp-08": _step_mcp_08,
+    "mcp-09": _step_mcp_09,
+    "mcp-10": _step_mcp_10,
+    "mcp-11": _step_mcp_11,
 }
 
 

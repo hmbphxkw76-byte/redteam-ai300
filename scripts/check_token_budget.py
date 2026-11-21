@@ -49,7 +49,10 @@ BUDGETS: dict[str, int] = {
     # 17000，留 ~361B；属 ADR-0005「基线 + 必要增量」，不删除既有内容。
     # 17000 → 17500：并入 #229 verify-evidence 术语块后实测 17186（+186），按
     # ADR-0006「合并后实际内容 + 余量」重算，留 ~314B。
-    "GLOSSARY.md": 17500,
+    # 17500 → 18000：attack-embeddings Ch6 增量并入 #275 的 2 条术语（推断探测 /
+    # 块分选）+ 扩展 embedding 反演条目后实测 17871（+380），按 ADR-0005
+    # 「基线 + 必要增量」与 ADR-0006「并集后 + 余量」上调，留 ~129B。
+    "GLOSSARY.md": 18000,
     "docs/governance/GOVERNANCE.md": 17000,
     # 28000 → 30000：并入 feat/framework-docs-recovery 的 v1.2 框架选型规范
     # （§1.4 固定阅读要求 + §2.1 B9 + 阶段 1/2/3/8 输入引用 + §5 第 5 条），

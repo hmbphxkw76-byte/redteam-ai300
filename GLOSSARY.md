@@ -124,7 +124,7 @@ _Avoid_: 答案校验器
 嵌入向量，可经反演/信息提取泄露敏感数据。
 
 **embedding 反演 (embedding inversion)**:
-从 dense embedding 还原源文本的攻击（vec2text 等多步受控生成），属 OWASP LLM08 敏感信息泄露面；`attack-embeddings` emb-03 攻击原语。
+从 dense embedding 还原源文本的攻击（vec2text 多步纠错/填槽/beam search），属 OWASP LLM08 敏感信息泄露面；`attack-embeddings` emb-03 与 Ch6 增量反演原语。
 _Avoid_: 向量逆推
 
 **成员推断 (membership inference)**:
@@ -342,3 +342,11 @@ _Avoid_: 任务表
 
 **编排层 (orchestration layer)**:
 `tooling-automate` 唯一编排件：S-1 统一编排入口（CLI 与库共用、命令执行器可注入）只串联既有共享工具（`collect_evidence` 与各校验脚本），不重写判据、不含攻击逻辑；每件输出附`复用声明`。
+
+**推断探测 (inference probing)**:
+向 RAG 接口发查询、把响应分段与各候选模型向量比对以识别 embedding 模型（top5 平均相似度判据）；Ch6 §6.2。
+_Avoid_: 推理探针
+
+**块分选 (chunk triage)**:
+在全量 embedding 上用敏感度探针级联筛出高价值块、无需先反演；Ch6 §6.2。
+_Avoid_: 块筛选

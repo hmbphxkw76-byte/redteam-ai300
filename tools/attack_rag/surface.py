@@ -63,6 +63,8 @@ class RagSurface:
     guardrails: Tuple[str, ...] = ()
     writable: str = "unknown"
     source: str = "synthetic"
+    retrieval_mode: str = ""      # enterprise / synthetic / 不可判定
+    tracing: str = ""             # Phoenix 追踪面；缺项留空由上层标注
 
     def identified(self) -> bool:
         """识别到 RAG 组件（有向量库或检索入口）才算定位成功。"""
@@ -88,11 +90,13 @@ class RagSurface:
 
     def render(self) -> str:
         return ("来源: %s\n向量库/检索入口: %s | %s\n摄取通道: %s\n"
-                "下游 agent: %s\n下游能力: %s\n可写判定: %s\n护栏基线:\n%s"
+                "下游 agent: %s\n下游能力: %s\n可写判定: %s\n"
+                "检索模式: %s\n追踪面: %s\n护栏基线:\n%s"
                 % (self.source, self.vector_db or UNKNOWN, self.retrieval or UNKNOWN,
                    self.ingest or UNKNOWN, self.downstream or UNKNOWN,
                    "、".join(self.capabilities) or UNKNOWN,
-                   self.writable, self.guardrail_baseline()))
+                   self.writable, self.retrieval_mode or UNKNOWN,
+                   self.tracing or UNKNOWN, self.guardrail_baseline()))
 
     def as_dict(self):
         return {"source": self.source, "vector_db": self.vector_db,
@@ -100,7 +104,8 @@ class RagSurface:
                 "downstream": self.downstream,
                 "capabilities": list(self.capabilities),
                 "guardrails": list(self.guardrails),
-                "writable": self.writable}
+                "writable": self.writable,
+                "retrieval_mode": self.retrieval_mode, "tracing": self.tracing}
 
 
 def from_inventory(data: Any, ingest: str = "",

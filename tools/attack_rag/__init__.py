@@ -7,15 +7,24 @@
 
 顶层零 pyrit 依赖：真实执行才在方法体内延迟导入（ADR-0004）。
 """
+from .architecture import from_surface as arch_from_surface, render as arch_render
 from .backends import FakeBackend, RealPyRITBackend
+from .blend import citation_name, payload_budget, safe_offset
+from .capability import dormant_doc, filter_asymmetry, probe, ProbeResult
+from .ch5 import CH5_STEP_IDS, CH5_STEP_SPECS, run_ch5
 from .decision_diff import DecisionDiff, DiffResult
+from .extract import hit_rate, multi_topic_collision, one_shot, probe_prompt
 from .harness import MALICIOUS_MARKER, RagHarness, RetrievalHit, default_corpus
 from .index_tamper import IndexTamper
 from .ingest import (FakeIngestChannel, FileIngestChannel, HttpIngestChannel,
                      IngestResult, ReadOnlyChannel, channel_for)
 from .model import (LEVELS, AttackReport, AttackRequest, FlagProof, StepVerdict,
                     XpiaOutcome)
+from .obfuscation import (homoglyph, indirect_instruction, multimodal_camouflage,
+                          rotate, zero_widthify, ZERO_WIDTH_CODEPOINTS, HOMOGLYPHS)
 from .poisoned_rag import PoisonedRAGInjector
+from .readchain import batch_lines, match_user, parse_uid
+from .slow_drip import event_fatigue, pdf_note, timeline
 from .retrieval_probe import (BeforeAfter, EmbeddingCollisionCraft, RetrievalProbe,
                               TopKTable)
 from .runner import DEFAULT_EVIDENCE_DIR, OBJECT_GRAPH, Runtime, run_attack
@@ -36,4 +45,13 @@ __all__ = [
     "FakeIngestChannel", "ReadOnlyChannel", "channel_for",
     "run_xpia", "build_payload", "XpiaResult",
     "FakeBackend", "RealPyRITBackend",
+    "run_ch5", "CH5_STEP_IDS", "CH5_STEP_SPECS",
+    "probe", "ProbeResult", "filter_asymmetry", "dormant_doc",
+    "parse_uid", "match_user", "batch_lines",
+    "zero_widthify", "homoglyph", "indirect_instruction", "rotate",
+    "multimodal_camouflage", "ZERO_WIDTH_CODEPOINTS", "HOMOGLYPHS",
+    "probe_prompt", "one_shot", "multi_topic_collision", "hit_rate",
+    "safe_offset", "payload_budget", "citation_name",
+    "arch_from_surface", "arch_render",
+    "timeline", "event_fatigue", "pdf_note",
 ]

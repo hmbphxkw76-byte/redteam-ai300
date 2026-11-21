@@ -10,11 +10,17 @@
 realpath 解析后二次校验（防 symlink 逃逸）。
 """
 import os
-from dataclasses import dataclass, field
+import posixpath
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 # 穿越载荷：允许目录 + ../ 逃逸到兄弟目录
 TRAVERSAL_SUFFIX = "../.secrets/credentials.json"
+
+
+def _norm(path: str) -> str:
+    """统一 POSIX 语义规范化（Ch7/CVE 靶场为 Linux；避免 Windows 反斜杠漂移）。"""
+    return posixpath.normpath(str(path).replace("\\", "/"))
 
 
 @dataclass(frozen=True)
@@ -32,19 +38,15 @@ class EscapeResult:
                 "resolved": self.resolved, "detail": self.detail}
 
 
-def _norm(path: str) -> str:
-    return os.path.normpath(path)
-
-
 def prefix_bypass(allowed: str, target: Optional[str] = None) -> EscapeResult:
     """判定"前缀检查早于规范化"缺陷：构造 allowed + ../ 路径。
 
     缺陷命中判据：naive `startswith(allowed)` 为真，但规范化后已越出 allowed。
     """
-    target = target or os.path.join(allowed, TRAVERSAL_SUFFIX)
+    target = target or posixpath.join(allowed, TRAVERSAL_SUFFIX)
     naive = target.startswith(allowed)
     normalized = _norm(target)
-    inside_after_norm = normalized.startswith(_norm(allowed) + os.sep)
+    inside_after_norm = normalized.startswith(_norm(allowed) + "/")
     hit = bool(naive and not inside_after_norm)
     return EscapeResult(
         kind="prefix_bypass", hit=hit, input_path=target, resolved=normalized,
@@ -56,10 +58,10 @@ def symlink_escape(allowed: str, link_name: str, outside_target: str,
                    fs: Optional[Any] = None) -> EscapeResult:
     """判定 symlink 逃逸：允许目录内软链指向目录外，逻辑规范在内、物理解析在外。"""
     fs = fs or os.path
-    logical = _norm(os.path.join(allowed, link_name))
+    logical = _norm(posixpath.join(allowed, link_name))
     resolved = fs.realpath(logical)
-    logical_inside = logical.startswith(_norm(allowed) + os.sep)
-    physical_outside = not resolved.startswith(_norm(fs.realpath(allowed)) + os.sep)
+    logical_inside = logical.startswith(_norm(allowed) + "/")
+    physical_outside = not resolved.startswith(_norm(fs.realpath(allowed)) + "/")
     hit = bool(logical_inside and physical_outside)
     return EscapeResult(
         kind="symlink_escape", hit=hit, input_path=logical, resolved=resolved,
@@ -71,8 +73,9 @@ def realpath_fix_check(allowed: str, candidate: str, fs: Optional[Any] = None) -
     """修复对照：realpath 二次校验应拒绝越界路径。"""
     fs = fs or os.path
     resolved = fs.realpath(candidate)
+    resolved = _norm(resolved)
     allowed_real = _norm(fs.realpath(allowed))
-    inside = resolved.startswith(allowed_real + os.sep) or resolved == allowed_real
+    inside = resolved.startswith(allowed_real + "/") or resolved == allowed_real
     return EscapeResult(
         kind="realpath_fix", hit=not inside, input_path=candidate, resolved=resolved,
         detail=("realpath 校验拒绝越界访问（修复生效）" if not inside

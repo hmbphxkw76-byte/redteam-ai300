@@ -183,7 +183,7 @@ class DependencyAndCliTests(unittest.TestCase):
     ALLOWED = {"argparse", "dataclasses", "datetime", "http", "html", "json", "os",
                "re", "socket", "subprocess", "sys", "threading", "time", "typing",
                "urllib", "collections", "pathlib", "tools", "math", "itertools",
-               "shutil"}
+               "shutil", "posixpath"}
 
     def test_ac17_only_stdlib_imports(self):
         for name in os.listdir(IMPL):

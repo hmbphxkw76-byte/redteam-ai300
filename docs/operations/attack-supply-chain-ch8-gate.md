@@ -17,10 +17,10 @@
 |---|---|---|
 | B1 | `validate_skill.py` | PASS（16 技能） |
 | B2 | `check_glossary.py` | PASS（66 废弃词） |
-| B3 | `check_tools_compile.py` | PASS（211 文件 0 失败） |
-| B3 | `unittest discover -s tests` | PASS（1,062 OK skip=3） |
+| B3 | `check_tools_compile.py` | PASS（212 文件 0 失败） |
+| B3 | `unittest discover -s tests` | PASS（1,066 OK skip=3） |
 | B4 | `check_evidence_contract.py` | PASS（4 适配器） |
-| B6 | `measure_coverage.py --target attack-supply-chain --min 80` | PASS（728/825=88.2%） |
+| B6 | `measure_coverage.py --target attack-supply-chain --min 80` | PASS（754/860=87.7%） |
 | C4 | `check_token_budget.py --check` | PASS |
 | lint | `markdownlint-cli2 <docs+skill>` | PASS（0） |
 | 对齐 | `alignment --render` | PASS（14/14，强校验） |
@@ -37,4 +37,4 @@ spec-v1 5,363/8,000 · v2 7,221/10,000 · PR 2,9xx/3,000 · canonical 14,xxx/16,
 ## 推送与结论
 
 检出锁 `checkout_lock.py --check` 推送前实测；SSH → HTTPS 各一次即停。PR 含「契约变更清单」段，互链 #336/#337–343。
-**结论**：硬违规清零、14/14 强校验对齐、门禁全绿、覆盖率 88.2%；检出锁阻断则停留阶段 11（ADR-0006）。
+**结论**：硬违规清零、14/14 强校验对齐、门禁全绿、覆盖率 87.7%；检出锁阻断则停留阶段 11（ADR-0006）。

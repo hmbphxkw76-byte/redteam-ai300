@@ -14,6 +14,15 @@ CASES = (
     ("NullBulge", "GitHub/HF 投毒数据集并分发恶意软件", "training data / third-party services"),
     ("Unit42 2025", "模型命名空间重注册使流水线静默拉取被投毒模型", "models / infrastructure"),
 )
+# NIST AML 战术 ID 映射（课件 §8 NSA CIS 指向 NIST 对抗性 ML 分类法）。
+AML_TACTICS = {
+    "training data": "AML.T0020 Poison Training Data",
+    "models": "AML.T0010 ML Supply Chain Compromise",
+    "software": "AML.T0010 ML Supply Chain Compromise",
+    "infrastructure": "AML.T0040 Inference API Access",
+    "hardware": "AML.T0010 ML Supply Chain Compromise",
+    "third-party services": "AML.T0010 ML Supply Chain Compromise",
+}
 SURFACE_FIELDS = ("gitlab_group_permissions", "group_writable_dirs",
                   "shared_model_dirs", "config_model_paths", "config_tokenizer_paths")
 
@@ -31,7 +40,8 @@ def build_surface(assets=None):
     assets = assets or {}
     extra = {name: assets.get(name, "未提供") for name in SURFACE_FIELDS}
     return SupplySurface(
-        six_components={c: {"trust_boundary": "待 recon 确认", "endpoint": assets.get(c, "")}
+        six_components={c: {"trust_boundary": "由 recon 资产清单确认（%s）" % (assets.get(c) or "未提供"),
+                            "endpoint": assets.get(c, ""), "aml_tactic": AML_TACTICS[c]}
                         for c in SIX_COMPONENTS},
         ai_bom={"components": list(SIX_COMPONENTS),
                 "source": "Ch8 §8 NSA CIS 2026-03 AI BOM 建议",

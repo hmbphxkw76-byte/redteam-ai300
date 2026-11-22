@@ -33,10 +33,21 @@ def main(argv=None):
     p.add_argument("--inject", required=True, help="<trigger>:<target>")
     p.add_argument("--frac", type=float, default=0.01, help="投毒比例 (0,1]")
     p.add_argument("--backend", choices=("fake", "art"), default="fake")
+    p.add_argument("--amplification", type=int, default=1,
+                   help="Ch8 G4：每样本复制份数（课件 3 样本×10=30）；1 表示不放大")
     args = p.parse_args(argv)
     trigger, target = _parse_inject(args.inject)
     backend = ArtPoisonBackend() if args.backend == "art" else FakePoisonBackend()
     result = poison_dataset(args.data, trigger, target, args.frac, backend)
+    if args.amplification > 1:
+        from tools.attack_supply_chain.amplification import build_poison_set
+        sample = {"instruction": trigger, "output": target}
+        amplified = build_poison_set([sample], base_lines=int(args.frac * 10000) or 74,
+                                     factor=args.amplification)
+        result["amplification"] = {"factor": args.amplification,
+                                   "poison_lines": amplified.poison_lines,
+                                   "total_lines": amplified.total_lines,
+                                   "ratio": amplified.ratio}
     print(json.dumps(result, ensure_ascii=False))
     return 0
 

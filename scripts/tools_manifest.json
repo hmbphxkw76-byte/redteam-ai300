@@ -138,11 +138,32 @@
         "tools.attack_supply_chain.model_scan",
         "tools.attack_supply_chain.injector",
         "tools.attack_supply_chain.evidence",
-        "tools.attack_supply_chain.workflow"
+        "tools.attack_supply_chain.workflow",
+        "tools.attack_supply_chain.mcp_backdoor",
+        "tools.attack_supply_chain.pickle_rce",
+        "tools.attack_supply_chain.format_matrix",
+        "tools.attack_supply_chain.amplification",
+        "tools.attack_supply_chain.adapter_poison",
+        "tools.attack_supply_chain.tokenizer_swap",
+        "tools.attack_supply_chain.pickle_bypass",
+        "tools.attack_supply_chain.stealth_backdoor",
+        "tools.attack_supply_chain.ch8_evasion",
+        "tools.attack_supply_chain.surface_fields",
+        "tools.attack_supply_chain.ch8_steps",
+        "tools.attack_supply_chain.alignment",
+        "tools.attack_supply_chain.sleeper"
       ],
       "tests": [
         "tests.attack_supply_chain.test_attack_supply_chain_seams",
-        "tests.attack_supply_chain.test_attack_supply_chain_evidence_contract"
+        "tests.attack_supply_chain.test_attack_supply_chain_evidence_contract",
+        "tests.attack_supply_chain.test_ch8_steps",
+        "tests.attack_supply_chain.test_ch8_poison",
+        "tests.attack_supply_chain.test_ch8_artifacts",
+        "tests.attack_supply_chain.test_ch8_evasion",
+        "tests.attack_supply_chain.test_ch8_surface",
+        "tests.attack_supply_chain.test_ch8_contract",
+        "tests.attack_supply_chain.test_ch8_cli",
+        "tests.attack_supply_chain.test_ch8_pickle_rce"
       ]
     },
     {

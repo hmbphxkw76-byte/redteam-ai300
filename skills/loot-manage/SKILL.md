@@ -40,9 +40,17 @@ output: 结构化战利品登记簿（loot/registry.md，markdown 表格）、fl
 2. 命令模板：`printf '### 攻击路径\n- 入口 <ENTRY_IP> → <HOST1>（trad-04 flag）→ <HOST2>（trad-07 flag）→ …\n' >> loot/registry.md`
 3. 索引核对结果移交 `verify-evidence` 作为提交前校验输入；登记簿本体移交 `report-exam` 作为素材索引。
 
-## Ch9 云凭据指纹登记（新增，不改 loot-01..04 判据）
+## Ch9 六服务凭据指纹登记（加固版，不改 loot-01..04 判据）
 
-依 `docs/research/loot-manage-ch9-canonical.md`（L-1..L-4），新增 `tools/loot_manage/ch9_cloud.py#register_cloud_fingerprint`：把 `attack-infra` ch9 五服务/K8s 凭据狩猎产出的「前缀 + 长度 + 位置」指纹即时追加为 `凭据` 行，content 仅含脱敏表示，明文禁止入登记簿。复用既有 8 列 schema 与 `registry.append_row`，不新增列、不改类型/状态集合；框架组合取矩阵 ⑧（无攻击框架）。
+事实源 `docs/research/loot-manage-b5-hardening-canonical.md`（B5-1..B5-6）。类型化结论 `tools/loot_manage/ch9_b5_model.py#CloudFingerprintVerdict`，六服务枚举常量 `CLOUD_SERVICES`/`SOURCES` 同模块，登记入口 `tools/loot_manage/ch9_cloud.py#register_cloud_fingerprint`（指纹格式 `tools/loot_manage/ch9_cloud.py#fingerprint_text`、编号 `tools/loot_manage/ch9_cloud.py#next_id`），下游无损回溯 `tools/loot_manage/ch9_b5_trace.py#trace_from_loot` 与 `tools/loot_manage/ch9_b5_trace.py#lossless`。
+
+| 服务 | 位置锚点 | 一手依据 |
+|---|---|---|
+| S3 / CloudWatch / ModelRegistry / ECR | 见 `SOURCES` | B5-5（Ch9 canonical C-4/C-10/C-11） |
+| SecretsManager | `secretsmanager-secret` | B5-1（`GetSecretValue` 敏感字段） |
+| SSM | `ssm-secure-parameter` | B5-2（`SecureString --with-decryption`） |
+
+**能力边界**：content = `服务:前缀…(len=N) @ 位置`，明文（含引号包裹）一律拒绝（P-1）；不执行云 API、不新增登记簿列、不改 `verify-evidence`/`report-exam` 判据。`verify_evidence.from_loot` 消费既有 `parse_registry`/`parse_dual`/`fragment_pieces`，须无损还原 id/host/evidence/三件套（B5-3）。复验：`python scripts/verify_lm_b5_skill_refs.py && python scripts/verify_lm_b5_coverage.py --min 90`。
 
 ## 质量门
 

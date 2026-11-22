@@ -55,6 +55,19 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、投毒前后对照
    - 证据：`python tools/collect_evidence.py --step sc-08 --cmd "whoami; id; find / -name ai_vector.txt 2>/dev/null -exec cat {} \;" --out loot/sc-08-flag.md --shot-cmd "screenshot --region flag_proof" --ai-log "见 loot/sc-08-flag.md" --flag "<ai_vector.txt 值>" --target <AI_VECTOR_HOST> --strict`
 9. 取证须含访问证明：`whoami`/`id` + flag 内容同屏截图（对齐 §6.2 双通道一致）。
 
+### 攻击路径 D — Ch8 课件攻击链（sc-09..sc-14，独立注册表）
+
+> 以下六步为 OffSec AI-300 Ch8 差距补齐，独立于 sc-01..08 的 `STEP_IDS`（既有 8 步与证据夹具不变）；统一经 `tools/attack_supply_chain/ch8_steps.py` 派发，证据沿用 `collect_evidence.py --step <id> --strict`。全部为本地 mock / 确定性实现，不向演练目标落真实恶意载荷。
+
+10. **sc-09 MCP 源码后门**：研读合法 server（FastMCP / `@mcp.tool()` / docstring 即描述）→ 选埋入高频 helper（`list_all`）→ 伪装身份通用提交 → 推送 → 等待窗口（≤4 分钟）。命令：`python -m tools.attack_supply_chain.mcp_backdoor --server <S> --helper <H> --author <A> --email <E>`。证据：`collect_evidence.py --step sc-09 ... --strict`。
+11. **sc-10 Pickle RCE**：`__reduce__`→`(os.system,cmd)`、`weights_only=False`、命名 `{model}_epoch_{NNN}.pt` 取最高 epoch、体积差 1,519 B vs ~46 MB 检测信号；与 `model_scan.scan()` 联动做投放前后对照。命令：`python -m tools.attack_supply_chain.pickle_rce --base <M> --epoch <N> --cmd <C> --files <F...>`。
+12. **sc-11 训练投毒放大**：JSONL `instruction`/`output` 3 样本×10→30、74→104 行（约 29%）、`finetune.py --epochs 7 --lr 5e-5 --max-length 384`、cron 2 分钟；休眠代理三类触发与量化 SHA-256 缺口一并记录。命令：`python -m tools.attack_supply_chain.amplification --samples 3 --base 74 --factor 10`。
+13. **sc-12 LoRA 适配器投毒**：从 `adapter_config.json` 还原 r=16/alpha=32/dropout=0.05、SMB 主机/IP 替换为攻击者 IP、0.14% 参数与 8MB/3GB 体积对照、serving 与 NTLMv2 判据。命令：`python -m tools.attack_supply_chain.adapter_poison --ip <IP> --text <T>`。
+14. **sc-13 Tokenizer 操纵**：`MAL`↔`FUN` 交换（MALICIOUS 拆 88799/1317/42652、FUN=62721），须同改 `vocab.json` 与 `tokenizer.json`、备份、fail-open 判 SAFE 的 before/after；防御为哈希校验 + fail-closed。命令：`python -m tools.attack_supply_chain.tokenizer_swap --vocab <V> --fast <F>`。
+15. **sc-14 Pickle 扫描器绕过**：`GLOBAL+REDUCE` opcode、三变体（baseline / `__setstate__` 类 / `sympy.sympify` gadget）、跨机器判定、133 gadgets；绕过载荷经扫描应干净作反向证据。命令：`python -m tools.attack_supply_chain.pickle_bypass --list`。
+- 跨框架格式矩阵（`format_matrix.py`）、隐身后门三层（`stealth_backdoor.py`）、进阶八类登记（`ch8_evasion.py`）、六组件与 AI BOM（`surface_fields.py`）为上述步骤的支撑模块，按课件锚点引用，不新增步骤标识。
+- 对齐验证：`python -m tools.attack_supply_chain.alignment --render` 须输出 14/14 PASS（G1–G14 四元组齐全）方可收尾。
+
 ## 质量门
 
 以下证据**必须**全部产出，缺失任一即判定未过门禁，不得进入下一技能：
@@ -79,3 +92,6 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、投毒前后对照
 - 若投毒仅部分生效（触发率低），如实记录命中率，不得夸大。
 - 若恶意依赖被签名校验/护栏拦截，记录拦截行为与原因，评估改走其它路径；不反复重试同一被拦截动作。
 - 若目标为疑似诱饵机（0 分、无 AI 供应链面），记录判定依据后 ≤30 分钟内结束，不在 0 分主机空耗。
+- 修改生产模型/权重前取得显式授权并确认在交战范围内；不得擅自重训生产模型（可退化性能、破坏对齐、引入法规责任）。
+- 目标操作系统未知时对 `creationflags` 作平台判断；Windows 专有常量（如 `0x01000000`）在非 Windows 上须跳过，不得无条件传入。
+- 训练与载荷准备在攻击者自有基础设施完成，不在目标侧留下训练日志、GPU 峰值或临时文件等取证痕迹；课件攻击链均为本地 mock，不向演练目标落真实恶意载荷。

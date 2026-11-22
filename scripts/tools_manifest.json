@@ -236,11 +236,17 @@
         "tools.threat_model.decoy",
         "tools.threat_model.graph",
         "tools.threat_model.render",
-        "tools.threat_model.cli"
+        "tools.threat_model.cli",
+        "tools.threat_model.assumptions",
+        "tools.threat_model.roe",
+        "tools.threat_model.decision",
+        "tools.threat_model.atlas",
+        "tools.threat_model.brief"
       ],
       "tests": [
         "tests.threat_model.test_threat_model",
-        "tests.threat_model.test_threat_model_evidence_contract"
+        "tests.threat_model.test_threat_model_evidence_contract",
+        "tests.threat_model.test_threat_model_ch10"
       ]
     },
     {

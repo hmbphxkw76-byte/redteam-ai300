@@ -96,4 +96,84 @@ def render(tm):
     else:
         L.append("**未过门禁**（缺：%s）。" % "、".join(missing))
     L.append("")
+
+    # ---- Ch10 增量节（追加在既有四节 + 质量门之后，既有节 ID/表头不变）----
+    _render_ch10_sections(L, tm)
     return "\n".join(L) + "\n"
+
+
+def _render_ch10_sections(L, tm):
+    """Ch10 对齐增量节：假设登记册 / 边界五要素 / 皇冠珠宝 / 路径门与矩阵 / RoE 发现。"""
+    # 5 假设登记册（六字段）
+    regs = getattr(tm, "assumptions", []) or []
+    if regs:
+        L.append("## 5. 假设登记册（Ch10 · 六字段）")
+        L.append("")
+        L += _table(["ID", "观察", "假设", "置信度", "来源", "状态"],
+                    [a.as_row() for a in regs])
+        L.append("")
+        low = [a.id for a in regs if a.bucket == "verification_task"]
+        L.append("> 置信度=来源可靠性；待验证任务（LOW/缺证，不驱动攻击规划）：%s" %
+                 ("、".join(low) or "无"))
+        L.append("")
+
+    # 6 信任边界五要素 + 缺口 + 身份塌缩
+    tbs = getattr(tm, "trust_boundaries", []) or []
+    if tbs:
+        L.append("## 6. 信任边界与信任区（Ch10 · 五要素）")
+        L.append("")
+        L += _table(["ID", "从→到", "信任类型", "强制机制", "验证状态", "进攻含义"],
+                    [b.as_row() for b in tbs])
+        L.append("")
+        gaps = [b.id for b in tbs if b.is_gap]
+        collapses = [b.id for b in tbs if b.identity_collapse]
+        L.append("> 信任缺口（TRUST_GAP，无强制机制）：%s" % ("、".join(gaps) or "无"))
+        L.append("> 身份塌缩（归属丢失）：%s" % ("、".join(collapses) or "无"))
+        L.append("")
+
+    # 7 皇冠珠宝（与既有 §1 考试计分排序并存）
+    jewels = [a for a in tm.high_value if getattr(a, "offensive_value", "")]
+    if jewels:
+        L.append("## 7. 皇冠珠宝（Ch10 · 按进攻价值）")
+        L.append("")
+        L += _table(["资产ID", "进攻价值", "访问状态", "证据 step"],
+                    [[a.asset_id, a.offensive_value, a.access_status or "UNVALIDATED",
+                      "`%s`" % (a.evidence_step or "—")] for a in jewels])
+        L.append("")
+
+    # 8 升级路径 Go/No-Go + 决策矩阵
+    if any(getattr(p, "gates", None) for p in tm.paths) or getattr(tm, "decision_matrix", None):
+        L.append("## 8. 升级路径 Go/No-Go 与决策矩阵（Ch10）")
+        L.append("")
+        grows = []
+        for p in tm.paths:
+            grows.append([p.target_asset, p.gate_decision or p.status,
+                          "、".join("%s=%s" % (g.assumption_id, g.decision) for g in p.gates) or "—",
+                          p.detection_risk or "—",
+                          " → ".join(p.boundary_crossings) or "—"])
+        if grows:
+            L += _table(["目标资产", "状态", "Go/No-Go 门", "检测风险", "跨越边界"], grows)
+            L.append("")
+        matrix = getattr(tm, "decision_matrix", {}) or {}
+        if matrix.get("rows"):
+            L += _table(["决策点", "信息可用", "信息缺失", "验证成本", "决定"],
+                        matrix["rows"])
+            L.append("")
+
+    # 9 ATLAS 映射
+    amap = getattr(tm, "atlas_map", []) or []
+    if amap:
+        L.append("## 9. MITRE ATLAS 映射（Ch10 Table 6）")
+        L.append("")
+        L += _table(["组件", "技术", "ID", "适用性", "应用说明"],
+                    [m.as_row() for m in amap])
+        L.append("")
+
+    # 10 RoE 报告风险发现（双轨）
+    findings = getattr(tm, "report_findings", []) or []
+    if findings:
+        L.append("## 10. RoE 报告风险发现（执行计划外）")
+        L.append("")
+        for f in findings:
+            L.append("- %s" % f)
+        L.append("")

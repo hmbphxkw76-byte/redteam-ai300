@@ -12,9 +12,11 @@ output: 威胁模型文档（高价值资产 / 信任边界 / 最短攻击路径
 
 考前 24h 节奏（§5.4）下，把 `recon-ai` 的资产清单转化为**优先级攻击图**，先打最高杠杆目标、避开 0 分诱饵机（§5.3）。本技能覆盖 D10（AI 目标威胁建模），其输出（优先级攻击图）是 §4.5 编排流水线的入口驱动。与 `decoy-detect` 衔接（诱饵判定结论直接喂其复核），并拉动 `attack-rag` / `attack-embeddings` / `attack-infra` 等链式子技能。
 
-## Ch9 身份链信任建模（新增，不改既有图语义）
+## Ch9 身份链信任建模（加固版，不改既有图语义）
 
-依 `docs/research/threat-model-ch9-canonical.md`（M-1..M-4），`tools/threat_model/ch9_identity_chain.py` 把 Ch9 的 IAM assume-role 链（图3）与 K8s 双身份能力互补链（Table 2）归一为有向图与可达性结论，供既有「信任边界 + 最短攻击路径」消费。纯分析、零网络、不执行 assume-role/token 提取；矩阵 ⑬ 方法论（MITRE ATLAS/OWASP），无专用框架。
+事实源 `docs/research/threat-model-c3-hardening-canonical.md`（M5-1..M5-7）。类型化结论 `tools/threat_model/ch9_c3_model.py#IdentityChainVerdict`；IAM 图 `tools/threat_model/ch9_identity_chain.py#iam_chain_graph`（L5-14/图3）、K8s 链 `#k8s_identity_chain`（L47-52/Table 2）；资产/边界/路径投影 `tools/threat_model/ch9_identity_chain.py#to_assets`、`#to_boundaries`、`#asset_ids_for`、`#shortest_for_chain`；下游引用探针 `tools/threat_model/ch9_c3_downstream.py#claim_ids`。
+
+**约束**：资产 ID 稳定（`iam-<role>`/`k8s-sa-<name>`），attack-infra/foothold-traditional 按 ID 引用；信任边界与最短路径复用既有 `boundaries.shortest_paths`，不改诱饵判定与优先级图语义；纯分析、零网络、不执行 assume-role/token 提取。复验：`python scripts/verify_tm_c3_skill_refs.py && python scripts/verify_tm_c3_coverage.py --min 90`。
 
 ## 执行体
 

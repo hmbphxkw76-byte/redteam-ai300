@@ -68,6 +68,10 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、投毒前后对照
 - 跨框架格式矩阵（`format_matrix.py`）、隐身后门三层（`stealth_backdoor.py`）、进阶八类登记（`ch8_evasion.py`）、六组件与 AI BOM（`surface_fields.py`）为上述步骤的支撑模块，按课件锚点引用，不新增步骤标识。
 - 对齐验证：`python -m tools.attack_supply_chain.alignment --render` 须输出 14/14 PASS（G1–G14 四元组齐全）方可收尾。
 
+## Ch9 运行时/工件边界（新增，不改既有投毒判据）
+
+依 `docs/research/attack-supply-chain-ch9-canonical.md`（S-1..S-4），Ch9 中 Sidecar/init 共享卷拦截推理请求（L54-55）属**运行时基础设施利用**，归 `attack-infra` B2；MinIO/MLflow 工件凭据外带与模型投毒（L53、Ch8 G1-G14）属**供应链**，归本技能。`tools/attack_supply_chain/ch9_boundary.py#classify` 提供确定性判定：工件信号优先、双向信号标 `ambiguous` 供人工复核。本技能不实现运行时拦截、不改动 Ch8 模块。
+
 ## 质量门
 
 以下证据**必须**全部产出，缺失任一即判定未过门禁，不得进入下一技能：

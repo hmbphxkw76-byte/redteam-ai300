@@ -99,7 +99,7 @@ _Avoid_: 信任等级
 _Avoid_: MCP 遥测、调用遥测
 
 **MCP Apps (MCP 应用)**:
-工具经 `_meta.ui.resourceUri`（`ui://`）关联 UI 资源，host 在双层 iframe 沙箱代理渲染，app/host 经 `postMessage` 上的 JSON-RPC（`tools/call`）通信；来源 SEP-1865 / spec 2026-01-26（调研 U-1）。
+工具经 `_meta.ui.resourceUri`（`ui://`）关联 UI 资源，host 双层 iframe 沙箱渲染，app/host 经 `postMessage` JSON-RPC 通信；来源 SEP-1865 / spec 2026-01-26。
 _Avoid_: MCP 界面应用
 
 **AppBridge (应用桥)**:
@@ -107,7 +107,7 @@ MCP Apps SDK 中代理 host 与 iframe 视图通信、转发 tools/resources/pro
 _Avoid_: 应用桥接器
 
 **沙箱逃逸 (sandbox escape)**:
-绕过工具文件系统边界读写目录外资源；覆盖前缀碰撞（CVE-2025-53110）与 symlink 跟随（CVE-2025-53109），修复为规范路径加分隔符边界 + `realpath` 二次校验（U-4..U-6）。
+绕过工具文件系统边界读写目录外资源；含前缀碰撞（CVE-2025-53110）与 symlink 跟随（CVE-2025-53109），修复为规范路径+分隔符边界+`realpath` 二次校验（U-4..U-6）。
 _Avoid_: 路径逃逸
 
 **工具链注入 (tool-chain injection)**:
@@ -195,7 +195,7 @@ _Avoid_: 靶机、靶标
 ## 战利品管理
 
 **战利品 (loot)**:
-红队作战全程取得的凭据、会话、flag 与攻击路径的统称；每条以编号 `L-<n>` 登记于战利品登记簿，禁止散落于对话上下文（§5.2）。
+红队全程取得的凭据、会话、flag、攻击路径与定格式问答统称；每条以 `L-<n>` 登记于登记簿，禁止散落对话上下文（§5.2）。
 来源：`skills/loot-manage/SKILL.md`。
 
 **战利品登记簿 (loot registry)**:
@@ -203,8 +203,12 @@ _Avoid_: 靶机、靶标
 来源：`skills/loot-manage/SKILL.md`。
 
 **攻击路径 (attack path)**:
-单技能内「入口 → 主机 → 横向」的路径摘要，登记于战利品登记簿「攻击路径」小节，供报告 High-Level Attack Path 复用；与「攻击链」（跨 3 台主机的计分路径）不同，不可混用。
+单技能内「入口→主机→横向」路径摘要，登记于登记簿同名小节，供报告 High-Level Attack Path 复用；与「攻击链」（跨 3 台主机计分路径）不可混用。凭据串链复用本字段。
 来源：`skills/loot-manage/SKILL.md`；`docs/research/loot-manage-canonical.md` §7。
+
+**问答取证 (quiz evidence)**:
+课件定格式问答（模型名、OS build `xx.x.xxxxx.xxxx`、LLM 地址 `x.x.x.x:xxxx`），登记于登记簿同名小节，`vrf-09` 校验；不映射`ai_vector.txt`。
+来源：`skills/loot-manage/SKILL.md`。
 
 ## AI 供应链 (supply chain)
 
@@ -241,7 +245,7 @@ PyRIT v1.1.0 封装单一攻击手法的可复用组件（`pyrit.executor.attack
 _Avoid_: 攻击编排器（v1.1.0 前称 orchestrator，已弃用）
 
 **XPIA 工作流 (XPIA workflow)**:
-承担间接提示注入（跨域提示注入）的工作流策略，位于 `pyrit.executor.workflow`（`XPIATestWorkflow` / `XPIAWorkflow`）；**不是** `*Attack` 攻击策略。`XpiaAttack` 在 v1.1.0 不存在。
+间接提示注入工作流策略，位于 `pyrit.executor.workflow`（`XPIATestWorkflow`/`XPIAWorkflow`）；**不是** `*Attack` 策略。`XpiaAttack` 在 v1.1.0 不存在。
 _Avoid_: 跨域注入攻击策略、间接注入编排器
 
 **执行器 (AttackExecutor)**:
@@ -261,7 +265,7 @@ _Avoid_: 转译器、转换器链
 _Avoid_: 评判器、评测器
 
 **记忆 (Memory)**:
-跨步骤或跨会话暂存对话与状态的存储后端（`pyrit.memory` 的 `SQLiteMemory` / `AzureSQLMemory`），经 `initialize_pyrit_async(memory_db_type=...)` 选择；跨会话验证须用 `SQLite` 文件型后端。
+跨步骤/会话暂存对话与状态的存储后端（`pyrit.memory` 的 `SQLiteMemory`/`AzureSQLMemory`），经 `initialize_pyrit_async(memory_db_type=...)` 选择；跨会话验证用 `SQLite` 后端。
 _Avoid_: 记忆库、记忆体
 
 **对象图 (object graph)**:
@@ -379,7 +383,7 @@ _Avoid_: 应用类型、子路径、证据时效、未知资产、自验证、�
 _Avoid_: 任务表
 
 **编排层 (orchestration layer)**:
-`tooling-automate` 唯一编排件：S-1 统一编排入口（CLI 与库共用、命令执行器可注入）只串联既有共享工具（`collect_evidence` 与各校验脚本），不重写判据、不含攻击逻辑；每件输出附`复用声明`。
+`tooling-automate` 唯一编排件：S-1 统一入口（CLI/库共用、命令执行器可注入）串联既有共享工具（`collect_evidence` 等），不重写判据、不含攻击逻辑；输出附复用声明`。
 
 **推断探测 (inference probing)**:
 向 RAG 接口发查询、把响应分段与各候选模型向量比对以识别 embedding 模型（top5 平均相似度判据）；Ch6 §6.2。

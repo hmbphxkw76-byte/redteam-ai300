@@ -291,7 +291,7 @@ class VerifyTests(unittest.TestCase):
     def test_AC08_AC13_eight_checks_all_green(self):
         v = verify_report(self.m, self.en, appendix_md=self.app)
         self.assertTrue(v["passed"], "blocking=%s" % v["blocking"])
-        self.assertEqual(len(v["checks"]), 9)  # vrf-01..08 + proof-single
+        self.assertEqual(len(v["checks"]), 10)  # vrf-01..09 + proof-single
         self.assertIsNone(v["checks"]["vrf-07"])  # dry-run 记未判定，不放宽
         self.assertFalse(v["failed_checks"])
 

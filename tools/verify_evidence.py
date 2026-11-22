@@ -56,7 +56,7 @@ from tools.scored_targets import (  # noqa: E402  (常量随模块加载)
 )
 
 CHECKS = ("vrf-01", "vrf-02", "vrf-03", "vrf-04",
-          "vrf-05", "vrf-06", "vrf-07", "vrf-08", "proof-single")
+          "vrf-05", "vrf-06", "vrf-07", "vrf-08", "vrf-09", "proof-single")
 ACCESS_PROOF_TOKENS = ("whoami", "id")
 
 _LOOT_REGISTRY = None
@@ -198,6 +198,7 @@ def normalize_payload(raw):
         "glossary_path": raw.get("glossary_path", DEFAULT_GLOSSARY),
         "exam_end_at": _parse_time(raw.get("exam_end_at"), "exam_end_at"),
         "submit_at": _parse_time(raw.get("submit_at"), "submit_at"),
+        "quiz_answers": list(raw.get("quiz_answers", []) or []),
     }
 
 
@@ -353,7 +354,8 @@ def from_loot(registry_path, evidence_dir=None, report_md="", appendix_md="",
                               "osid": _osid_from_name(registry_path),
                               "report_md": report_md,
                               "appendix_md": appendix_md,
-                              "target_points": target_points or {}})
+                              "target_points": target_points or {},
+                              "quiz_answers": getattr(registry, "quiz_answers", [])})
 
 
 # ---------------------------------------------------------------- S-2 判据
@@ -646,6 +648,33 @@ def check_vrf08(inp, tools):
     return r
 
 
+def check_vrf09(inp):
+    """问答取证格式（Ch11 L287/L1388）：quiz_answers 的定格式答案可机读校验。
+
+    无 quiz_answers 时判 ok（保持向后兼容）；有则逐条校验 fmt 对应正则，格式不符阻断。
+    """
+    r = _result()
+    quizzes = inp.get("quiz_answers", []) or []
+    if not quizzes:
+        r["ok"] = True  # 未登记问答不阻断（向后兼容）
+        return r
+    try:
+        from tools.loot_manage.registry import check_quiz_format
+    except Exception:
+        r["ok"] = False
+        r["blocking"].append("vrf-09：问答格式校验器不可用")
+        return r
+    bad = []
+    for q in quizzes:
+        ok, rule = check_quiz_format(q.get("a", ""), q.get("fmt", ""))
+        if not ok:
+            bad.append("%s（%s）" % (q.get("q", "?"), rule))
+    r["ok"] = not bad
+    if bad:
+        r["blocking"].append("vrf-09：问答格式不符 %s" % "、".join(bad))
+    return r
+
+
 def check_proof_single(inp):
     """域控 proof.txt 单次提交（§2.2.3）：按目标键判定，不做 flag 值子串匹配。"""
     r = _result()
@@ -687,6 +716,7 @@ def verify(payload, require_artifacts=True, tools=None):
         "vrf-06": lambda: check_vrf06(inp),
         "vrf-07": lambda: check_vrf07(inp, require_artifacts, tools),
         "vrf-08": lambda: check_vrf08(inp, tools),
+        "vrf-09": lambda: check_vrf09(inp),
         "proof-single": lambda: check_proof_single(inp),
     }
     checks, blocking, missing, pending = {}, [], [], []

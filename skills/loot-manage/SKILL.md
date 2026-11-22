@@ -5,7 +5,7 @@ domain: D1, D10
 scoring_unit: 通用
 trigger: 任一攻击技能（foothold-traditional / attack-ai-agent / attack-rag / attack-mcp-tool 等）取得新的凭据、会话、flag 或攻击路径，需即时登记沉淀
 input: 各攻击技能产出的战利品（凭据/会话/flag/路径）、对应 collect_evidence.py 证据片段路径、recon-ai 资产清单
-output: 结构化战利品登记簿（loot/registry.md，markdown 表格）、flag 双通道占位（面板提交值 + 截图路径）、可被 verify-evidence / report-exam 无损回溯的索引
+output: 结构化战利品登记簿（loot/registry.md，markdown 表格）、flag 双通道占位（面板提交值 + 截图路径）、定格式问答（quiz_answer）与凭据串链索引，可被 verify-evidence / report-exam 无损回溯
 ---
 
 # loot-manage — 战利品与凭证管理
@@ -39,6 +39,12 @@ output: 结构化战利品登记簿（loot/registry.md，markdown 表格）、fl
 1. 每完成一段攻击路径（入口 → 主机 → 横向），在登记簿末尾「攻击路径」小节追加一行路径摘要（供 `report-exam` 的 High-Level Attack Path 复用），并核对全表索引：每行证据片段路径均存在、每个 flag 均有双通道占位。
 2. 命令模板：`printf '### 攻击路径\n- 入口 <ENTRY_IP> → <HOST1>（trad-04 flag）→ <HOST2>（trad-07 flag）→ …\n' >> loot/registry.md`
 3. 索引核对结果移交 `verify-evidence` 作为提交前校验输入；登记簿本体移交 `report-exam` 作为素材索引。
+
+### loot-05 定格式问答与凭据串链
+
+1. 课件 3 个定格式问答（模型名、OS build `xx.x.xxxxx.xxxx`、LLM 地址 `x.x.x.x:xxxx`）在登记簿「问答取证」小节登记为 `题面 | 答案 | 格式 | 证据片段路径`；格式可机读校验（`tools/loot_manage/registry.py#check_quiz_format`，C1 路径引用）。
+2. 凭据串链（如 ED25519 私钥→SYSTEM→DA）复用「攻击路径」小节既有字段，视图见 `#credential_chain`：标 key 类型与指纹（可选、缺省不阻断），不另立平行存储（C1）。
+3. `verify-evidence` 的 `vrf-09` 对问答格式做校验（`#check_vrf09`），同批核对；报告侧不因新字段解析失败。
 
 ## Ch9 六服务凭据指纹登记（加固版，不改 loot-01..04 判据）
 

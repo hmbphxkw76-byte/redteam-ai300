@@ -43,5 +43,35 @@ def enrich(inventory, classification):
             reachable=bool(c.get("reachable", True)),
             foothold_required=bool(c.get("foothold_required", False)),
             depends_on=list(c.get("depends_on", []) or []),
+            # Ch10 增量（recon 七字段不变，走分类覆盖层承载）
+            observations=list(c.get("observations", []) or []),
+            offensive_value=c.get("offensive_value", "") or "",
+            access_status=c.get("access_status", "") or "",
+            path_gates=list(c.get("path_gates", []) or []),
+            detection_risk=c.get("detection_risk", "") or "",
         ))
     return views
+
+
+def classification_observations(classification):
+    """从分类层提取全局观察/假设条目（不挂在任何单一资产上）。"""
+    cls = classification or {}
+    if isinstance(cls, dict):
+        return list(cls.get("assumptions", []) or [])
+    return []
+
+
+def classification_detection_rules(classification):
+    """从分类层提取检测规则（Ch10 Listing 7）。"""
+    cls = classification or {}
+    if isinstance(cls, dict):
+        return list(cls.get("detection_rules", []) or [])
+    return []
+
+
+def classification_trust_boundaries(classification):
+    """从分类层提取信任边界五要素列表（Ch10 Table 8）。"""
+    cls = classification or {}
+    if isinstance(cls, dict):
+        return list(cls.get("trust_boundaries", []) or [])
+    return []

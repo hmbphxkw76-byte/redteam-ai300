@@ -370,3 +370,27 @@ _Avoid_: 推理探针
 **块分选 (chunk triage)**:
 在全量 embedding 上用敏感度探针级联筛出高价值块、无需先反演；Ch6 §6.2。
 _Avoid_: 块筛选
+
+## Ch10 威胁建模方法论（threat-model 对齐）
+
+**假设登记册 (assumption register)**:
+`threat-model` 按 Ch10 §10.1 逐条记录 Observation/Hypothesis/Confidence/Source/Status 的可演进清单；置信度=来源可靠性，缺证假设仅驱动验证任务。
+来源：`docs/research/threat-model-ch10-canonical.md` §1.2。
+_Avoid_: 假设表
+
+**信任区 (trust zone)**:
+共享同一特权级别的区域，由信任边界切分；实线=VALIDATED、虚线=UNVALIDATED。区别于「信任边界」（组件间边）。
+来源：同上 §1.3 R-15。
+
+**推理强制边界 (inference-based trust boundary)**:
+由 LLM 推理而非策略强制的边界（如分类判定），靠输入操纵利用而非认证绕过。
+来源：同上 §1.3 R-11。
+
+**皇冠珠宝 (crown jewels)**:
+按当前知识进攻价值排序的资产清单，含访问状态（OBTAINED/ACCESSIBLE/UNVALIDATED/BEHIND N BOUNDARIES）；与考试计分排序并存。
+来源：同上 §1.5 R-23。
+
+**攻击情报简报 (attack intelligence brief)**:
+Ch10 §10.2 六段式版本化交付物（TARGET SUMMARY/CROWN JEWELS/ASSUMPTION REGISTER STATUS/SCOPE CONSTRAINTS/ESCALATION PATHS/NEXT ACTIONS），版本史=决策日志。
+来源：同上 §1.4 R-21/22。
+_Avoid_: 攻击简报

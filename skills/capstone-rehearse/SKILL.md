@@ -6,6 +6,7 @@ scoring_unit: 通用
 trigger: 所有 P0/P1 技能已就绪，且进入考前演练窗口（§5.4），需对 §4.5 编排流水线做一次全谱系走查
 input: 各技能就绪状态（threat-model/recon-ai/foothold/链式 AI 利用/独立机/loot/域控/verify/report）、§4.5 流水线定义、§5.4 24h 节奏
 output: 演练报告（覆盖度矩阵 / 24h 节奏时间线 / 缺口与补强清单），供 report-exam 引用、考前针对性补强
+语境: course-capstone（课件 Ch11，DA 目标、3 问答产物、不映射 ai_vector.txt） | osai-rehearsal（GOVERNANCE §4.5 计分演练、§5.4 24h）；执行前须判定，无法判定记 UNDETERMINED（见执行体 §0）
 ---
 
 # capstone-rehearse — Capstone 演练
@@ -14,7 +15,13 @@ output: 演练报告（覆盖度矩阵 / 24h 节奏时间线 / 缺口与补强�
 
 ## 执行体
 
-按「流水线全谱系走查 → 24h 节奏映射 → 缺口清单 → 演练报告」四节推进；如实标注未覆盖阶段，不得假称全覆盖。
+按「语境判定 → 流水线全谱系走查 → 24h 节奏映射 → 缺口清单 → 演练报告」五节推进；如实标注未覆盖阶段，不得假称全覆盖。
+
+### 0. 语境判定（前置）
+
+1. 本次走查开始前，先判定语境，取值三态：`course-capstone`（课件 Ch11：Domain Admin 目标、3 个定格式问答、不映射 `ai_vector.txt`）/ `osai-rehearsal`（GOVERNANCE §4.5 计分演练、§5.4 24h 节奏）/ `UNDETERMINED`。
+2. 两类语境的目标、计分单元、产物、节奏、结论边界对照见 `docs/research/capstone-rehearse-canonical.md#1.1`（C1：路径引用，不转抄）。
+3. 依据不足时记 `UNDETERMINED` 并在报告标注，不臆断为任一语境；判定结果写入演练报告抬头。
 
 ### 1. 流水线全谱系走查
 
@@ -61,3 +68,4 @@ output: 演练报告（覆盖度矩阵 / 24h 节奏时间线 / 缺口与补强�
 - 若某阶段技能未就绪，明确标注缺口而非假称覆盖；不把「未演练」写成「已通过」。
 - 若 24h 节奏超出，给出压缩/取舍方案，不隐瞒超时风险。
 - 本技能仅做演练验收，**不含真实考试利用**；所有结论须结合实战环境验证。
+- **结论不外推（语境隔离）**：`course-capstone` 演练/问答结果**不得充当 OSAI 就绪证明**；`osai-rehearsal` 结论**不外推**到课程演练。该约束复用 `docs/research/capstone-rehearse-canonical.md#4` 既有「演练片段不得混入 `-real` 正式提交」条款（C1：单一事实源，不另立新规、不复述正文）。两类语境产物不得交叉引用为计分证据。

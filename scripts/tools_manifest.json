@@ -321,7 +321,15 @@
         "tools.attack_infra.report",
         "tools.attack_infra.runner",
         "tools.attack_infra.cli",
-        "tools.attack_infra.provenance"
+        "tools.attack_infra.provenance",
+        "tools.attack_infra.ch9_model",
+        "tools.attack_infra.ch9_iam",
+        "tools.attack_infra.ch9_k8s",
+        "tools.attack_infra.ch9_secrets",
+        "tools.attack_infra.ch9_container",
+        "tools.attack_infra.ch9_scope",
+        "tools.attack_infra.ch9_gpu",
+        "tools.attack_infra.ch9_runner"
       ],
       "tests": [
         "tests.attack_infra.test_attack_infra_units",
@@ -329,7 +337,8 @@
         "tests.attack_infra.test_attack_infra_path_b",
         "tests.attack_infra.test_attack_infra_path_c",
         "tests.attack_infra.test_attack_infra_runner",
-        "tests.attack_infra.test_attack_infra_evidence_contract"
+        "tests.attack_infra.test_attack_infra_evidence_contract",
+        "tests.attack_infra.test_attack_infra_ch9"
       ]
     },
     {

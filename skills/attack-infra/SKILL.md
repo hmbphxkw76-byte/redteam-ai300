@@ -55,6 +55,22 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、利用前后对照
    - 证据：`python tools/collect_evidence.py --step infra-08 --cmd "whoami; id; find / -name ai_vector.txt 2>/dev/null -exec cat {} \;" --out loot/infra-08-flag.md --shot-cmd "screenshot --region flag_proof" --ai-log "见 loot/infra-08-flag.md" --flag "<ai_vector.txt 值>" --target <AI_VECTOR_HOST> --strict`
 9. 取证须含访问证明：`whoami`/`id` + flag 内容同屏截图（对齐 §6.2 双通道一致）。
 
+## Ch9 基础设施利用扩展（新增，不改上述 infra-01..08 判据）
+
+依课程源 `Ch9-AI-Infrastructure-and-Deployment-Exploits.html` 与事实索引 `docs/research/attack-infra-ch9-canonical.md`，新增七组能力；均为可选步骤，经 `tools/attack_infra/ch9_runner.py` 独立编排，不改写既有五值结论：
+
+| 组 | 步骤 | 能力 | 一手事实 | 课程锚点 |
+|---|---|---|---|---|
+| IAM 链 | ch9-iam-01/03 | inline/attached 策略解析、trust policy 可扮演判定、assume-role 角色链与跨项目边界识别 | C-1/C-2/C-3/C-5 | L5-14、图 3 |
+| K8s 身份链 | ch9-k8s-01/02/04 | raw HTTP SelfSubjectRulesReview、跨 namespace 规则一致性判 ClusterRole、JWT sub 提取、双身份能力矩阵 | C-6/C-7/C-8 | L39-52、Table 2 |
+| 五服务凭据 | ch9-sec-01/02/03 | S3/SecretsManager/SSM/CloudWatch/ECR 指纹化枚举、SSM 旧口令、日志精确过滤 | C-4/C-10/C-11 | L15-28 |
+| 共享卷拦截 | ch9-ctr-01/02 | 可写共享卷判定、请求篡改前后推理对照 + AI 交互日志 | C-6 | L54-55 |
+| 范围闸门 | ch9-scope | 只读枚举/主动利用分离，跨项目无扩权即阻断 | §3 P-3 | Warning L739/L1190 |
+| OPSEC | ch9-opsec | 会话名融入、精确过滤、目标化读取三项建议 | C-4 | 多处 Tip |
+| GPU 逃逸 | ch9-gpu | toolkit≤1.17.7 版本阈值 + hook/ENV 注入面判定；无靶场即 BLOCKED | C-9（CVE-2025-23266） | L56-63、图 7 |
+
+**能力边界**：凭据仅产指纹（前缀/长度/位置），明文不落片段；GPU 只做条件判定不编译载荷（NVD 未提供可复现载荷细节，R-3）；JD 解码不验签；跨项目主动动作无扩权即阻断。入口：`ch9_runner.run_ch9(ctx)`，`ctx.ch9_step_ids` 缺省执行全部 13 步。
+
 ## 质量门
 
 以下证据**必须**全部产出，缺失任一即判定未过门禁，不得进入下一技能：

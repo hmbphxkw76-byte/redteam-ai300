@@ -354,6 +354,24 @@ _Avoid_: 应用类型、子路径、证据时效、未知资产、自验证、�
 `attack-infra` 每步的互斥判定结论；五值语义与非 `EXPLOITED` 的依据要求见 `docs/operations/attack-infra-terms.md` §2。
 来源：`docs/operations/attack-infra-terms.md` §2。
 
+**凭据指纹 (credential fingerprint)**:
+凭据仅记前缀/长度/位置的脱敏表示，明文不入片段；见 `docs/research/attack-infra-ch9-canonical.md` §3 P-2。
+
+**身份链 (identity chain)**:
+两身份能力互补的提权路径（一读一写），见 `docs/research/attack-infra-ch9-canonical.md` C-7/C-8、Ch9 Table 2。
+
+**范围闸门 (scope gate)**:
+跨项目资源区分只读枚举与主动利用的前置判定，见 `docs/research/attack-infra-ch9-canonical.md` §3 P-3。
+
+**共享卷拦截 (shared-volume interception)**:
+同 Pod 内经可写共享卷篡改推理输入，见 `docs/research/attack-infra-ch9-canonical.md` C-6、Ch9 L54-55。
+
+**角色链提权 (role-chain escalation)**:
+沿 `sts:AssumeRole` 逐跳提权，见 `docs/research/attack-infra-ch9-canonical.md` C-1/C-3、Ch9 图 3。
+
+**GPU 逃逸 (GPU escape)**:
+借 GPU 运行时 hook 缺陷从容器提权到主机，见 `docs/research/attack-infra-ch9-canonical.md` C-9（CVE-2025-23266）。
+
 ## 自动化编排（tooling-automate）
 
 **任务清单 (task manifest)**:

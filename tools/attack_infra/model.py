@@ -193,6 +193,36 @@ class RunContext:
     step_ids: Tuple[str, ...] = STEP_IDS
     ports: Optional[Tuple[int, ...]] = None
     command_text: str = ""
+    # Ch9 扩展字段（全部可选，默认值保持既有判据不变；设计记录 §1 单 seam）
+    iam_role: str = ""
+    iam_policy: str = ""
+    iam_principal: str = ""
+    iam_chain: Tuple[str, ...] = ()
+    sa_token_path: str = ""
+    sa_ca_path: str = ""
+    k8s_api_host: str = ""
+    k8s_api_port: str = ""
+    k8s_rules_url: str = ""
+    k8s_namespaces: Tuple[str, ...] = ()
+    identity_a: str = ""
+    identity_b: str = ""
+    identity_a_rules: Tuple[Any, ...] = ()
+    identity_b_rules: Tuple[Any, ...] = ()
+    ssm_param: str = ""
+    log_group: str = ""
+    log_pattern: str = ""
+    pod_json: str = ""
+    can_exec_sidecar: bool = False
+    inference_before: str = ""
+    inference_after: str = ""
+    discovered_resource: str = ""
+    out_of_scope: bool = False
+    scope_expansion: bool = False
+    active_action: bool = False
+    gpu_toolkit_version: str = ""
+    gpu_hook_surface: bool = False
+    gpu_env_injection: bool = False
+    ch9_step_ids: Tuple[str, ...] = ()
 
 
 RunRequest = RunContext

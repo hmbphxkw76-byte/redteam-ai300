@@ -57,6 +57,17 @@ output: 每台主机「命令 + 输出 + 截图」证据、横向路径图、提
    - 命令：`python tools/collect_evidence.py --step trad-08 --cmd "echo '横向路径图 + 立足点移交清单（见 loot/attack-path.md 与 loot/handoff.md）'" --out loot/trad-08-handoff.md --shot-cmd "screenshot --region path_graph" --target <ATTACK_CHAIN> --strict`
 2. 两台传统向量机均取证后，链内剩余主机为 AI向量机时移交 AI 向量技能；域控收敛由编排层按需触发（非本技能范围）。
 
+## Ch9 入口扩展（新增，不改 trad-01..08 判据）
+
+依 `Ch9-AI-Infrastructure-and-Deployment-Exploits.html` 与事实索引 `docs/research/foothold-traditional-ch9-canonical.md`（T-1..T-4），新增两个可选入口步骤，经 `tools/foothold_traditional/ch9_entry.py` 判定：
+
+| 步骤 | 能力 | 一手事实 | 课程锚点 |
+|---|---|---|---|
+| trad-09 | SSRF 响应识别 AWS 凭据键名（仅产指纹，明文不落盘），可选 GetCallerIdentity 验证 | T-1/T-2 | L1-2 |
+| trad-10 | `sudo -l` 识别 NOPASSWD 包装脚本，作为 GPU 提权立足点；提权本体由 `attack-infra` ch9-gpu 承担 | T-3 | L56-57 |
+
+**能力边界**：不生成 SSRF 载荷（入口由 recon 提供）、不执行 CVE-2025-23266 提权、不引入 AI 框架（矩阵 ⑦ 纯 Kali 工具链）。
+
 ## 质量门
 
 以下证据**必须**全部产出，缺失任一即判定未过门禁，不得进入下一技能：

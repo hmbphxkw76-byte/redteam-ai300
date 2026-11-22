@@ -20,7 +20,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、检索层操纵前
 
 ### 前置：定位 RAG 攻击面
 
-0. **交战规则（Rules of Engagement）确认**：任何上传/注入动作前，先确认该行为未被 Rules of Engagement 排除；未确认不得上传。对每一份上传文件登记 `upload_manifest`（文件名、内容 SHA-256、时间戳、目标系统、关联 embedding 清理状态）五项，写入证据「关键输出」，供客户在收尾时验证上传数据及其 embedding 已完全清除（Ch5 §5.2 Warning）。
+0. **交战规则（Rules of Engagement）确认**：任何上传/注入动作前，先确认该行为未被 Rules of Engagement 排除；未确认不得上传。对每一份上传文件登记上传清单（文件名、内容 SHA-256、时间戳、目标系统、关联 embedding 清理状态），写入证据「关键输出」，供客户在收尾时验证上传数据及其 embedding 已完全清除（Ch5 §5.2 Warning）。该清单的字段语义与清理状态取值统一由共享变更登记契约定义（`docs/contracts/collect_evidence.contract.md#3`：文件名→`change_target`、SHA-256→`script_sha256`、时间戳→`timestamp`、目标系统→`target`、清理状态→`cleanup_state`；经 `collect_evidence.py --manifest --note` 落盘，C1 单一事实源，不另立平行清单）。
 1. 复用 `recon-ai` 资产清单，确认 RAG 组件：向量库（Milvus / Weaviate / Qdrant / Chroma / pgvector）、embedding 模型、检索接口、内容摄取通道（文件上传 / API / 数据库 / 网页抓取）。
 2. 识别消费检索结果的下游 agent：其输入是否拼接检索上下文、是否对检索内容执行指令、是否有工具调用能力。
 3. 记录护栏基线：检索过滤、输出审查、对检索内容的信任边界，作为投毒效果的对照。

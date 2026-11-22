@@ -51,6 +51,17 @@ output: 每台主机「命令 + 输出 + 截图」证据、横向路径图、提
    - 命令：`sudo -l && <PRIVESC_CMD> && id; find / -name trad_vector.txt 2>/dev/null -exec cat {} \;`
    - 证据：`python tools/collect_evidence.py --step trad-07 --cmd "sudo -l && <PRIVESC_CMD> && id; find / -name trad_vector.txt 2>/dev/null -exec cat {} \;" --out loot/trad-07-flag-host2.md --shot-cmd "screenshot --region flag_proof" --flag "<trad_vector.txt 值>" --target <TRAD_VECTOR_HOST2> --strict`
 
+#### 可选手法条目（Ch11 传统手法库，按需引用）
+
+以下为 trad-03/trad-07 的可选具体手法，每条含前置条件、示意命令（标注 Ch11 来源，不伪造回显）与清理引用（复用共享变更登记契约，C1）：
+
+- **RDS Gateway pivot**（trad-03，[D:L540]）：前置=已入 VPN Users 组、有 RDP 凭据；`xfreerdp3 /v:CONNECT02 /g:<GW>:443 /u:<USER> /p:<PASS>` + `\tsclient\payloads` 共享投放（Ch11 §11.4）。
+- **CVE-2025-26125 本地提权**（trad-03，[D:L586]）：前置=取得 CLIENT01 低权 shell；按 Listing 26 提权至 SYSTEM，前后 `id` 同屏。
+- **进程内存转储取凭据**（trad-07，[D:L1143]）：前置=目标进程含解密后凭据（如 KeePass）；`procdump -ma <PID> dump.dmp` → 离线搜明文，procdump 为签名工具不易触发 Defender（Ch11 Listing 51）。
+- **计划任务二进制替换提权**（trad-07，[D:L1424]）：前置=计划任务路径用户可写；`icacls <task.exe>` 确认可写 → 替换为载荷 → 待任务以 SYSTEM 运行，取证 SYSTEM shell（Ch11 §11.4）。
+- **GitLab PAT / 硬编码凭据发现**（trad-05，[D:L615-734]）：前置=取得 dev 主机访问；查 GitLab PAT、dev 分支配置、SSMS 插件硬编码凭据，登记 `loot-manage`（路径引用，不复制）。
+- 上述改动系统/放模块的手法，清理状态字段复用共享变更登记契约（C1）；示意命令标来源、不伪造目标回显。
+
 ### 收尾 — 路径沉淀与立足点移交
 
 1. **trad-08 横向路径图沉淀 + 立足点移交**：输出横向路径图（入口 → 各主机 → 汇聚方向，供 Executive Summary 的 High-Level Attack Path 复用），并产出「立足点移交清单」：会话/凭据、可达 AI向量机与独立机的路由、已登记战利品索引，显式满足 `attack-ai-agent` / `attack-rag` / `attack-mcp-tool` 的内网立足点前置（§4.5）。

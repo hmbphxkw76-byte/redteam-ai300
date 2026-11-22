@@ -307,12 +307,41 @@ def build_fragment(step_id, command, output="", screenshot=None, shot_cmd=None,
     return markdown, report
 
 
+CHANGE_FIELDS = ("change_kind", "change_target", "change_ts", "cleanup_state", "cleanup_owner")
+
+
+def parse_change_note(note):
+    """解析 `--note` 中的结构化变更注记（RoE 变更登记/清理，Ch11 L48/L820/L914/L1213）。
+
+    仅当 note 是 JSON 对象且含 `change_kind` 时视为结构化；其余按普通分析注记处理（空字典），
+    保持 `--note` 既有语义向后兼容。登记了变更但未声明清理时 cleanup_state 诚实记 pending，
+    不假称已清理；未登记变更时不阻断且留空。
+    """
+    if not note:
+        return {}
+    try:
+        obj = json.loads(note)
+    except (ValueError, TypeError):
+        return {}
+    if not isinstance(obj, dict) or "change_kind" not in obj:
+        return {}
+    result = {}
+    for key in CHANGE_FIELDS:
+        val = obj.get(key, "")
+        result[key] = val if isinstance(val, str) else str(val)
+    if result["change_kind"] and not result["cleanup_state"]:
+        result["cleanup_state"] = "pending"
+    return result
+
+
 def build_manifest_record(step_id, command, report, timestamp, profile="",
                           retention="", target="", screenshot="", shot_kind="",
-                          script=""):
+                          script="", change_kind="", change_target="",
+                          change_ts="", cleanup_state="", cleanup_owner=""):
     """构造证据清单行（JSONL）。字段集见 GLOSSARY「证据清单」与 AC-19。
 
     显式参数而非 argparse Namespace：格式与 CLI 解耦，便于被其它调用方复用。
+    change_* / cleanup_* 为可选扩展（默认空串），未传时旧调用签名与返回键形态不变。
     """
     return {
         "step_id": step_id,
@@ -328,6 +357,11 @@ def build_manifest_record(step_id, command, report, timestamp, profile="",
         "shot_status": report["shot_status"],
         "script": script,
         "script_sha256": report["hashes"]["script"],
+        "change_kind": change_kind,
+        "change_target": change_target,
+        "change_ts": change_ts,
+        "cleanup_state": cleanup_state,
+        "cleanup_owner": cleanup_owner,
         "pieces": {
             "确切命令": report["required_status"]["确切命令"],
             "关键输出": report["required_status"]["关键输出"],
@@ -458,11 +492,13 @@ def main(argv=None):
 
     # —— 证据清单（JSONL，逐行追加；供 report-exam 与人工复核独立消费） ——
     if args.manifest:
+        change = parse_change_note(args.note)
         record = build_manifest_record(
             args.step, args.cmd, report, timestamp,
             profile=args.profile, retention=(args.retention or args.out),
             target=args.target, screenshot=args.screenshot or "",
-            shot_kind=args.shot_kind or "", script=args.script or "")
+            shot_kind=args.shot_kind or "", script=args.script or "",
+            **change)
         man_dir = os.path.dirname(os.path.abspath(args.manifest))
         if man_dir and not os.path.isdir(man_dir):
             os.makedirs(man_dir, exist_ok=True)

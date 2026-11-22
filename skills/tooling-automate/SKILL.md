@@ -40,6 +40,14 @@ output: 自动化脚本/编排（复用既有共享工具、零新增 seam 优�
 2. 与 `verify-evidence` 的校验编排衔接：自动化证据收集后可直接进入全量校验（§8.2）。
 3. 记录自动化覆盖率（已脚本化任务占比）与剩余手动任务。
 
+## 变更登记与清理（RoE 统一契约）
+
+凡自动化脚本修改了目标系统/服务（如禁用 Defender、替换模块、改配置），须按 RoE「登记变更并规划清理」（Ch11 L48/L820/L914/L1213）在证据清单中登记。字段来源唯一：`tools/collect_evidence.py` 的 `build_manifest_record` 之 `change_*` / `cleanup_*` 字段（契约见 `docs/contracts/collect_evidence.contract.md#3`，C1 单一事实源）。用法：在 `collect_evidence.py --manifest` 调用中经 `--note` 传 JSON（含 `change_kind`），字段由 `parse_change_note` 注入；普通文本注记语义不变。
+
+- `cleanup_state` 取值域 `pending` / `done` / `n/a`；登记变更但未完成清理时如实记 `pending`，**不得假称已清理**；`--strict` 不因 `pending` 阻断。
+- 备份先行：修改文件前备份（Ch11 L914）；清理须含删除恶意模块、杀 reverse shell 进程、验证自动化恢复三步（Ch11 L1213）。
+- 各 attack 技能按路径引用本契约，不另立平行清单（C1）。
+
 ## 质量门
 
 以下产出**必须**全部具备，缺失任一即判定未过门禁：

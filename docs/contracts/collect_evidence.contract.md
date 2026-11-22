@@ -1,6 +1,6 @@
 # 共享工具契约清单：tools/collect_evidence.py
 
-> **contract_version**: v3
+> **contract_version**: v4
 > **性质**：单一事实源（`AGENTS.md` C1）。消费者与报告器只引本文件 `路径#锚点`，不转抄契约正文。
 > **维护规则**：每次改动 `tools/collect_evidence.py` 语义，必须同步本清单元素并递增 `contract_version`，并在 CHANGELOG 追加一条「commit + PR + before→after + 兼容性判定」。
 
@@ -50,6 +50,10 @@ report 键（消费者 / 报告器依赖，字段名与语义即契约）：
 
 `step_id, command, sha256, timestamp, profile, retention, target, screenshot, screenshot_sha256, shot_kind, script, script_sha256, pieces{确切命令, 关键输出, 截图, AI 交互日志, flag 双通道, 脚本/PoC}, flag_dual, complete`
 
+v4 追加变更登记字段（均默认空串，向后兼容）：`change_kind`（变更类型，如 `module-hijack` / `disable-defender`）、`change_target`（被改系统/文件）、`change_ts`（变更时间）、`cleanup_state`（取值域 `pending` / `done` / `n/a`；登记变更未声明清理时诚实记 `pending`）、`cleanup_owner`（清理责任人）。
+
+传值方式：复用既有 `--note` 标志。当 `--note` 为 JSON 对象且含 `change_kind` 时按 `parse_change_note(note)` 解析为上述字段；否则保持为普通分析注记（既有语义不变，不新增 CLI 标志）。这是跨技能 RoE 变更登记/清理的唯一字段来源（Ch11 L48/L820/L914/L1213）；各攻击技能按路径引用本节，不另立平行清单（C1）。`--strict` 对 `cleanup_state=pending` 不阻断（诚实标注）。
+
 ## 4. 片段节标题（tools.report_exam.index.parse_fragment 下游契约）
 
 - `### 步骤 <step_id>：<title>`
@@ -70,6 +74,7 @@ report 键（消费者 / 报告器依赖，字段名与语义即契约）：
 
 ## CHANGELOG
 
+- `v4`（2026-11-22）commit:`ca037b5` PR:#412 破坏性:否 变更:新增变更登记字段 `change_kind`/`change_target`/`change_ts`/`cleanup_state`/`cleanup_owner`（默认空串）；`--note` 结构化 JSON 时经 `parse_change_note` 注入；`--strict` 对 `cleanup_state=pending` 不阻断。before→after:manifest 行无 change_* 字段 → 含 5 字段（默认空）；兼容性:旧调用签名/返回键形态不变，普通 `--note` 语义不变。消费者:tooling-automate、attack-rag（upload_manifest 改指向本节）。
 - `v3`（2026-11-15）commit:`e9f8bdd` PR:#250 破坏性:是 变更:`shot_status` 三态字段新增（`已提供`/`待补录`/`缺失`）；`--shot-cmd` 单独存在时「截图」由「已提供」改为「待补录（钩子命令已记录）」，`complete` 语义不变。
 - `v2`（历史）变更:引入 `--shot-kind`、`--manifest`、`build_manifest_record` 与证据清单 JSONL。
 - `v1`（历史）变更:初始契约。

@@ -22,12 +22,17 @@ STATUSES_BY_TYPE = {
 DEFAULT_STATUS = {"凭据": "有效", "会话": "存活", "flag": "已取证"}
 ATTACK_PATH_HEADING = "## 攻击路径"
 EMPTY_STATE_HEADING = "## 空态"
+QUIZ_HEADING = "## 问答取证"
 DASH = "—"
 # 小节标题容错：SKILL.md「loot-04」模板写作 `### 攻击路径`，本工具自生成用 `##`；
 # 两种层级都须识别，否则照模板手写的登记簿会漏解析该小节。
 _ATTACK_HEADING_RE = re.compile(r"^#{1,6}\s*攻击路径\s*$")
 _EMPTY_HEADING_RE = re.compile(r"^#{1,6}\s*空态\s*$")
+_QUIZ_HEADING_RE = re.compile(r"^#{1,6}\s*问答取证\s*$")
 _ANY_HEADING_RE = re.compile(r"^#{1,6}\s")
+# 定格式问答正则（Ch11 L287/L1388）：OS build xx.x.xxxxx.xxxx / LLM 地址 x.x.x.x:xxxx
+OS_BUILD_RE = re.compile(r"^\d+\.\d+\.\d+\.\d+$")
+LLM_ADDR_RE = re.compile(r"^\d+\.\d+\.\d+\.\d+:\d+$")
 _REASON_RE = re.compile(r"^[-*]\s*原因\s*[：:]\s*(.*)$")
 
 SKELETON = """# 战利品登记簿 (loot registry)
@@ -91,6 +96,21 @@ class Registry:
     attack_paths: list = field(default_factory=list)
     # 空态记录（SKILL.md「失败与豁免」）：{"reason": str, "lines": [str]}
     empty_state: dict | None = None
+    # 问答取证（Ch11 3 个定格式问答）：[{"q":题面,"a":答案,"fmt":格式,"src":证据片段路径}]
+    quiz_answers: list = field(default_factory=list)
+
+    def credential_chain(self) -> list:
+        """凭据串链视图：复用 attack_paths（C1 不另立存储），标 key 类型/指纹/下游目标。
+
+        攻击路径行形如「A(key=ED25519, fp=SHA256:xx) → B」时解析；无法解析者原样保留为 path。
+        """
+        view = []
+        for p in self.attack_paths:
+            m = re.search(r"key=([A-Za-z0-9_-]+)", p)
+            fp = re.search(r"fp=([A-Za-z0-9:]+)", p)
+            view.append({"path": p, "key_type": m.group(1) if m else "",
+                         "fingerprint": fp.group(1) if fp else "", "optional": True})
+        return view
 
     def to_text(self) -> str:
         lines = ["| " + " | ".join(self.header) + " |",
@@ -113,22 +133,29 @@ def parse_registry(text: str) -> Registry:
     """
     header, rows, attack_paths = [], [], []
     table_started = False
-    in_attack = in_empty = False
-    empty_lines = []
+    in_attack = in_empty = in_quiz = False
+    empty_lines, quiz_lines = [], []
     for raw in (text or "").splitlines():
         s = raw.strip()
         if _ATTACK_HEADING_RE.match(s):
-            in_attack, in_empty, table_started = True, False, False
+            in_attack, in_empty, in_quiz, table_started = True, False, False, False
             continue
         if _EMPTY_HEADING_RE.match(s):
-            in_empty, in_attack, table_started = True, False, False
+            in_empty, in_attack, in_quiz, table_started = True, False, False, False
+            continue
+        if _QUIZ_HEADING_RE.match(s):
+            in_quiz, in_attack, in_empty, table_started = True, False, False, False
             continue
         if _ANY_HEADING_RE.match(s):
-            in_attack = in_empty = False
+            in_attack = in_empty = in_quiz = False
             continue
         if in_attack:
             if s.startswith("- "):
                 attack_paths.append(s[2:].strip())
+            continue
+        if in_quiz:
+            if s.startswith("- "):
+                quiz_lines.append(s[2:].strip())
             continue
         if in_empty:
             if s:
@@ -152,7 +179,23 @@ def parse_registry(text: str) -> Registry:
             if m:
                 reason = m.group(1).strip()
         empty_state = {"reason": reason, "lines": empty_lines}
-    return Registry(header, rows, attack_paths, empty_state)
+    # 问答行格式：`题面 | 答案 | 格式 | 证据片段路径`
+    quiz_answers = []
+    for ln in quiz_lines:
+        parts = [p.strip() for p in ln.split("|")]
+        if len(parts) >= 4:
+            quiz_answers.append({"q": parts[0], "a": parts[1],
+                                 "fmt": parts[2], "src": parts[3]})
+    return Registry(header, rows, attack_paths, empty_state, quiz_answers)
+
+
+def check_quiz_format(answer: str, fmt: str) -> tuple[bool, str]:
+    """机读问答格式校验：os_build(x.x.xxxxx.xxxx) / llm_addr(x.x.x.x:xxxx)。"""
+    if fmt == "os_build":
+        return (bool(OS_BUILD_RE.match(answer or "")), "OS build 格式 xx.x.xxxxx.xxxx")
+    if fmt == "llm_addr":
+        return (bool(LLM_ADDR_RE.match(answer or "")), "LLM 地址格式 x.x.x.x:xxxx")
+    return (True, "非定格式问答，跳过格式校验")
 
 
 def parse_dual(cell: str):

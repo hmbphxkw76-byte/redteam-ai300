@@ -601,7 +601,7 @@ class VerifyEvidenceV2Tests(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertIn(key, r)
         self.assertEqual(set(r["checks"]), set(VE.CHECKS))
-        self.assertEqual(len(r["checks"]), 9)
+        self.assertEqual(len(r["checks"]), 10)
 
     # --- AC-16 退出码与摘要 -----------------------------------------------
     def test_AC16_exit_codes_and_summary(self):

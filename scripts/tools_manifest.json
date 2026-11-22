@@ -200,7 +200,8 @@
       ],
       "tests": [
         "tests.loot_manage.test_loot_manage",
-        "tests.loot_manage.test_loot_manage_evidence_contract"
+        "tests.loot_manage.test_loot_manage_evidence_contract",
+        "tests.loot_manage.test_quiz_chain"
       ]
     },
     {

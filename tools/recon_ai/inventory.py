@@ -30,7 +30,7 @@ def host_of(target):
 
 
 def build(judgements, target, profile, failed_steps=None, endpoints=None,
-          phases=None, hints=None, tried=None, extra_signals=0):
+          phases=None, hints=None, tried=None, extra_signals=0, emb_meta=None):
     """按 step 判定结果组装清单。
 
     `judgements`：{step_id: Judgement}；`endpoints`：{step_id: 首选端点}。
@@ -75,6 +75,7 @@ def build(judgements, target, profile, failed_steps=None, endpoints=None,
             credential_hint=hints.get(step_id) or "无",
             evidence_step=step_id,
             phase=phases.get(step_id, ""),
+            emb_metadata=(emb_meta or {}).get(step_id) or None,
         ))
         present_categories.append(category.value)
 

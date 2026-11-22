@@ -305,10 +305,24 @@ def run_recon(target, profile="passive", lab="MM_04", out_dir=None,
               for sid, j in judgements.items()}
     hints = _credential_hints(step_results)
     tried_by_step = {r["step_id"]: r.get("tried", []) for r in step_records}
+    # Ch6 侦察侧嵌入面元数据（只读标注；维度/probing 入口来自已观测 context）
+    from . import emb_surface as _es
+    from .model import Category as _Cat, Existence as _Ex
+    emb_meta = {}
+    for sid, j in judgements.items():
+        if j.existence != _Ex.PRESENT:
+            continue
+        if sid == "recon-04":
+            emb_meta[sid] = _es.build_emb_metadata(
+                _Cat.VECTOR_DB.name, endpoints.get(sid, ""),
+                dim=(j.context or {}).get("dim"))
+        elif sid == "recon-03":
+            emb_meta[sid] = _es.build_emb_metadata(
+                _Cat.RAG.name, endpoints.get(sid, ""), probing_entry=True)
     inventory = inventory_mod.build(
         judgements, requested, profile,
         failed_steps=budget.failed_steps, endpoints=endpoints, phases=phases,
-        hints=hints, tried=tried_by_step,
+        hints=hints, tried=tried_by_step, emb_meta=emb_meta,
         extra_signals=(len(plan.signals) if plan is not None else 0))
     finished = datetime.now().astimezone().isoformat(timespec="seconds")
 

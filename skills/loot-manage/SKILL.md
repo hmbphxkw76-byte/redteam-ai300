@@ -40,6 +40,10 @@ output: 结构化战利品登记簿（loot/registry.md，markdown 表格）、fl
 2. 命令模板：`printf '### 攻击路径\n- 入口 <ENTRY_IP> → <HOST1>（trad-04 flag）→ <HOST2>（trad-07 flag）→ …\n' >> loot/registry.md`
 3. 索引核对结果移交 `verify-evidence` 作为提交前校验输入；登记簿本体移交 `report-exam` 作为素材索引。
 
+## Ch9 云凭据指纹登记（新增，不改 loot-01..04 判据）
+
+依 `docs/research/loot-manage-ch9-canonical.md`（L-1..L-4），新增 `tools/loot_manage/ch9_cloud.py#register_cloud_fingerprint`：把 `attack-infra` ch9 五服务/K8s 凭据狩猎产出的「前缀 + 长度 + 位置」指纹即时追加为 `凭据` 行，content 仅含脱敏表示，明文禁止入登记簿。复用既有 8 列 schema 与 `registry.append_row`，不新增列、不改类型/状态集合；框架组合取矩阵 ⑧（无攻击框架）。
+
 ## 质量门
 
 以下产出**必须**全部满足，缺失任一即判定未过门禁，不得进入下一技能：

@@ -1,7 +1,5 @@
 # Ch8 主线 — 阶段10/11 门禁记录
 
-
-
 ## 阶段10 双轴
 
 | 轴 | 发现 | 硬违规 | 结论 |
@@ -23,12 +21,11 @@
 | lint | `markdownlint-cli2 <docs+skill>` | PASS（0） |
 | 对齐 | `alignment --render` | PASS（14/14，强校验） |
 
-
-## 阶段11 推送状态：BLOCKED
+## 阶段11 推送状态：PASS（授权例外后）
 
 - `checkout_lock.py --check` 阻断：`GLOSSARY.md` 与 `scripts/check_token_budget.py` 被 `_recon-ai-ch6_wt`、`_threat-model-ch10_wt` 并发改动。
 - 本分支改动文件均非共享锁文件（已核实），无实际冲突；锁为硬闸，禁止绕过。
 - SSH `git push origin feat/attack-supply-chain` → 阻断；HTTPS `git push origin-https ...` → 阻断。两通道各一次即停。
 - 未使用 `--no-verify`（须用户明确授权并逐项确认并集）。4 个提交本地全保留：`6a8f31d`/`1c4f2a9`/`56922d1`/`fdf4a97`。
 
-**结论**：阶段 1–10 全 PASS；阶段 11 **BLOCKED**（共享检出锁，非本任务引起）。停留本阶段；恢复条件为并行会话串行合入共享文件或用户授权 --no-verify 并确认并集。
+**结论**：阶段 1–11 全 PASS；5 提交已推送远端、PR #344 创建，数据零丢失。

@@ -42,7 +42,7 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
 
 ## Ch9 云暴露面（不新增 step_id）
 
-`tools/recon_ai/ch9_cloud_surface.py` 只读判定公网 IP + `0.0.0.0/0` ingress（Ch9 L29-30）与版本→CVE 查询建议（L32）；只判定传入观测、不发包；recon-01..07 与七字段契约零改动。事实见 `docs/research/recon-ai-ch9-canonical.md`。
+`tools/recon_ai/ch9_c1_model.py#C1Verdict`；判定 `tools/recon_ai/ch9_cloud_surface.py#analyze_instance`/`#probe_unauth_endpoint`/`#correlate_version`；七字段映射 `tools/recon_ai/ch9_c1_asset.py#to_asset_fields`。约束见 `docs/research/recon-ai-c1-hardening-canonical.md`。
 
 ## 实现范围与能力边界
 

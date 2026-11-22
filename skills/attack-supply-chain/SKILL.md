@@ -68,9 +68,17 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、投毒前后对照
 - 跨框架格式矩阵（`format_matrix.py`）、隐身后门三层（`stealth_backdoor.py`）、进阶八类登记（`ch8_evasion.py`）、六组件与 AI BOM（`surface_fields.py`）为上述步骤的支撑模块，按课件锚点引用，不新增步骤标识。
 - 对齐验证：`python -m tools.attack_supply_chain.alignment --render` 须输出 14/14 PASS（G1–G14 四元组齐全）方可收尾。
 
-## Ch9 运行时/工件边界（新增，不改既有投毒判据）
+## Ch9 运行时/工件边界（加固版，不改既有投毒判据）
 
-依 `docs/research/attack-supply-chain-ch9-canonical.md`（S-1..S-4），Ch9 中 Sidecar/init 共享卷拦截推理请求（L54-55）属**运行时基础设施利用**，归 `attack-infra` B2；MinIO/MLflow 工件凭据外带与模型投毒（L53、Ch8 G1-G14）属**供应链**，归本技能。`tools/attack_supply_chain/ch9_boundary.py#classify` 提供确定性判定：工件信号优先、双向信号标 `ambiguous` 供人工复核。本技能不实现运行时拦截、不改动 Ch8 模块。
+事实源 `docs/research/attack-supply-chain-ch9-b6-hardening-canonical.md`（B6-1..B6-5）。类型化结论 `tools/attack_supply_chain/ch9_boundary_model.py#BoundaryVerdict`；路由 `tools/attack_supply_chain/ch9_boundary.py#classify`；strict 证据 `tools/attack_supply_chain/ch9_boundary_evidence.py#emit_strict_evidence`（argv 组装 `build_evidence_argv`）；编排 `tools/attack_supply_chain/ch9_boundary_runner.py#run_boundary`。
+
+| 观察信号 | owner | 转交目标（路径#锚点） |
+|---|---|---|
+| sidecar/init/共享卷/exec（L54-55） | attack-infra | `tools/attack_infra/ch9_container.py#writable_shared_volume`、`tools/attack_infra/ch9_container.py#intercept_verdict` |
+| model/artifact/minio/registry/投毒（L53） | 本技能 | `tools/attack_supply_chain/poison_engine.py#poison_model` |
+| 双向信号 | 本技能 + `ambiguous` | 人工复核后分别转交 |
+
+**能力边界**：不实现 Sidecar 拦截本体（属 attack-infra B2）、不改 Ch8 判据、不执行载荷；判定经 `collect_evidence.py --strict` 落盘三件套。复验：`python scripts/verify_asc_b6_skill_refs.py && python scripts/verify_asc_b6_coverage.py --min 90`。
 
 ## 质量门
 

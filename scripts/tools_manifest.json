@@ -62,12 +62,14 @@
         "tools.attack_ai_agent.runner",
         "tools.attack_ai_agent.backends",
         "tools.attack_ai_agent.paths",
-        "tools.attack_ai_agent.steps"
+        "tools.attack_ai_agent.steps",
+        "tools.attack_ai_agent.validation_gap"
       ],
       "tests": [
         "tests.attack_ai_agent.test_attack_ai_agent_runner",
         "tests.attack_ai_agent.test_attack_ai_agent_evidence_contract",
-        "tests.attack_ai_agent.test_attack_ai_agent_adapters"
+        "tests.attack_ai_agent.test_attack_ai_agent_adapters",
+        "tests.attack_ai_agent.test_validation_gap"
       ]
     },
     {

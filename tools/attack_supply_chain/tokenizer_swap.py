@@ -4,7 +4,7 @@
 
 对 vocab.json 与 tokenizer.json 两个文件交换 MAL↔FUN 的 ID，产出备份路径、
 双文件一致性判定、fail-open before/after 对照与恢复演练描述。
-不修改真实 tokenizer 文件（除非显式传入路径且 confirmation=True）；默认纯计算。
+本模块为纯计算：只交换传入的 dict 并返回新 dict，不读写任何 tokenizer 文件。
 """
 from dataclasses import dataclass, field
 

@@ -39,4 +39,3 @@ verify → alignment --render → 14/14 PASS
 - 单向门：既有 `STEP_IDS`（len==8）与 sc-01..08 证据片段结构不得扩展；新步骤只在独立注册表 `ch8_steps.STEP_IDS_CH8`。
 - 双向门：SKILL.md 执行体与 `alignment.py` 的 ROWS 四元组须同步；新增模块须同步 `tools_manifest.json` 才计入覆盖率。
 - 影响半径：仅 attack-supply-chain 技能与 manifest 登记；不改共享文件（GLOSSARY.md / check_token_budget.py / ci.yml 等），无并行会话冲突。
-

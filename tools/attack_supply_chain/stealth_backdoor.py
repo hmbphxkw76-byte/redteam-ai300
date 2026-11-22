@@ -7,7 +7,9 @@ XOR 编解码 + 零宽 Unicode bootstrap 编解码（U+200B=0/U+200C=1）+ 反�
 """
 ZERO_WIDTH_0 = "\u200b"   # ZERO WIDTH SPACE
 ZERO_WIDTH_1 = "\u200c"   # ZERO WIDTH NON-JOINER
-DEFAULT_KEY = b"BioGenAI-DataWarehouse-v3.1"
+# 课件 Ch8 §8.3 Listing 76 的演示密钥字面量（仅本地编解码往返示意，非真实凭据）。
+DEMO_XOR_KEY = b"BioGenAI-DataWarehouse-v3.1"
+DEFAULT_KEY = DEMO_XOR_KEY
 
 ANTI_SANDBOX = (
     ("platform.machine() 非 x86", "模拟 CI runner"),

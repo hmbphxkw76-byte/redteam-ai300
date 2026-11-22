@@ -41,3 +41,7 @@ def main(argv=None):
     if a.list:
         print(json.dumps(list(STEP_IDS_CH8)))
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

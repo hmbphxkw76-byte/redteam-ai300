@@ -157,7 +157,8 @@
         "tools.attack_supply_chain.surface_fields",
         "tools.attack_supply_chain.ch8_steps",
         "tools.attack_supply_chain.alignment",
-        "tools.attack_supply_chain.sleeper"
+        "tools.attack_supply_chain.sleeper",
+        "tools.attack_supply_chain.integrity_probe"
       ],
       "tests": [
         "tests.attack_supply_chain.test_attack_supply_chain_seams",
@@ -169,7 +170,8 @@
         "tests.attack_supply_chain.test_ch8_surface",
         "tests.attack_supply_chain.test_ch8_contract",
         "tests.attack_supply_chain.test_ch8_cli",
-        "tests.attack_supply_chain.test_ch8_pickle_rce"
+        "tests.attack_supply_chain.test_ch8_pickle_rce",
+        "tests.attack_supply_chain.test_integrity_probe"
       ]
     },
     {

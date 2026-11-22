@@ -301,12 +301,16 @@
         "tools.attack_rag.steps",
         "tools.attack_rag.runner",
         "tools.attack_rag.cli",
-        "tools.attack_rag.ch6_adapter"
+        "tools.attack_rag.ch6_adapter",
+        "tools.attack_rag.agent_log",
+        "tools.attack_rag.ch11"
       ],
       "tests": [
         "tests.attack_rag.test_attack_rag",
         "tests.attack_rag.test_attack_rag_evidence_contract",
-        "tests.attack_rag.test_attack_rag_ch6"
+        "tests.attack_rag.test_attack_rag_ch6",
+        "tests.attack_rag.test_agent_log",
+        "tests.attack_rag.test_ch11_evidence_contract"
       ]
     },
     {

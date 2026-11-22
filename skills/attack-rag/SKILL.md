@@ -50,6 +50,12 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、检索层操纵前
 1. 取得 AI 向量机立足点后定位 `ai_vector.txt`。
 2. 取证须含访问证明：`whoami`/`id` + flag 内容同屏截图（对齐 §6.2 双通道要求）。
 
+### §11 日志回读闭环（rag-10 · 独立步骤）
+
+闭合 Ch11 §11.5 的 RAG 间接注入外泄链。步骤标识 `rag-10` 独立于冻结的 6-ID 主链（`rag-00..05`）与 Ch5 步骤（`rag-06..09`），经 `tools/attack_rag/ch11.py#CH11_STEP_IDS` 承载，不改动主链契约。执行入口 `tools/attack_rag/ch11_cli.py`，经 `collect_evidence.py --step rag-10 --strict` 落证。
+
+分析能力以纯函数提供（路径引用，不转抄实现，C1）：`tools/attack_rag/agent_log.py#classify_events` 分类四类事件（heartbeat 含 60s 周期，`lm_error` 单列）；`#infer_trigger_keyword` 从 ≥3 条重复无意义查询提取触发词（无重复返回 `None`，不臆造）；`#infer_agent_identity` 仅取 ACL FullControl 主体、HR 组消歧、仍不唯一标歧义；`#key_path_candidates` 按 id_ed25519→id_rsa→id_ecdsa 迭代；`#extract_pem` 保留换行与 BEGIN/END 行。Kibana 不可达时 detect/confirm 记 UNDETERMINED，不臆断无告警。触发词关联文件读取指令须经 RoE 前置确认（见前置第 0 步），上传清单字段复用共享变更登记契约（同上节）。
+
 ## 质量门
 
 以下证据**必须**全部产出，缺失任一即判定未过门禁，不得进入下一技能：

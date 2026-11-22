@@ -12,6 +12,9 @@ from .backends import FakeBackend, RealPyRITBackend
 from .blend import citation_name, payload_budget, safe_offset
 from .capability import dormant_doc, filter_asymmetry, probe, ProbeResult
 from .ch5 import CH5_STEP_IDS, CH5_STEP_SPECS, run_ch5
+from .ch11 import CH11_STEP_IDS, CH11_STEP_SPECS, run_ch11
+from .agent_log import (classify_events, has_periodic_heartbeat, infer_agent_identity,
+                        infer_trigger_keyword, key_path_candidates, extract_pem)
 from .decision_diff import DecisionDiff, DiffResult
 from .extract import hit_rate, multi_topic_collision, one_shot, probe_prompt
 from .harness import MALICIOUS_MARKER, RagHarness, RetrievalHit, default_corpus
@@ -46,6 +49,9 @@ __all__ = [
     "run_xpia", "build_payload", "XpiaResult",
     "FakeBackend", "RealPyRITBackend",
     "run_ch5", "CH5_STEP_IDS", "CH5_STEP_SPECS",
+    "run_ch11", "CH11_STEP_IDS", "CH11_STEP_SPECS",
+    "classify_events", "has_periodic_heartbeat", "infer_agent_identity",
+    "infer_trigger_keyword", "key_path_candidates", "extract_pem",
     "probe", "ProbeResult", "filter_asymmetry", "dormant_doc",
     "parse_uid", "match_user", "batch_lines",
     "zero_widthify", "homoglyph", "indirect_instruction", "rotate",

@@ -26,6 +26,7 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
 4. **向量库发现（recon-04）**：发现向量库（Milvus :19530、Weaviate :8080、Qdrant :6333、Chroma、pgvector）及健康检查/接口暴露。
    - 证据：`python tools/collect_evidence.py --step recon-04 --out loot/recon-04-vector-db.md --strict`
    - 命令：`curl -s <VECTOR_ENDPOINT>/healthz`（active 档对 6333/8080/19530/8000 各一次只读 GET；全关记 ABSENT）
+   - Ch6：资产可选 `emb_metadata`（见 canonical）
 5. **agent 系统识别（recon-05）**：识别 agent 框架（AutoGen、CrewAI、LangGraph 等）与编排/多智能体痕迹；A2A 命中时补录协议信息，不新增 step_id。
    - 证据：`python tools/collect_evidence.py --step recon-05 --out loot/recon-05-agent-sys.md --strict`
    - 命令：`curl -s <AGENT_ENDPOINT>/<agent_probe>`
@@ -42,7 +43,7 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
 
 ## Ch9 云暴露面（不新增 step_id）
 
-`tools/recon_ai/ch9_c1_model.py#C1Verdict`；判定 `tools/recon_ai/ch9_cloud_surface.py#analyze_instance`/`#probe_unauth_endpoint`/`#correlate_version`；七字段映射 `tools/recon_ai/ch9_c1_asset.py#to_asset_fields`。约束见 `docs/research/recon-ai-c1-hardening-canonical.md`。
+`tools/recon_ai/ch9_c1_model.py#C1Verdict`；判定 `analyze_instance`/`probe_unauth_endpoint`/`correlate_version`（`ch9_cloud_surface`）；七字段 `to_asset_fields`（`ch9_c1_asset`）。约束见 `docs/research/recon-ai-c1-hardening-canonical.md`。
 
 ## 实现范围与能力边界
 

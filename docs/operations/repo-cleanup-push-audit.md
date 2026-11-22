@@ -1,7 +1,7 @@
 # ADR-0006 `--no-verify` 审计 — 全 repo 收尾清理（2026-11-22）
 
 ## 阻断原因
-pre-push 共享检出锁：GLOSSARY.md / scripts/tools_manifest.json / scripts/check_token_budget.py 在 3 个 worktree（_attack-infra-ch9_wt / _recon-ai-ch6_wt / _threat-model-ch10_wt）有 staged 改动。
+pre-push 共享检出锁：`GLOSSARY.md`、`scripts/tools_manifest.json`、`scripts/check_token_budget.py` 在 3 个 worktree（`_attack-infra-ch9_wt`、`_recon-ai-ch6_wt`、`_threat-model-ch10_wt`）有 staged 改动。
 
 ## 本次推送为何不构成并集冲突
 1. 两个 backup ref 是**全新 ref**（远端不存在），纯新增，无覆盖、无 force。

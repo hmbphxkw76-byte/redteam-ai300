@@ -15,6 +15,20 @@
 - **边界**：仅演练验收，**不含真实考试利用**；所有结论须结合实战环境验证（`SKILL.md#失败与豁免`）。演练目标 `http://192.168.40.189` 是 AIVP 实例，非 OSAI 正式考试环境（见 `.workbuddy/memory/MEMORY.md`「权威指针」）。
 - **PyRIT 对象图**：**无**。本技能是纯静态走查/报告域，不构造 `*Attack` / `OpenAIChatTarget`，不 import `pyrit`。B7 对本技能的判定形式是「确认为零 PyRIT 依赖 + 不出现禁用旧名」，而非对象映射；该判定形式与 `docs/research/verify-evidence-canonical.md#L13` 一致（单一事实源，C1）。
 
+### 1.1 两类 capstone 语境对照（C1）
+
+课件 Ch11 与 OSAI 考试 capstone 为**不同语境**，不得混用结论。隔离复用 §4，不另立新规。
+
+| 维度 | `course-capstone`（课件 Ch11） | `osai-rehearsal`（GOVERNANCE 计分） | 锚点 |
+|---|---|---|---|
+| 目标 | AD 取 Domain Admin | §4.5 九阶段走查+24h | [D:§11.1/L46]；[P:GOVERNANCE.md#L145-L148] |
+| 计分单元 | 无（3 个定格式问答） | 8 机 100 分/75 及格；`ai_vector.txt` | [D:L210/L287/L1388]；[P:GLOSSARY.md#L215] |
+| 产物 | 模型名/OS build/LLM 地址 | 覆盖度矩阵+24h 时间线+缺口清单 | [D:L210/L287/L1388]；[P:SKILL.md#L8] |
+| 节奏 | 无 24h 约束 | §5.4 24h+24h 提交 | [P:GOVERNANCE.md#L170] |
+| 结论边界 | 问答不映射 `ai_vector.txt`，不当就绪证明 | 不外推课程；不混入 `-real` | [D:§11.6/L1536-1546]；[P:§4#L53-L57] |
+
+**隔离约束（复用 §4）**：课程结果不得充当 OSAI 就绪证明；OSAI 结论不外推课程。与 §4「`-real` 隔离」同一约束，只引用不复述（C1）。一手源：Ch11 extract + GOVERNANCE，≥2 条。
+
 ## 2. 规范一手源清单（条款 → 判定对象）
 
 | 事实 | 一手来源锚点 | 本技能的判定对象 |

@@ -1,6 +1,6 @@
 ## 变更摘要
 
-Ch8《Supply Chain Attacks on AI/ML Systems》差距 G1–G14 全量落地：新增 sc-09..14 独立步骤注册表（不注入既有 sc-01..08 的 `STEP_IDS`）与 12 个确定性本地模块，补齐 MCP 源码后门、Pickle RCE、跨格式矩阵、训练投毒放大、休眠/量化、LoRA、Tokenizer 交换、扫描器绕过、隐身后门三层与进阶八类登记；SKILL.md 增六步执行体与三条交战边界。规格 #336（v1/v2），工单 #337–#343。
+Ch8 差距 G1–G14 全量落地：sc-09..14 独立步骤注册表（不改 `STEP_IDS`）+ 12 个确定性本地模块，覆盖 MCP 源码后门、Pickle RCE、格式矩阵、投毒放大、LoRA、Tokenizer、扫描器绕过、隐身后门与八类登记；SKILL.md 增执行体与边界。规格 #336，工单 #337–#343。
 
 ```
 change → tools/attack_supply_chain/{12 new modules}
@@ -15,7 +15,7 @@ verify → alignment --render → 14/14 PASS
 
 - **组件类型**：`skill`（D8 / P0）
 - **目标计分单元**：`AI向量机`
-- **端到端演示**：`python -m tools.attack_supply_chain.alignment --render` 输出 14/14 PASS；`python -m unittest tests.attack_supply_chain.test_ch8_steps -v` 六步全绿；覆盖率 89.7%（689/768）。
+- **端到端演示**：`alignment --render` 14/14 PASS；`unittest test_ch8_steps -v` 六步全绿；覆盖率 87.7%。
 
 ## 治理合规自检
 
@@ -26,7 +26,9 @@ verify → alignment --render → 14/14 PASS
 
 ## 契约变更清单
 
-本次**未改动**共享证据契约（contract v3 不变）。新增步骤 sc-09..14 沿用 `collect_evidence.py --step <id> --strict` 三/五件套；既有 sc-01..08 证据夹具与 `report-exam.parse_fragment` 无损解析回归通过（test_ch8_contract.py 3 例）。`scripts/tools_manifest.json` 仅登记新模块/测试，无契约语义变更。
+**变更元素**：无（共享证据契约 contract v3 未改）。before→after：证据字段语义不变。
+**受影响**消费者：`report-exam` / `verify-evidence`（sc-09..14 沿用 `--step --strict` 三/五件套；既有 sc-01..08 与 `parse_fragment` 回归通过，test_ch8_contract.py 3 例）。
+**兼容**性判定：完全兼容，无迁移；`tools_manifest.json` 仅登记新模块/测试，无语义变更。
 
 ## Evidence
 

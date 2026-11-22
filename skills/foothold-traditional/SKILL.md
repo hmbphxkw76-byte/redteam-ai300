@@ -57,16 +57,16 @@ output: 每台主机「命令 + 输出 + 截图」证据、横向路径图、提
    - 命令：`python tools/collect_evidence.py --step trad-08 --cmd "echo '横向路径图 + 立足点移交清单（见 loot/attack-path.md 与 loot/handoff.md）'" --out loot/trad-08-handoff.md --shot-cmd "screenshot --region path_graph" --target <ATTACK_CHAIN> --strict`
 2. 两台传统向量机均取证后，链内剩余主机为 AI向量机时移交 AI 向量技能；域控收敛由编排层按需触发（非本技能范围）。
 
-## Ch9 入口扩展（新增，不改 trad-01..08 判据）
+## Ch9 入口扩展（加固版，不改 trad-01..08 判据）
 
-依 `Ch9-AI-Infrastructure-and-Deployment-Exploits.html` 与事实索引 `docs/research/foothold-traditional-ch9-canonical.md`（T-1..T-4），新增两个可选入口步骤，经 `tools/foothold_traditional/ch9_entry.py` 判定：
+事实源 `docs/research/foothold-traditional-ch9-hardening-canonical.md`（H-1..H-6），课程锚点 Listing 1-2 / 56-63。类型化五值结论 `tools/foothold_traditional/ch9_model.py#TriadVerdict`，判据入口 `tools/foothold_traditional/ch9_entry.py#ssrf_credential_entry` 与 `tools/foothold_traditional/ch9_entry.py#gpu_foothold_entry`，strict 证据 `tools/foothold_traditional/ch9_evidence.py#emit_strict_evidence`（参数组装 `tools/foothold_traditional/ch9_evidence.py#build_evidence_argv`），编排 `tools/foothold_traditional/ch9_runner.py#run_ch9`：
 
 | 步骤 | 能力 | 一手事实 | 课程锚点 |
 |---|---|---|---|
-| trad-09 | SSRF 响应识别 AWS 凭据键名（仅产指纹，明文不落盘），可选 GetCallerIdentity 验证 | T-1/T-2 | L1-2 |
-| trad-10 | `sudo -l` 识别 NOPASSWD 包装脚本，作为 GPU 提权立足点；提权本体由 `attack-infra` ch9-gpu 承担 | T-3 | L56-57 |
+| trad-09 | `/api/export?template_url=file:///proc/self/environ` SSRF 响应识别 Lambda env 凭据键名（`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_SESSION_TOKEN`），仅产 `Fingerprint`（键名+长度+位置），可选 `GetCallerIdentity` 验证 | H-1/H-2 | L1-2 |
+| trad-10 | `sudo -l` 识别 `(root) NOPASSWD:` 包装脚本，作为 GPU 逃逸初始立足点；提权本体由 attack-infra ch9-gpu 承担 | H-3 | L56-63 |
 
-**能力边界**：不生成 SSRF 载荷（入口由 recon 提供）、不执行 CVE-2025-23266 提权、不引入 AI 框架（矩阵 ⑦ 纯 Kali 工具链）。
+**能力边界**：不生成 SSRF 载荷、不执行 CVE-2025-23266 提权（P-4）、不引入 AI 框架（矩阵 ⑦）；凭据明文一律不落 output/证据（P-1）；每步经 `collect_evidence.py --strict` 落盘三件套（H-6）。复验：`python scripts/verify_skill_refs.py && python scripts/verify_ch9_ft_coverage.py --min 90`。
 
 ## 质量门
 

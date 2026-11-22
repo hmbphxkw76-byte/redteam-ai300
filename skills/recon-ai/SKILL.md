@@ -40,6 +40,10 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
 
 证据通用参数：各步另加 `--cmd` / `--shot-cmd` / `--target`；recon-07 另加 `--ai-log` 与 flag 双通道。
 
+## Ch9 云暴露面（不新增 step_id）
+
+`tools/recon_ai/ch9_cloud_surface.py` 只读判定公网 IP + `0.0.0.0/0` ingress（Ch9 L29-30）与版本→CVE 查询建议（L32）；只判定传入观测、不发包；recon-01..07 与七字段契约零改动。事实见 `docs/research/recon-ai-ch9-canonical.md`。
+
 ## 实现范围与能力边界
 
 #### 实现范围（In scope，已实现且可执行）
@@ -121,7 +125,7 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
 
 ## Ch2 对齐旁路分析（离线）
 
-覆盖 Ch2 §2.1–2.4 中 7 步枚举未含的**行为级侦察**：`tools/recon_ai/ch2.py`，零网络、只读观测、不改 C1–C9。触发：判读响应头/健康端点/模型行为/RAG sources/端点状态/仓库工件/MCP·A2A schema/metadata/前端 JS/检索阈值/防御日志时。执行：`observations` JSON → `cli.py analyze --input <OBS_JSON> [--out <ANALYSIS_JSON>]`。输出与校验（拒绝无依据结论/明文凭据/无交叉家族/单样本阈值）见 `docs/operations/recon-ai-ch2-analysis.md`。
+Ch2 §2.1–2.4 行为级侦察旁路：`tools/recon_ai/ch2.py`，零网络只读、不改 C1–C9。入口 `cli.py analyze --input <OBS_JSON> [--out <ANALYSIS_JSON>]`；触发、输出与校验见 `docs/operations/recon-ai-ch2-analysis.md`（单一事实源，不在此转抄）。
 
 ## 质量门
 

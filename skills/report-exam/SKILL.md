@@ -10,7 +10,7 @@ output: OSAI-OS-XXXXX-Exam-Report.pdf 及归档 OSAI-OS-XXXXX-Exam-Report.7z（�
 
 # report-exam — OSAI / AI-300 官方规范渗透测试报告
 
-把全部攻击证据组装为**严格对齐 OffSec 官方报告模板（`docs/governance/references/OSAI-Exam-Report.pdf`，下文称 S1）**的考试报告，并完成 PDF 与 `.7z` 打包。本技能是报告生成的**单一实现**：原 `offsec-report` 目录已合并入本技能（其名称弃用），治理登记（§4.4）仅以 `report-exam` 登记，避免双报告技能并存导致编排歧义。
+把攻击证据组装为**严格对齐 OffSec 官方报告模板（`docs/governance/references/OSAI-Exam-Report.pdf`，S1）**的考试报告，完成 PDF+`.7z` 打包。本技能为报告生成**单一实现**：原 `offsec-report` 已并入（名称弃用），治理登记（§4.4）仅用 `report-exam`，避免双报告技能歧义。
 
 核心约束来自 GOVERNANCE §6 / §7 / §8.2，与 S1 逐节对应；官方考试事实标注 **S1/S3**，本仓库工程约定标注 **工程标准**。
 
@@ -80,6 +80,8 @@ Table of Contents                              (official，须含 "Offsec AI Red
 
 **章节验收（§7.1）**：四章齐全（Introduction/Objective/Requirements → Executive Summary → Attack Walkthrough → Appendix）；Executive Summary 含 High-Level Attack Path；每台计分目标有独立小节；域控在 Chain 1 与 Chain 2 **两处**均有记录；诱饵机记为"确认不可利用"。
 
+> **可选：防御复盘段**（Ch11 §11.6，非官方四章、不进必填、不改 `parse_fragment`）：置于 High-Level Attack Path 后或附录。三条结论——SQL 面用 **allowlist**/blocklist 限 `sp_configure`/`xp_cmdshell`；RAG `read_file` 限定 KB 目录或执行前人工确认；AI 组件按**特权服务账户**管控（unvalidated tool access 使 AI 助手成攻击向量）。演练片段不入`-real`（canonical §4）。
+
 ---
 
 ## 2. 每主机小节五段式（S1 §7.2 / §6.1）
@@ -147,7 +149,7 @@ Table of Contents                              (official，须含 "Offsec AI Red
 
 ## 5. 双版策略（适配补充，源自 failed-projects `offsec-report`）
 
-failed-projects `offsec-report` 采用 **ZH 内部版 + EN 官方版** 双版。本仓库工作语言为中文、提交语言为英文，故适配为：
+双版策略（源自 failed-projects `offsec-report`）：工作语言中文、提交英文，适配为：
 
 | 维度 | EN 官方版（**提交候选，强制**） | ZH 内部版（**可选镜像**） |
 |---|---|---|
@@ -157,7 +159,7 @@ failed-projects `offsec-report` 采用 **ZH 内部版 + EN 官方版** 双版。
 | OSID/邮箱 | 真实值 | 演练可 N/A |
 | 证据 ID / flag / 命令 / 输出 | 与 ZH 版**逐字一致** | 同左 |
 
-**约束**：EN 版不得含中文正文（专名/工具名除外）；两版事实、IPv4、端口、版本、时间戳、请求数、结果必须一致；提交**仅** EN 版，命名 `OSAI-OS-XXXXX-Exam-Report.pdf`（§6.4）。ZH 版永不上交。
+**约束**：EN 版不得含中文正文（专名/工具名除外）；两版事实/IPv4/端口/版本/时间戳/结果一致；提交**仅** EN 版，命名 `OSAI-OS-XXXXX-Exam-Report.pdf`（§6.4）。ZH 版不上交。
 
 ---
 
@@ -171,7 +173,7 @@ failed-projects `offsec-report` 采用 **ZH 内部版 + EN 官方版** 双版。
 3. 缺失项回溯对应技能补录（不虚构）；无 `loot/` 时直接以 `evidence/<skill>/*.md` 为索引，自建主机→片段映射表。
 
 ### rpt-02 报告骨架组装（§7.1 四章）
-1. 固化四章骨架：Cover（含逐字 Copyright）→ TOC（含 "Offsec AI Red Teamer Report"）→ Introduction/Objective/Requirements → Executive Summary（Overview + High-Level Attack Path，路径复用 `loot/registry.md` 攻击路径）→ Attack Walkthrough（Chain1 → Chain2 → 独立主机 → 域控）→ Appendix。
+1. 固化四章骨架：Cover（逐字 Copyright）→ TOC（"Offsec AI Red Teamer Report"）→ Introduction/Objective/Requirements → Executive Summary（Overview+High-Level Attack Path，路径复用 `loot/registry.md`）→ Attack Walkthrough（Chain1→Chain2→独立主机→域控）→ Appendix。
 2. 模板：`templates/osai-report-template-en.md`（官方英文）/ `templates/osai-report-template-zh.md`（中文镜像）。
 
 ### rpt-03 每主机小节成文（§7.2 五段式）
@@ -230,11 +232,11 @@ failed-projects `offsec-report` 采用 **ZH 内部版 + EN 官方版** 双版。
 
 ### 10.1 解剖结构对齐治理（关键修改）
 - **原版**：自定义 front-matter（`exam_track` / `sasmp_version` / `bonded_agent` 等）+ 自由章节。
-- **本版**：改为本仓库强制解剖结构（§4.2）——`name/priority/domain/scoring_unit/trigger/input/output` + `执行体/质量门/校验标准/失败与豁免`，保证 `validate_skill.py` 与 §8.2 一致性校验通过。
+- **本版**：改为本仓库解剖结构（§4.2）——`name/priority/domain/scoring_unit/trigger/input/output`+`执行体/质量门/校验标准/失败与豁免`，保证 `validate_skill.py`/§8.2 通过。
 
 ### 10.2 证据管线替换（关键修改，非新增 Python 管线）
-- **原版**：依赖 `report_data.json` + `merge_findings.py` + `build_report.py` + `validate_report.py` + `md2pdf.py` + `finalize_report_data.py` 一整套 FRS 自动填充流水线（失败项目自带，本仓库**不存在**）。
-- **本版**：**弃用该 Python 流水线**，改用本仓库已有且经 CI 验证的管线——`collect_evidence.py` 片段（五件套/三件套）+ `loot-manage` 登记簿 + `verify-evidence` 提交前校验。引用方式改为「直接 include 片段 / 按路径引用」（§3.2），保证证据无损且可机读校验。不引入未经本仓库验证的脚本。
+- **原版**：依赖 `report_data.json`+`merge_findings.py`+`build_report.py`+`validate_report.py`+`md2pdf.py`+`finalize_report_data.py` 整套 FRS 流水线（本仓库**不存在**）。
+- **本版**：弃用该流水线，改用本仓库 CI 验证管线——`collect_evidence.py` 片段 + `loot-manage` 登记簿 + `verify-evidence` 校验；引用改为「直接 include / 按路径引用」（§3.2），证据无损、可机读。不引入未验证脚本。
 
 ### 10.3 官方事实与工程标准分离（新增，治理要求）
 - **原版**：将考试事实与内部约定混写。
@@ -242,7 +244,7 @@ failed-projects `offsec-report` 采用 **ZH 内部版 + EN 官方版** 双版。
 
 ### 10.4 章节映射与现有 evidence 绑定（新增，用户要求）
 - **原版**：通用 10 机模板，无本仓库证据绑定。
-- **本版**：新增 §4「与现有 evidence 的映射」与 `references/evidence-mapping.md`，把 `evidence/attack-ai-agent-real/aia-*.md` 显式映射到 Standalone/AI-vector 主机小节与 Appendix D，并说明当前仅覆盖 1 个 AI 向量主机、flag 双通道未提供等现状。
+- **本版**：新增 §4 映射 + `references/evidence-mapping.md`，把 `evidence/attack-ai-agent-real/aia-*.md` 映射到 Standalone/AI-vector 小节与 Appendix D，说明仅覆盖 1 个 AI 向量主机、flag 双通道未提供等现状。
 
 ### 10.5 双版策略务实化（修改）
 - **原版**：默认产出 ZH+EN 双版且 EN 为提交候选。

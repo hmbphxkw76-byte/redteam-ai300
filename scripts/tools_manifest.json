@@ -100,12 +100,14 @@
         "tools.recon_ai.inventory",
         "tools.recon_ai.runner",
         "tools.recon_ai.cli",
-        "tools.recon_ai.ch2"
+        "tools.recon_ai.ch2",
+        "tools.recon_ai.ch9_cloud_surface"
       ],
       "tests": [
         "tests.recon_ai.test_recon_ai",
         "tests.recon_ai.test_recon_ai_units",
-        "tests.recon_ai.test_recon_ai_ch2"
+        "tests.recon_ai.test_recon_ai_ch2",
+        "tests.recon_ai.test_recon_ai_ch9"
       ]
     },
     {

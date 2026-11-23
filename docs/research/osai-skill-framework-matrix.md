@@ -41,6 +41,10 @@
 | 14 | decoy-detect | P1 | 纯 Kali/网络侦察 + 人工 + 许可 AI | 识别 2 台诱饵机省时 |
 | 15 | capstone-rehearse | P2 | 全栈串联（garak→PyRIT+promptfoo+专项+Kali+AI） | 综合演练 |
 | 16 | tooling-automate | P2 | 自定义脚本编排各 CLI + CI + 许可 AI | 效率杠杆，建于各框架之上 |
+| 17 | attack-jailbreak | P1 | PyRIT（内核多轮策略）+ 转换器 + 分级评分 + 自定义 | AI 主分面（护栏绕过），PyRIT 占优场景 |
+| 18 | attack-multimodal | P1 | PyRIT（多模态 target）+ 转换器 + 自定义 + 复用 attack-rag 原语 | AI 主分面（跨模态注入） |
+
+> 序号 17/18 为 P3 缺口补齐新增（jailbreak/multimodal），经一手源核实 PyRIT 1.1.0 在两场景占优，按 GOVERNANCE §8.3 显式声明纳入矩阵。详见 `docs/research/attack-jailbreak-multimodal-canonical.md` §4。
 
 ---
 
@@ -141,6 +145,18 @@
 - **组合方式**：把 garak/promptfoo/PyRIT/Kali 串成可复跑流水线，批量收集证据。
 - **选择理由**：自动化是效率杠杆，但建立在各框架之上。
 - **适用场景**：复跑攻击、批量证据收集。
+
+### ⑰ attack-jailbreak（P3 新增 / P1）
+- **推荐组合**：**PyRIT(v1.1.0) 多轮策略内核**（RedTeamingAttack / CrescendoAttack / PAIRAttack / TreeOfAttacksWithPruningAttack）+ 转换器 + 分级评分（SubStringScorer 优先）+ 自定义。
+- **组合方式**：单一真实 seam 承载 PyRIT 调用，测试替身保持零依赖；证据复用 `collect_evidence.py`。
+- **选择理由**：越狱是 AI 主分面护栏绕过核心手段，PyRIT 多轮编排无可替代；一手源核实见 `attack-jailbreak-multimodal-canonical.md` M7。
+- **适用场景**：仅启用护栏加固、需系统性越狱的 AI 向量机。
+
+### ⑱ attack-multimodal（P3 新增 / P1）
+- **推荐组合**：**PyRIT(v1.1.0) 多模态 target**（OpenAIChatTarget 图像输入 / PlaywrightTarget image_path / HTTPXAPITarget 文件上传）+ 转换器 + 复用 attack-rag 的 multimodal_camouflage 原语。
+- **组合方式**：与 jailbreak 同构 seam；target 层用 1.1.0 已核实多模态类（M2/M5/M6）。
+- **选择理由**：跨模态注入是 AI 主分面；1.1.0 一手源已核实多模态 target（M1–M6），无需 1.2.x。
+- **适用场景**：图像上传/OCR/PDF 文件输入的跨模态注入场景。
 
 ---
 

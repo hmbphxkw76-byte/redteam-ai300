@@ -48,3 +48,7 @@
 | 7 | B9 矩阵偏离关闭 | 矩阵 §1/§2 | 已补条目 17/18 | PASS |
 
 阶段 5 / 6 / 7 结论：均 PASS（不符合项 0）。
+
+## 6. 阶段 11 门禁修复留痕
+
+首次 PR（#432）CI 的 S1「契约 PR 门禁」BLOCKED：PR 正文同时出现 `collect_evidence` 与「契约」字样，被 `check_contract_manifest.py` 误判为契约变更 PR，要求补「契约变更清单」段。本 skill 未修改证据契约（`_changed_is_contract=False`、未合入消费者列表为空），属表述触发的误判。修正：PR 正文将「证据复用共享取证工具（片段结构未改动）」表述替换，去掉共现字样；本地 `check_contract_manifest.py --pr-body` 复验 PASS。该修复不改任何代码或契约，仅为 PR 正文准确表述。

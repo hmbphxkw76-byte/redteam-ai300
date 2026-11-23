@@ -69,7 +69,11 @@ def resolve_target(mode):
     if mode == "all":
         modules, tests = [], []
         for name in ALL_TARGET_ORDER:
-            entry = _TARGETS[name]
+            # order 可能先于 manifest 注册落地（并行分支串行合入场景）；
+            # 跳过尚未注册的条目，避免 KeyError 使 CI 全量门禁崩溃。
+            entry = _TARGETS.get(name)
+            if entry is None:
+                continue
             modules.extend(_modules_for(entry))
             tests.extend(entry["tests"])
         return modules, tests

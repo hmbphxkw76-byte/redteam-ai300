@@ -17,7 +17,8 @@
       "tools/report_exam",
       "tools/threat_model",
       "tools/tooling_automate",
-      "tools/attack_jailbreak"
+      "tools/attack_jailbreak",
+      "tools/attack_multimodal"
     ],
     "scripts": [
       "tools/_evidence_contract.py",
@@ -384,6 +385,19 @@
       "tests": [
         "tests.attack_jailbreak.test_attack_jailbreak",
         "tests.attack_jailbreak.test_attack_jailbreak_evidence_contract"
+      ]
+    },
+    {
+      "name": "attack-multimodal",
+      "modules": [
+        "tools.attack_multimodal.steps",
+        "tools.attack_multimodal.backends",
+        "tools.attack_multimodal.runner",
+        "tools.attack_multimodal.demo"
+      ],
+      "tests": [
+        "tests.attack_multimodal.test_attack_multimodal",
+        "tests.attack_multimodal.test_attack_multimodal_evidence_contract"
       ]
     }
   ]

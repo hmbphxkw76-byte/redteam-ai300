@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""attack-ai-agent 的 PyRIT v1.1.0 原生实现（单一公开入口）。
+"""attack-ai-agent 的 PyRIT 原生实现（单一公开入口）。
 
 本包是 `skills/attack-ai-agent/SKILL.md` 声明攻击逻辑的运行时落地，覆盖
 OWASP ASI01 提示注入 / ASI06 记忆滥用 / ASI02 工具集成滥用三条路径。
@@ -10,11 +10,13 @@ OWASP ASI01 提示注入 / ASI06 记忆滥用 / ASI02 工具集成滥用三条�
   - `pyrit` 只在 RealPyRITBackend 的方法体内延迟导入；本包顶层绝不导入 pyrit，
     使 CI 在未安装 pyrit 的环境仍可导入并运行标准库测试（AC-23 / ADR-0003）。
   - 每个攻击步骤 1:1 对应一次 `collect_evidence.py --step aia-NN --strict`（B4）。
-  - 版本锁定 `pyrit==1.1.0`；间接注入按 B7 受控例外使用
+  - 版本目标见 tools/pyrit_compat（单一来源）；间接注入按 B7 受控例外使用
     `pyrit.executor.workflow.XPIATestWorkflow`。
 
 公开 API：run_attack、AttackRequest、AttackReport、StepVerdict、FakePyRITBackend。
 """
+from tools.pyrit_compat import TARGET_VERSION
+
 from .backends import BackendFactory, FakePyRITBackend, RealPyRITBackend
 from .runner import AttackReport, AttackRequest, StepVerdict, run_attack
 from .steps import STEP_IDS, STEP_SPECS, StepSpec
@@ -32,4 +34,4 @@ __all__ = [
     "RealPyRITBackend",
 ]
 
-PYRIT_VERSION = "1.1.0"
+PYRIT_VERSION = TARGET_VERSION

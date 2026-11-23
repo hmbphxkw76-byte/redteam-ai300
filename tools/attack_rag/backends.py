@@ -11,6 +11,8 @@
 import os
 from typing import Any, Protocol, runtime_checkable
 
+from tools.pyrit_compat import TARGET_VERSION
+
 from .embedder import DeterministicEmbedder, Embedder
 from .harness import MALICIOUS_MARKER
 from .model import XpiaOutcome
@@ -76,19 +78,19 @@ class FakeBackend:
 
 
 class RealPyRITBackend:
-    """生产适配器：延迟导入 `pyrit==1.1.0`；凭据只从 env 读取。"""
+    """生产适配器：延迟导入 `pyrit==%s`；凭据只从 env 读取。""" % TARGET_VERSION
 
     def __init__(self, target_config=None):
         self.target_config = dict(target_config or {})
 
     def describe(self):
-        return "pyrit-1.1.0 (target=OPENAI_CHAT_*, workflow=XPIATestWorkflow)"
+        return "pyrit-%s (target=OPENAI_CHAT_*, workflow=XPIATestWorkflow)" % TARGET_VERSION
 
     def make_target(self):
         try:
             from pyrit.prompt_target import OpenAIChatTarget
         except ImportError as exc:  # 未安装 pyrit：给出可执行诊断而非裸 ImportError
-            raise RuntimeError("需要 pyrit==1.1.0：%s" % exc) from exc
+            raise RuntimeError("需要 pyrit==%s：%s" % (TARGET_VERSION, exc)) from exc
         missing = [k for k in TARGET_ENV if not os.environ.get(k)]
         if missing:
             raise RuntimeError("缺少环境变量：%s（见根 .env，勿硬编码凭据）"
@@ -107,11 +109,13 @@ class RealPyRITBackend:
         prompt = "上下文：\n%s\n\n问题：%s" % ("\n".join(context_texts or ()), query)
         try:
             import asyncio
-            from pyrit.models import PromptRequestResponse, PromptRequestPiece
-            request = PromptRequestResponse(requests=[PromptRequestPiece(
-                role="user", original_value=prompt)])
-            response = asyncio.run(target.send_prompt_async(prompt_request=request))
-            return response.request_pieces[0].converted_value
+            # CHG-013: 1.1.0/1.2.x 统一使用 Message/MessagePiece；旧 shape 已被兼容层拒绝。
+            from pyrit.models import Message, MessagePiece
+            piece = MessagePiece(role="user", original_value=prompt,
+                                 converted_value=prompt)
+            request = Message(message_pieces=[piece])
+            responses = asyncio.run(target.send_prompt_async(message=request))
+            return responses[0].get_value()
         except Exception as exc:  # 端点/签名不符：不静默伪造成功
             raise RuntimeError("真实响应失败（pyrit 端点或签名未就绪）：%s" % exc) from exc
 
@@ -125,4 +129,4 @@ class RealPyRITBackend:
             return XpiaOutcome("", False, "workflow_missing: %s" % exc)
         return XpiaOutcome("", False,
                            "signature_unverified: XPIATestWorkflow 构造签名须以 "
-                           "pyrit==1.1.0 实测后接入（核实闸 B）")
+                           "pyrit==%s 实测后接入（核实闸 B）" % TARGET_VERSION)

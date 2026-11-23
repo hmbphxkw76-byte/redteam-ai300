@@ -11,6 +11,8 @@ import io
 import json
 import unittest
 
+from tools.pyrit_compat import TARGET_VERSION
+
 import tools.attack_multi_agent as pkg
 from tools.attack_multi_agent import Runtime, run_attack, AttackRequest, Scanner, BuiltinAnalyzer
 from tools.attack_multi_agent import cli
@@ -44,7 +46,7 @@ class RunnerTests(unittest.TestCase):
         # 每步 1:1 落盘（RecordingWriter 返回路径）
         self.assertTrue(all(v.evidence_path for v in rep.verdicts))
         self.assertEqual(rep.by_step("a2a-08").observation.tool_result, "AIVEC-xyz")
-        self.assertEqual(rep.object_graph["framework"][:12], "pyrit==1.1.0")
+        self.assertEqual(rep.object_graph["framework"][:12], "pyrit==" + TARGET_VERSION)
 
     def test_paths_override_branch(self):
         # 触发 run_attack(paths=...) 重建 AttackRequest 的分支

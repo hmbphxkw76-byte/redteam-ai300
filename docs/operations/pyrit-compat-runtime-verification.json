@@ -1,0 +1,116 @@
+{
+  "target_version": "1.2.1",
+  "installed_version": "1.2.1",
+  "version_match": true,
+  "signature_checks": [
+    {
+      "symbol": "pyrit.setup.initialization.initialize_pyrit_async",
+      "status": "PASS",
+      "extra_runtime_params": [],
+      "default_diffs": {}
+    },
+    {
+      "symbol": "pyrit.executor.attack.AttackExecutor.__init__",
+      "status": "PASS",
+      "extra_runtime_params": [],
+      "default_diffs": {}
+    },
+    {
+      "symbol": "pyrit.executor.attack.AttackExecutor.execute_attack_async",
+      "status": "PASS",
+      "extra_runtime_params": [],
+      "default_diffs": {}
+    },
+    {
+      "symbol": "pyrit.executor.attack.PromptSendingAttack.__init__",
+      "status": "PASS",
+      "extra_runtime_params": [],
+      "default_diffs": {}
+    },
+    {
+      "symbol": "pyrit.prompt_target.HTTPTarget.__init__",
+      "status": "PASS",
+      "extra_runtime_params": [],
+      "default_diffs": {}
+    },
+    {
+      "symbol": "pyrit.prompt_target.OpenAIChatTarget.__init__",
+      "status": "PASS",
+      "extra_runtime_params": [],
+      "default_diffs": {}
+    },
+    {
+      "symbol": "pyrit.score.SubStringScorer.__init__",
+      "status": "PASS",
+      "extra_runtime_params": [],
+      "default_diffs": {}
+    },
+    {
+      "symbol": "pyrit.score.SelfAskTrueFalseScorer.from_question",
+      "status": "PASS",
+      "extra_runtime_params": [],
+      "default_diffs": {}
+    },
+    {
+      "symbol": "pyrit.memory.SQLiteMemory.__init__",
+      "status": "PASS",
+      "note": "passthrough wrapper"
+    },
+    {
+      "symbol": "pyrit.executor.workflow.XPIATestWorkflow.__init__",
+      "status": "PASS",
+      "extra_runtime_params": [
+        "processing_target"
+      ],
+      "default_diffs": {}
+    },
+    {
+      "symbol": "pyrit.score.ContentScorable",
+      "status": "PASS",
+      "extra_runtime_params": [
+        "scorable_type"
+      ],
+      "default_diffs": {}
+    },
+    {
+      "symbol": "pyrit.score.TrueFalseQuestion",
+      "status": "PASS",
+      "extra_runtime_params": [
+        "category",
+        "metadata"
+      ],
+      "default_diffs": {}
+    },
+    {
+      "symbol": "pyrit.models.Message",
+      "status": "PASS",
+      "extra_runtime_params": [],
+      "default_diffs": {}
+    },
+    {
+      "symbol": "pyrit.models.MessagePiece",
+      "status": "PASS",
+      "extra_runtime_params": [
+        "converted_value_sha256",
+        "converter_identifiers",
+        "id",
+        "not_in_memory",
+        "original_prompt_id",
+        "original_value_sha256",
+        "prompt_metadata",
+        "response_error",
+        "timestamp"
+      ],
+      "default_diffs": {}
+    }
+  ],
+  "deterministic_scorer": {
+    "status": "PASS",
+    "hit": true,
+    "scores": [
+      "true"
+    ]
+  },
+  "verdict": "PASS",
+  "source": "runtime introspection; no target endpoint, no credentials"
+}

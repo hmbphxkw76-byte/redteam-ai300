@@ -1,0 +1,262 @@
+{
+  "coverage": {
+    "total_sites": 20,
+    "classified_sites": 20,
+    "unclassified_sites": 0,
+    "coverage": 1.0
+  },
+  "rows": [
+    {
+      "site": {
+        "file": "tools/attack_ai_agent/backends.py",
+        "line": 215,
+        "module": "pyrit.setup.initialization",
+        "symbol": "pyrit.setup.initialization.initialize_pyrit_async",
+        "function": "RealPyRITBackend._ensure_memory",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_ai_agent/backends.py",
+        "line": 222,
+        "module": "pyrit.prompt_target",
+        "symbol": "pyrit.prompt_target.OpenAIChatTarget",
+        "function": "RealPyRITBackend._build_openai_target",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_ai_agent/backends.py",
+        "line": 245,
+        "module": "pyrit.prompt_target",
+        "symbol": "pyrit.prompt_target.HTTPTarget",
+        "function": "RealPyRITBackend.make_target",
+        "kind": "ImportFrom"
+      },
+      "status": "mapped",
+      "change_ids": [
+        "CHG-014",
+        "CHG-001"
+      ]
+    },
+    {
+      "site": {
+        "file": "tools/attack_ai_agent/backends.py",
+        "line": 268,
+        "module": "pyrit.score",
+        "symbol": "pyrit.score.SubStringScorer",
+        "function": "RealPyRITBackend.make_scorer",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_ai_agent/backends.py",
+        "line": 271,
+        "module": "pyrit.score",
+        "symbol": "pyrit.score.SelfAskTrueFalseScorer",
+        "function": "RealPyRITBackend.make_scorer",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_ai_agent/backends.py",
+        "line": 271,
+        "module": "pyrit.score",
+        "symbol": "pyrit.score.TrueFalseQuestion",
+        "function": "RealPyRITBackend.make_scorer",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_ai_agent/backends.py",
+        "line": 305,
+        "module": "pyrit",
+        "symbol": "pyrit",
+        "function": "RealPyRITBackend.execute",
+        "kind": "Import"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_ai_agent/backends.py",
+        "line": 315,
+        "module": "pyrit.executor.attack",
+        "symbol": "pyrit.executor.attack.AttackExecutor",
+        "function": "RealPyRITBackend.execute",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_ai_agent/backends.py",
+        "line": 315,
+        "module": "pyrit.executor.attack",
+        "symbol": "pyrit.executor.attack.PromptSendingAttack",
+        "function": "RealPyRITBackend.execute",
+        "kind": "ImportFrom"
+      },
+      "status": "mapped",
+      "change_ids": [
+        "CHG-015",
+        "CHG-002"
+      ]
+    },
+    {
+      "site": {
+        "file": "tools/attack_ai_agent/backends.py",
+        "line": 316,
+        "module": "pyrit.score",
+        "symbol": "pyrit.score.SubStringScorer",
+        "function": "RealPyRITBackend.execute",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_ai_agent/backends.py",
+        "line": 316,
+        "module": "pyrit.score",
+        "symbol": "pyrit.score.ContentScorable",
+        "function": "RealPyRITBackend.execute",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_multi_agent/pyrit_attack.py",
+        "line": 35,
+        "module": "pyrit.executor.attack",
+        "symbol": "pyrit.executor.attack.AttackExecutor",
+        "function": "run_pyrit_multiturn",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_multi_agent/pyrit_attack.py",
+        "line": 35,
+        "module": "pyrit.executor.attack",
+        "symbol": "pyrit.executor.attack.PromptSendingAttack",
+        "function": "run_pyrit_multiturn",
+        "kind": "ImportFrom"
+      },
+      "status": "mapped",
+      "change_ids": [
+        "CHG-015",
+        "CHG-002"
+      ]
+    },
+    {
+      "site": {
+        "file": "tools/attack_multi_agent/pyrit_attack.py",
+        "line": 36,
+        "module": "pyrit.prompt_target",
+        "symbol": "pyrit.prompt_target.HTTPTarget",
+        "function": "run_pyrit_multiturn",
+        "kind": "ImportFrom"
+      },
+      "status": "mapped",
+      "change_ids": [
+        "CHG-014",
+        "CHG-001"
+      ]
+    },
+    {
+      "site": {
+        "file": "tools/attack_multi_agent/pyrit_attack.py",
+        "line": 37,
+        "module": "pyrit.score",
+        "symbol": "pyrit.score.ContentScorable",
+        "function": "run_pyrit_multiturn",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_multi_agent/pyrit_attack.py",
+        "line": 37,
+        "module": "pyrit.score",
+        "symbol": "pyrit.score.SubStringScorer",
+        "function": "run_pyrit_multiturn",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_rag/backends.py",
+        "line": 91,
+        "module": "pyrit.prompt_target",
+        "symbol": "pyrit.prompt_target.OpenAIChatTarget",
+        "function": "RealPyRITBackend.make_target",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_rag/backends.py",
+        "line": 113,
+        "module": "pyrit.models",
+        "symbol": "pyrit.models.Message",
+        "function": "RealPyRITBackend.respond",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_rag/backends.py",
+        "line": 113,
+        "module": "pyrit.models",
+        "symbol": "pyrit.models.MessagePiece",
+        "function": "RealPyRITBackend.respond",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    },
+    {
+      "site": {
+        "file": "tools/attack_rag/backends.py",
+        "line": 125,
+        "module": "pyrit.executor.workflow",
+        "symbol": "pyrit.executor.workflow.XPIATestWorkflow",
+        "function": "RealPyRITBackend.xpia",
+        "kind": "ImportFrom"
+      },
+      "status": "known-unchanged",
+      "change_ids": []
+    }
+  ]
+}

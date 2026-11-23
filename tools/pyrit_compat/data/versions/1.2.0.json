@@ -1,0 +1,372 @@
+{
+  "schema_version": "1.0",
+  "version": "1.2.0",
+  "verified_at": "2026-11-24",
+  "release": {
+    "version": "1.2.0",
+    "pypi_url": "https://pypi.org/pypi/pyrit/json",
+    "upload_utc": "2026-11-13T03:11:17.534730Z",
+    "hashes": {
+      "wheel": "fabee89a334b3d2ee91eabe2e6b15b4f605e8b643213e89c928302b6b719e8e4",
+      "sdist": "4a9661c9fb6d44c01bc50104bec72b37e66dc2f131eb31eddfd684c8ed0b48c0"
+    },
+    "release_notes_url": "https://github.com/microsoft/PyRIT/releases/tag/v1.2.0"
+  },
+  "changes": [
+    {
+      "id": "CHG-001",
+      "category": "parameter",
+      "status": "added",
+      "symbol": "pyrit.prompt_target.HTTPTarget.__init__",
+      "version_from": "1.2.0",
+      "version_to": "1.3.0",
+      "detail": "trace_config: TargetTraceConfig | None added as keyword-only parameter; http_request remains required.",
+      "source_url": "https://github.com/microsoft/PyRIT/blob/v1.2.0/pyrit/prompt_target/http_target/http_target.py",
+      "verified_at": "2026-11-24",
+      "verification": "verified",
+      "adaptation": "warn",
+      "adaptation_note": "New keyword is additive; adapt_kwargs rejects it below 1.2.0."
+    },
+    {
+      "id": "CHG-002",
+      "category": "parameter",
+      "status": "updated",
+      "symbol": "pyrit.executor.attack.PromptSendingAttack.__init__",
+      "version_from": "1.2.0",
+      "version_to": "1.3.0",
+      "detail": "params_type default changed from AttackParameters to PromptSendingAttackParameters.",
+      "source_url": "https://github.com/microsoft/PyRIT/blob/v1.2.0/pyrit/executor/attack/single_turn/prompt_sending.py",
+      "verified_at": "2026-11-24",
+      "verification": "verified",
+      "adaptation": "rewrite",
+      "adaptation_note": "Explicit rewrite prevents silent default-behavior drift."
+    },
+    {
+      "id": "CHG-003",
+      "category": "behavior",
+      "status": "updated",
+      "symbol": "pyrit.scenario.initialize_async",
+      "version_from": "1.2.0",
+      "version_to": "1.3.0",
+      "detail": "Custom scenarios must call argument-free initialize_async(); not the pyrit.setup.initialize_pyrit_async used by this repo.",
+      "source_url": "https://github.com/microsoft/PyRIT/releases/tag/v1.2.0",
+      "verified_at": "2026-11-24",
+      "verification": "verified",
+      "adaptation": "none",
+      "adaptation_note": "Explicitly mapped as non-impact to avoid false alarm on setup initializer."
+    },
+    {
+      "id": "CHG-004",
+      "category": "function",
+      "status": "updated",
+      "symbol": "pyrit.score.MessageScorer._score_piece_async",
+      "version_from": "1.2.0",
+      "version_to": "1.3.0",
+      "detail": "Custom subclasses must override _score_piece_with_expectation_async(..., expectation=...).",
+      "source_url": "https://github.com/microsoft/PyRIT/pull/3312",
+      "verified_at": "2026-11-24",
+      "verification": "verified",
+      "adaptation": "error",
+      "adaptation_note": "AST hook scan blocks any remaining override."
+    },
+    {
+      "id": "CHG-005",
+      "category": "api",
+      "status": "removed",
+      "symbol": "pyrit.prompt_target.GandalfTarget",
+      "version_from": "1.2.0",
+      "version_to": "1.3.0",
+      "detail": "Gandalf target and scorer removed.",
+      "source_url": "https://github.com/microsoft/PyRIT/pull/3467",
+      "verified_at": "2026-11-24",
+      "verification": "verified",
+      "adaptation": "error",
+      "adaptation_note": "No repository call site; legacy scan would block any future import."
+    },
+    {
+      "id": "CHG-006",
+      "category": "behavior",
+      "status": "removed",
+      "symbol": "pyrit.__runtime__.Python310",
+      "version_from": "1.2.0",
+      "version_to": "1.3.0",
+      "detail": "Python 3.10 unsupported; requires >=3.11,<3.15.",
+      "source_url": "https://github.com/microsoft/PyRIT/releases/tag/v1.2.0",
+      "verified_at": "2026-11-24",
+      "verification": "verified",
+      "adaptation": "error",
+      "adaptation_note": "Environment check recorded in research doc; local interpreter is 3.13.14."
+    },
+    {
+      "id": "CHG-007",
+      "category": "behavior",
+      "status": "updated",
+      "symbol": "pyrit.backend.scenario_read",
+      "version_from": "1.2.0",
+      "version_to": "1.3.0",
+      "detail": "Backend scenario reads are async-only.",
+      "source_url": "https://github.com/microsoft/PyRIT/pull/2953",
+      "verified_at": "2026-11-24",
+      "verification": "verified",
+      "adaptation": "none",
+      "adaptation_note": "Repository has no CoPyRIT backend integration."
+    },
+    {
+      "id": "CHG-008",
+      "category": "parameter",
+      "status": "updated",
+      "symbol": "pyrit.datasets.selection",
+      "version_from": "1.2.0",
+      "version_to": "1.3.0",
+      "detail": "Dataset selection uses explicit sources/fetch policies/limits; use 'all' instead of None for unlimited.",
+      "source_url": "https://github.com/microsoft/PyRIT/releases/tag/v1.2.0",
+      "verified_at": "2026-11-24",
+      "verification": "verified",
+      "adaptation": "none",
+      "adaptation_note": "No repository call site."
+    },
+    {
+      "id": "CHG-009",
+      "category": "behavior",
+      "status": "updated",
+      "symbol": "pyrit.backend.copyrit_artifacts",
+      "version_from": "1.2.0",
+      "version_to": "1.3.0",
+      "detail": "Compatibility-enforcing CoPyRIT backends require matching source commit across backend/CLI/browser.",
+      "source_url": "https://github.com/microsoft/PyRIT/pull/2829",
+      "verified_at": "2026-11-24",
+      "verification": "verified",
+      "adaptation": "none",
+      "adaptation_note": "Out of repository scope; recorded as deployment constraint."
+    },
+    {
+      "id": "CHG-010",
+      "category": "behavior",
+      "status": "updated",
+      "symbol": "pyrit.memory.schema",
+      "version_from": "1.2.0",
+      "version_to": "1.3.0",
+      "detail": "Alembic migrations affect persisted scores, scenarios, conversations, target identities, observations and attack results; rollback is coordinated.",
+      "source_url": "https://github.com/microsoft/PyRIT/releases/tag/v1.2.0",
+      "verified_at": "2026-11-24",
+      "verification": "verified",
+      "adaptation": "warn",
+      "adaptation_note": "Backup SQLite DB before upgrade; no production DB in this repository."
+    }
+  ],
+  "signatures": {
+    "pyrit.setup.initialization.initialize_pyrit_async": {
+      "kind": "function",
+      "params": [
+        "memory_db_type",
+        "initialization_scripts",
+        "initializers",
+        "load_defaults",
+        "env_files",
+        "env_akv_ref",
+        "env_akv_strict",
+        "silent",
+        "seed",
+        "raise_on_initializer_error",
+        "**memory_instance_kwargs"
+      ],
+      "defaults": {
+        "load_defaults": "True",
+        "env_akv_strict": "True",
+        "silent": "False",
+        "raise_on_initializer_error": "True"
+      }
+    },
+    "pyrit.executor.attack.AttackExecutor.__init__": {
+      "kind": "function",
+      "params": [
+        "max_concurrency"
+      ],
+      "defaults": {
+        "max_concurrency": "1"
+      }
+    },
+    "pyrit.executor.attack.AttackExecutor.execute_attack_async": {
+      "kind": "function",
+      "params": [
+        "attack",
+        "objectives",
+        "field_overrides",
+        "return_partial_on_failure",
+        "attribution",
+        "**broadcast_fields"
+      ],
+      "defaults": {
+        "field_overrides": "None",
+        "return_partial_on_failure": "False"
+      }
+    },
+    "pyrit.executor.attack.PromptSendingAttack.__init__": {
+      "kind": "function",
+      "params": [
+        "objective_target",
+        "attack_converter_config",
+        "attack_scoring_config",
+        "prompt_normalizer",
+        "max_attempts_on_failure",
+        "params_type",
+        "prepended_conversation_config"
+      ],
+      "defaults": {
+        "params_type": "PromptSendingAttackParameters",
+        "max_attempts_on_failure": "0"
+      }
+    },
+    "pyrit.prompt_target.HTTPTarget.__init__": {
+      "kind": "function",
+      "params": [
+        "http_request",
+        "prompt_regex_string",
+        "use_tls",
+        "callback_function",
+        "max_requests_per_minute",
+        "client",
+        "model_name",
+        "follow_redirects",
+        "custom_configuration",
+        "trace_config",
+        "**httpx_client_kwargs"
+      ],
+      "defaults": {
+        "prompt_regex_string": "{PROMPT}",
+        "use_tls": "True"
+      }
+    },
+    "pyrit.prompt_target.OpenAIChatTarget.__init__": {
+      "kind": "function",
+      "params": [
+        "max_completion_tokens",
+        "temperature",
+        "top_p",
+        "frequency_penalty",
+        "presence_penalty",
+        "seed",
+        "n",
+        "audio_response_config",
+        "extra_body_parameters",
+        "custom_configuration",
+        "**kwargs"
+      ],
+      "defaults": {}
+    },
+    "pyrit.score.SubStringScorer.__init__": {
+      "kind": "function",
+      "params": [
+        "substring",
+        "text_matcher",
+        "categories",
+        "aggregator",
+        "validator"
+      ],
+      "defaults": {}
+    },
+    "pyrit.score.SelfAskTrueFalseScorer.from_question": {
+      "kind": "function",
+      "params": [
+        "chat_target",
+        "question",
+        "system_prompt_template",
+        "response_handler",
+        "validator",
+        "score_aggregator"
+      ],
+      "defaults": {}
+    },
+    "pyrit.memory.SQLiteMemory.__init__": {
+      "kind": "passthrough-wrapper",
+      "params": [
+        "*args",
+        "**kwargs"
+      ],
+      "defaults": {}
+    },
+    "pyrit.executor.workflow.XPIATestWorkflow.__init__": {
+      "kind": "function",
+      "params": [
+        "attack_setup_target",
+        "scorer",
+        "converter_config",
+        "prompt_normalizer",
+        "logger"
+      ],
+      "defaults": {}
+    },
+    "pyrit.score.ContentScorable": {
+      "kind": "model-fields",
+      "params": [
+        "value",
+        "data_type"
+      ],
+      "defaults": {}
+    },
+    "pyrit.score.TrueFalseQuestion": {
+      "kind": "model-fields",
+      "params": [
+        "true_description",
+        "false_description"
+      ],
+      "defaults": {}
+    },
+    "pyrit.models.Message": {
+      "kind": "model-fields",
+      "params": [
+        "message_pieces"
+      ],
+      "defaults": {}
+    },
+    "pyrit.models.MessagePiece": {
+      "kind": "model-fields",
+      "params": [
+        "role",
+        "conversation_id",
+        "sequence",
+        "original_value",
+        "original_value_data_type",
+        "converted_value",
+        "converted_value_data_type"
+      ],
+      "defaults": {}
+    }
+  },
+  "adapters": [
+    {
+      "id": "ADP-HTTP-TRACE",
+      "symbol": "pyrit.prompt_target.HTTPTarget",
+      "actions": [
+        {
+          "kind": "require_min_version",
+          "param": "trace_config",
+          "since": "1.2.0"
+        }
+      ]
+    },
+    {
+      "id": "ADP-PARAM-TYPE",
+      "symbol": "pyrit.executor.attack.PromptSendingAttack",
+      "actions": [
+        {
+          "kind": "rewrite_param",
+          "param": "params_type",
+          "from": "AttackParameters",
+          "to": "PromptSendingAttackParameters",
+          "since": "1.2.0"
+        }
+      ]
+    },
+    {
+      "id": "ADP-SCORER-HOOK",
+      "symbol": "pyrit.score.MessageScorer._score_piece_async",
+      "actions": [
+        {
+          "kind": "reject",
+          "reason": "override _score_piece_with_expectation_async"
+        }
+      ]
+    }
+  ]
+}

@@ -36,7 +36,7 @@ def build_parser():
     ap = argparse.ArgumentParser(description="RAG 投毒与检索层操纵执行器（attack-rag）")
     ap.add_argument("--target", default="rag-harness", help="目标标识（演练目标或合成 harness）")
     ap.add_argument("--backend", choices=("fake", "real"), default="fake",
-                    help="fake=离线确定性（CI 默认）；real=pyrit==1.1.0 + 端点")
+                    help="fake=离线确定性（CI 默认）；real=目标 PyRIT 版本 + 端点（见 tools/pyrit_compat）")
     ap.add_argument("--path", action="append", choices=("A", "B", "C"), default=None,
                     help="攻击路径（可重复）；缺省全选")
     ap.add_argument("--step", default="", help="仅执行单步：%s" % ", ".join(STEP_IDS))

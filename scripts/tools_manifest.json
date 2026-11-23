@@ -10,6 +10,7 @@
       "tools/attack_multi_agent",
       "tools/attack_rag",
       "tools/attack_supply_chain",
+      "tools/pyrit_compat",
       "tools/capstone_rehearse",
       "tools/decoy_detect",
       "tools/loot_manage",
@@ -398,6 +399,24 @@
       "tests": [
         "tests.attack_multimodal.test_attack_multimodal",
         "tests.attack_multimodal.test_attack_multimodal_evidence_contract"
+      ]
+    },
+    {
+      "name": "pyrit-compat",
+      "modules": [
+        "tools.pyrit_compat.version",
+        "tools.pyrit_compat.model",
+        "tools.pyrit_compat.alert",
+        "tools.pyrit_compat.versions",
+        "tools.pyrit_compat.manifest",
+        "tools.pyrit_compat.mapper",
+        "tools.pyrit_compat.compat",
+        "tools.pyrit_compat.checker"
+      ],
+      "tests": [
+        "tests.pyrit_compat.test_versions",
+        "tests.pyrit_compat.test_manifest_mapper",
+        "tests.pyrit_compat.test_compat_checker"
       ]
     }
   ]

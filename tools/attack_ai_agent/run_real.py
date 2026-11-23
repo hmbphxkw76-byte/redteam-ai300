@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""真实双模型攻击运行器（生产 seam，需 pyrit==1.1.0 与 .env 凭据）。
+"""真实双模型攻击运行器（生产 seam，需目标 PyRIT 版本与 .env 凭据，见 tools/pyrit_compat）。
 
 职责（对齐用户 2026-11-14 双模型要求）：
   1. 攻击 / 目标模型：OPENAI_CHAT_* 命名空间（默认模型，类似 workbuddy 提供的模型）。

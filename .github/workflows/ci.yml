@@ -88,6 +88,9 @@ jobs:
         # 编译范围唯一来源 scripts/tools_manifest.json；补齐原遗漏 5 包 + 10 脚本。
         # 独立步骤，不与并发会话共用长行（ADR-0006 去冲突约定）。
         run: python scripts/check_tools_compile.py
+      - name: PyRIT 版本漂移与调用点映射门禁 (S1)
+        # 独立步骤，不与并发会话共用长行；离线夹具，不依赖真实 pyrit 安装。
+        run: python -m tools.pyrit_compat.checker check --root . --target 1.2.1
       - name: EvidenceWriter 契约符合性 (S1)
         # 4 份适配器最小契约静态校验（tools/_evidence_contract.py）
         run: python scripts/check_evidence_contract.py

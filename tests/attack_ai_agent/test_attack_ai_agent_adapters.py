@@ -21,6 +21,7 @@ from tests._paths import ROOT  # noqa: E402
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
+from tools.pyrit_compat import TARGET_VERSION  # noqa: E402
 from tools.attack_ai_agent import demo, run_attack  # noqa: E402
 from tools.attack_ai_agent.backends import (FakePyRITBackend, RealPyRITBackend,
                                             TargetResponse)  # noqa: E402
@@ -118,8 +119,8 @@ class AdapterTests(unittest.TestCase):
             # 双模型命名空间（2026-11-14）：断言完整公开字符串
             self.assertEqual(
                 backend.describe(),
-                "pyrit-1.1.0 (dual-model: attack=OPENAI_CHAT_*, "
-                "scorer=OPENAI_SCORER_*)")
+                "pyrit-%s (dual-model: attack=OPENAI_CHAT_*, "
+                "scorer=OPENAI_SCORER_*)" % TARGET_VERSION)
             self.assertIsNotNone(backend.make_target("objective"))
             self.assertIsNotNone(backend.make_target("scorer"))
             self.assertIsNotNone(backend.make_target("tool"))

@@ -15,6 +15,8 @@ import sys
 from dataclasses import dataclass, field
 from typing import Any, Dict, Tuple
 
+from tools.pyrit_compat import TARGET_VERSION
+
 from .backends import FakePyRITBackend, TargetResponse
 from .paths import build_all_paths
 from .steps import STEP_IDS, StepSpec, steps_for_paths
@@ -134,11 +136,12 @@ def grade(response: TargetResponse) -> str:
 def build_ai_log(spec: StepSpec, graph: Dict[str, Any], response: TargetResponse,
                  level: str) -> str:
     """AI 交互日志（§6.3）：prompt / 模型 / 输出 / 采纳或修改。"""
-    return ("prompt: %s\nmodel: pyrit==1.1.0 / %s\n"
+    return ("prompt: %s\nmodel: pyrit==%s / %s\n"
             "output: %s\nverdict: %s\nadoption: 证据如实记录，未夸大效果等级\n"
             "object_graph: %s | target: %s | scorer: %s\n"
-            "markdown: %s" % (
+            "markdown: %s"             % (
                 spec.objective,
+                TARGET_VERSION,
                 graph.get("strategy_module", ""),
                 response.text.replace("\n", " ")[:400],
                 level,

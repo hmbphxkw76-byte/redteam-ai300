@@ -48,6 +48,7 @@ ALL_TARGET_ORDER = (
     "attack-infra", "tooling-automate",
     "attack-jailbreak",
     "attack-multimodal",
+    "pyrit-compat",
 )
 
 

@@ -87,7 +87,7 @@ class AttackRequest:
     step: str = ""
     evidence_dir: str = ""
     emit: bool = True
-    backend: str = "fake"          # fake（离线，CI 默认） | real（pyrit==1.1.0）
+    backend: str = "fake"          # fake（离线，CI 默认） | real（PyRIT 目标版本见 tools/pyrit_compat）
     query: str = DEFAULT_QUERY
     answer: str = DEFAULT_ANSWER
     instruction: str = DEFAULT_INSTRUCTION

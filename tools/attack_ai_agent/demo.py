@@ -26,7 +26,7 @@ else:
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="attack-ai-agent PyRIT v1.1.0 端到端演示")
+    ap = argparse.ArgumentParser(description="attack-ai-agent PyRIT 端到端演示（版本见 tools/pyrit_compat）")
     ap.add_argument("--step", default="", help="仅执行单个步骤标识，如 aia-02")
     ap.add_argument("--target", default="<AGENT_ENDPOINT>", help="目标标识")
     ap.add_argument("--scenario", default="effective",

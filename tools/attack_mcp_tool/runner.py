@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Dict, Optional, Tuple
 
+from tools.pyrit_compat import TARGET_VERSION
+
 from . import grade as grading
 from . import poison
 from . import escape as escape_judge
@@ -34,7 +36,7 @@ DEFAULT_EVIDENCE_DIR = os.path.join(ROOT, "evidence", "attack-mcp-tool")
 
 # 对象图（B7 / ADR-0004）：声明式记录，不在运行时导入模型框架
 OBJECT_GRAPH: Dict[str, Any] = {
-    "framework": "pyrit==1.1.0",
+    "framework": "pyrit==" + TARGET_VERSION,
     "target": "HTTPTarget",
     "scorer": "SubStringScorer",
     "strategy": "（MCP 无专用攻击策略，以 HTTPTarget + 回调对接）",

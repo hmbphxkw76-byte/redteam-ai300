@@ -16,7 +16,8 @@
       "tools/recon_ai",
       "tools/report_exam",
       "tools/threat_model",
-      "tools/tooling_automate"
+      "tools/tooling_automate",
+      "tools/attack_jailbreak"
     ],
     "scripts": [
       "tools/_evidence_contract.py",
@@ -370,6 +371,19 @@
         "tests.tooling_automate.test_tooling_summary",
         "tests.tooling_automate.test_tooling_evidence_contract",
         "tests.tooling_automate.test_tooling_tdd_contract"
+      ]
+    },
+    {
+      "name": "attack-jailbreak",
+      "modules": [
+        "tools.attack_jailbreak.steps",
+        "tools.attack_jailbreak.backends",
+        "tools.attack_jailbreak.runner",
+        "tools.attack_jailbreak.demo"
+      ],
+      "tests": [
+        "tests.attack_jailbreak.test_attack_jailbreak",
+        "tests.attack_jailbreak.test_attack_jailbreak_evidence_contract"
       ]
     }
   ]

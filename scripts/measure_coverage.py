@@ -47,6 +47,7 @@ ALL_TARGET_ORDER = (
     "attack-embeddings", "threat-model", "attack-rag", "verify-evidence",
     "attack-infra", "tooling-automate",
     "attack-jailbreak",
+    "attack-multimodal",
 )
 
 

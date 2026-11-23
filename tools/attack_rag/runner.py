@@ -11,6 +11,8 @@ import shlex
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
+from tools.pyrit_compat import TARGET_VERSION
+
 from .backends import FakeBackend, RealPyRITBackend
 from .decision_diff import DecisionDiff
 from .evidence import DEFAULT_TOOL, EvidenceWriter, ShotHook
@@ -29,7 +31,7 @@ DEFAULT_EVIDENCE_DIR = os.path.join(ROOT, "evidence", "attack-rag")
 
 # B7 对象图（声明式记录，不在运行时强制导入框架）
 OBJECT_GRAPH = {
-    "framework": "pyrit==1.1.0",
+    "framework": "pyrit==" + TARGET_VERSION,
     "target": "OpenAIChatTarget",
     "strategy": "XPIATestWorkflow",
     "scorer": "SubStringScorer",

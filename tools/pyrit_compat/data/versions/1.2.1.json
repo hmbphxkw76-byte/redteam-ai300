@@ -1,0 +1,211 @@
+{
+  "schema_version": "1.0",
+  "version": "1.2.1",
+  "verified_at": "2026-11-24",
+  "release": {
+    "version": "1.2.1",
+    "pypi_url": "https://pypi.org/pypi/pyrit/json",
+    "upload_utc": "2026-11-16T22:55:21.562763Z",
+    "hashes": {
+      "wheel": "4e404c415257d412bf2017beae42d6e116ebcd90cb32f5b1ef9394367ce2806a",
+      "sdist": "52cbd9b68021b68a8fe1fef86a7606a066c4627cd2d24c28308316e6bd7fa3d5"
+    },
+    "release_notes_url": "https://github.com/microsoft/PyRIT/releases/tag/v1.2.1"
+  },
+  "changes": [
+    {
+      "id": "CHG-011",
+      "category": "behavior",
+      "status": "updated",
+      "symbol": "pyrit.__packaging__.v121",
+      "version_from": "1.2.1",
+      "version_to": "1.3.0",
+      "detail": "v1.2.1 is packaging-only; no runtime behavior or public API changes.",
+      "source_url": "https://github.com/microsoft/PyRIT/releases/tag/v1.2.1",
+      "verified_at": "2026-11-24",
+      "verification": "verified",
+      "adaptation": "none",
+      "adaptation_note": "1.2.0 adaptation set is sufficient for 1.2.1."
+    }
+  ],
+  "signatures": {
+    "pyrit.setup.initialization.initialize_pyrit_async": {
+      "kind": "function",
+      "params": [
+        "memory_db_type",
+        "initialization_scripts",
+        "initializers",
+        "load_defaults",
+        "env_files",
+        "env_akv_ref",
+        "env_akv_strict",
+        "silent",
+        "seed",
+        "raise_on_initializer_error",
+        "**memory_instance_kwargs"
+      ],
+      "defaults": {
+        "load_defaults": "True",
+        "env_akv_strict": "True",
+        "silent": "False",
+        "raise_on_initializer_error": "True"
+      }
+    },
+    "pyrit.executor.attack.AttackExecutor.__init__": {
+      "kind": "function",
+      "params": [
+        "max_concurrency"
+      ],
+      "defaults": {
+        "max_concurrency": "1"
+      }
+    },
+    "pyrit.executor.attack.AttackExecutor.execute_attack_async": {
+      "kind": "function",
+      "params": [
+        "attack",
+        "objectives",
+        "field_overrides",
+        "return_partial_on_failure",
+        "attribution",
+        "**broadcast_fields"
+      ],
+      "defaults": {
+        "field_overrides": "None",
+        "return_partial_on_failure": "False"
+      }
+    },
+    "pyrit.executor.attack.PromptSendingAttack.__init__": {
+      "kind": "function",
+      "params": [
+        "objective_target",
+        "attack_converter_config",
+        "attack_scoring_config",
+        "prompt_normalizer",
+        "max_attempts_on_failure",
+        "params_type",
+        "prepended_conversation_config"
+      ],
+      "defaults": {
+        "params_type": "PromptSendingAttackParameters",
+        "max_attempts_on_failure": "0"
+      }
+    },
+    "pyrit.prompt_target.HTTPTarget.__init__": {
+      "kind": "function",
+      "params": [
+        "http_request",
+        "prompt_regex_string",
+        "use_tls",
+        "callback_function",
+        "max_requests_per_minute",
+        "client",
+        "model_name",
+        "follow_redirects",
+        "custom_configuration",
+        "trace_config",
+        "**httpx_client_kwargs"
+      ],
+      "defaults": {
+        "prompt_regex_string": "{PROMPT}",
+        "use_tls": "True"
+      }
+    },
+    "pyrit.prompt_target.OpenAIChatTarget.__init__": {
+      "kind": "function",
+      "params": [
+        "max_completion_tokens",
+        "temperature",
+        "top_p",
+        "frequency_penalty",
+        "presence_penalty",
+        "seed",
+        "n",
+        "audio_response_config",
+        "extra_body_parameters",
+        "custom_configuration",
+        "**kwargs"
+      ],
+      "defaults": {}
+    },
+    "pyrit.score.SubStringScorer.__init__": {
+      "kind": "function",
+      "params": [
+        "substring",
+        "text_matcher",
+        "categories",
+        "aggregator",
+        "validator"
+      ],
+      "defaults": {}
+    },
+    "pyrit.score.SelfAskTrueFalseScorer.from_question": {
+      "kind": "function",
+      "params": [
+        "chat_target",
+        "question",
+        "system_prompt_template",
+        "response_handler",
+        "validator",
+        "score_aggregator"
+      ],
+      "defaults": {}
+    },
+    "pyrit.memory.SQLiteMemory.__init__": {
+      "kind": "passthrough-wrapper",
+      "params": [
+        "*args",
+        "**kwargs"
+      ],
+      "defaults": {}
+    },
+    "pyrit.executor.workflow.XPIATestWorkflow.__init__": {
+      "kind": "function",
+      "params": [
+        "attack_setup_target",
+        "scorer",
+        "converter_config",
+        "prompt_normalizer",
+        "logger"
+      ],
+      "defaults": {}
+    },
+    "pyrit.score.ContentScorable": {
+      "kind": "model-fields",
+      "params": [
+        "value",
+        "data_type"
+      ],
+      "defaults": {}
+    },
+    "pyrit.score.TrueFalseQuestion": {
+      "kind": "model-fields",
+      "params": [
+        "true_description",
+        "false_description"
+      ],
+      "defaults": {}
+    },
+    "pyrit.models.Message": {
+      "kind": "model-fields",
+      "params": [
+        "message_pieces"
+      ],
+      "defaults": {}
+    },
+    "pyrit.models.MessagePiece": {
+      "kind": "model-fields",
+      "params": [
+        "role",
+        "conversation_id",
+        "sequence",
+        "original_value",
+        "original_value_data_type",
+        "converted_value",
+        "converted_value_data_type"
+      ],
+      "defaults": {}
+    }
+  },
+  "adapters": []
+}

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """间接注入（路径 B → 下游）：经 `XPIATestWorkflow` 触发下游 agent。
 
-B7 受控例外：跨域提示注入**不是** `*Attack`，v1.1.0 由
+B7 受控例外：跨域提示注入**不是** `*Attack`，1.1.0+ 由
 `pyrit.executor.workflow.XPIATestWorkflow` 承载。本模块不直接导入 PyRIT，
 一律经后端注入点调用，故顶层零 pyrit 依赖（ADR-0004）。
 

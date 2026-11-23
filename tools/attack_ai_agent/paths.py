@@ -10,7 +10,7 @@
 类名依据（一手源，2026-11-14 核实）：
   docs/research/pyrit-v110-api-verification.md  V1-V14 / X1-X4
   docs/research/pyrit-canonical-references.md  §3 / §4
-版本锁 pyrit==1.1.0（ADR-0004）；禁止 0.x 命名空间。
+版本目标见 tools/pyrit_compat（单一来源）；禁止 0.x 命名空间。
 """
 
 from dataclasses import dataclass, field

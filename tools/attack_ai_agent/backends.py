@@ -6,13 +6,15 @@
   - `RealPyRITBackend`：`pyrit` 只在方法体内延迟导入，生产环境装配真实对象图。
   - `FakePyRITBackend`：纯标准库，返回确定性响应，供 S2 测试注入（零外部依赖）。
 
-版本锁定 `pyrit==1.1.0`。间接注入按 B7 受控例外由
+版本目标 `pyrit==1.2.1`（单一来源 tools/pyrit_compat）。间接注入按 B7 受控例外由
 `pyrit.executor.workflow.XPIATestWorkflow` 承担；其余路径统一用
 `pyrit.executor.attack` 下的 `*Attack`。
 """
 import os
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
+
+from tools.pyrit_compat import TARGET_VERSION
 
 from .steps import STEP_SPECS
 
@@ -185,7 +187,7 @@ def aivp_sse_callback(response):
 
 
 class RealPyRITBackend:
-    """生产适配器：每个方法体内延迟导入 PyRIT v1.1.0 对象。
+    """生产适配器：每个方法体内延迟导入目标版本的 PyRIT 对象。
 
     顶层无 pyrit 导入 → 未安装 pyrit 的环境仍可 import 本包（AC-23）。
     端点与密钥由 env 命名空间注入，不硬编码凭据（AC-22）。
@@ -203,8 +205,8 @@ class RealPyRITBackend:
         self._memory_initialized = False
 
     def describe(self):
-        return ("pyrit-1.1.0 (dual-model: attack=OPENAI_CHAT_*, "
-                "scorer=OPENAI_SCORER_*)")
+        return ("pyrit-%s (dual-model: attack=OPENAI_CHAT_*, "
+                "scorer=OPENAI_SCORER_*)" % TARGET_VERSION)
 
     # -- 内存初始化（AttackExecutor 之前必须） ---------------------------------
     def _ensure_memory(self):
@@ -297,13 +299,13 @@ class RealPyRITBackend:
 
         返回 TargetResponse（外部行为）；异常按「失败与豁免」记录，不抛未捕获异常。
         """
-        # 前置守卫：真实执行需要 pyrit==1.1.0 与目标端点；缺失时给出明确诊断，
+        # 前置守卫：真实执行需要 pyrit==1.2.1 与目标端点；缺失时给出明确诊断，
         # 而不是把 ModuleNotFoundError / KeyError 泄漏给调用方（失败与豁免）。
         try:
             import pyrit  # noqa: F401  (延迟导入契约：顶层不得导入 pyrit)
         except ImportError as exc:
             raise RuntimeError(
-                "真实执行需要 pyrit==1.1.0，当前环境未安装：%s" % exc) from exc
+                "真实执行需要 pyrit==%s，当前环境未安装：%s" % (TARGET_VERSION, exc)) from exc
         if not (all(os.environ.get(k) for k in ATTACK_ENV)
                 or str(self.target_config).find("http") >= 0):
             raise RuntimeError(

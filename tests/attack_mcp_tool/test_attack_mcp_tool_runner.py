@@ -14,6 +14,7 @@ from tests._paths import ROOT  # noqa: E402
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
+from tools.pyrit_compat import TARGET_VERSION  # noqa: E402
 from tools.attack_mcp_tool import (LEVELS, STEP_IDS, AttackRequest, Runtime,  # noqa: E402
                                    run_attack)
 from tools.attack_mcp_tool import grade as grading  # noqa: E402
@@ -87,7 +88,7 @@ class EntryPointTests(unittest.TestCase):
         report = run_attack(
             AttackRequest(target="http://t.example", step="mcp-01"), offline({}))
         graph = report.object_graph
-        self.assertEqual(graph["framework"], "pyrit==1.1.0")
+        self.assertEqual(graph["framework"], "pyrit==" + TARGET_VERSION)
         self.assertEqual(graph["target"], "HTTPTarget")
         self.assertEqual(graph["scorer"], "SubStringScorer")
         blob = json.dumps(graph, ensure_ascii=False)

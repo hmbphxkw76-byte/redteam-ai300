@@ -15,6 +15,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Dict, Optional
 
+from tools.pyrit_compat import TARGET_VERSION
+
 from .grade import derive as _derive, grade as _grade
 from .a2a import A2ABusClient, MemoryStoreClient, OrchestratorClient
 from .evidence import EvidenceWriter, RecordingWriter
@@ -30,13 +32,13 @@ DEFAULT_EVIDENCE_DIR = os.path.join(ROOT, "evidence", "attack-multi-agent")
 
 # 对象图（B7 / ADR-0004 / 矩阵 §⑩）：PyRIT 仅深度补位，MA 由 A2ASecBench/a2a-scanner 主导
 OBJECT_GRAPH: Dict[str, Any] = {
-    "framework": "pyrit==1.1.0（仅深度补位，非主演）",
+    "framework": "pyrit==%s（仅深度补位，非主演）" % TARGET_VERSION,
     "lead": "A2ASecBench + a2a-scanner（外部适配 seam，scanner.py）",
     "target": "HTTPTarget（PyRIT 打 A2A 端点多轮）",
     "scorer": "SubStringScorer（PyRIT 补位判定）",
     "memory": "SQLiteMemory（PyRIT 补位留证）",
     "sdk": "A2A Python SDK/samples（演练目标基座与 recon）",
-    "notes": "PyRIT v1.1.0 无原生 MA 策略；矩阵 §⑩ 规定 MA 由 A2ASecBench/a2a-scanner 主导，"
+    "notes": "PyRIT 1.x 无原生 MA 策略；矩阵 §⑩ 规定 MA 由 A2ASecBench/a2a-scanner 主导，"
              "PyRIT 经 HTTPTarget 回调做深度补位（B9）",
 }
 

@@ -46,6 +46,7 @@ ALL_TARGET_ORDER = (
     "attack-supply-chain", "decoy-detect", "loot-manage", "attack-multi-agent",
     "attack-embeddings", "threat-model", "attack-rag", "verify-evidence",
     "attack-infra", "tooling-automate",
+    "pyrit-compat",
 )
 
 

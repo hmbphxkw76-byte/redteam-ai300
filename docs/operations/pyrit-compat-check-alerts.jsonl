@@ -1,0 +1,3 @@
+{"change_id": null, "code": "DEFAULT_CHANGED", "file": null, "line": null, "message": "pyrit.executor.attack.PromptSendingAttack.__init__.params_type 默认值 AttackParameters → PromptSendingAttackParameters", "severity": "warn"}
+{"change_id": null, "code": "PARAM_ADDED", "file": null, "line": null, "message": "pyrit.prompt_target.HTTPTarget.__init__ 参数新增：trace_config", "severity": "warn"}
+{"change_id": null, "code": "SIGNATURE_REPRESENTATION_CHANGED", "file": null, "line": null, "message": "pyrit.memory.SQLiteMemory.__init__ 签名表示方式变化（function → passthrough-wrapper）", "severity": "warn"}

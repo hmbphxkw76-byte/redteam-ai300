@@ -57,6 +57,16 @@ from .tooling import (
 )
 from .runner import CommandRunner, SubprocessRunner, RunOutcome, Orchestrator
 from .cli import main
+from .handoff import (
+    derive_panel_flags, recon_fragments_for_report,
+    check_h1_asset_inventory, check_h2_screenshot, check_h3_dual_channel,
+    check_h4_reusable_loot, check_h5_report_enumeration, check_h6_submission,
+    ALIGNMENT_CLAIMS, verify_alignment, all_checks,
+)
+from .d11_gateway import (
+    D11Result, CommandRunner, SubprocessRunner, RunOutcome,
+    prepare_report_inputs, run_d11_gateway, load_window,
+)
 
 __all__ = [
     "Verdict", "Decision", "Record", "GateResult", "LimitConfig", "AnonymizeConfig", "PromptContext",
@@ -67,4 +77,9 @@ __all__ = [
     "ToolKind", "ToolSpec", "TypedRegistry", "CallIDNormalizer", "ErrorKind", "ErrorClassifier", "RetryPolicy",
     "BoundedRetriever",
     "CommandRunner", "SubprocessRunner", "RunOutcome", "Orchestrator", "main",
+    "derive_panel_flags", "recon_fragments_for_report",
+    "check_h1_asset_inventory", "check_h2_screenshot", "check_h3_dual_channel",
+    "check_h4_reusable_loot", "check_h5_report_enumeration", "check_h6_submission",
+    "ALIGNMENT_CLAIMS", "verify_alignment", "all_checks",
+    "D11Result", "prepare_report_inputs", "run_d11_gateway", "load_window",
 ]

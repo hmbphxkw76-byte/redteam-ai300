@@ -1,13 +1,13 @@
 {
-  "target": "192.168.40.189",
+  "target": "<TARGET>",
   "profile": "passive",
   "generated_at": "2026-11-15T10:30:00+08:00",
   "assets": [
-    {"asset_id": "ai-llm-a-01", "category": "LLM引擎", "product": "vLLM", "version": "0.6.1", "endpoint": "http://192.168.40.189:8000", "credential_hint": "Bearer-1a2b3c4d", "evidence_step": "loot/recon-01-llm-engine.md"},
-    {"asset_id": "ai-rag-b-01", "category": "RAG库", "product": "LangChain", "version": "0.3.0", "endpoint": "http://192.168.40.189:8080", "credential_hint": "", "evidence_step": "loot/recon-03-rag-lib.md"},
-    {"asset_id": "vec-c-01", "category": "向量库", "product": "Milvus", "version": "2.4", "endpoint": "http://192.168.40.189:19530", "credential_hint": "", "evidence_step": "loot/recon-04-vector-db.md"},
-    {"asset_id": "trad-d-01", "category": "传统向量机", "product": "Apache httpd", "version": "2.4.58", "endpoint": "http://192.168.40.189:80", "credential_hint": "", "evidence_step": "loot/recon-07-guardrail.md"},
-    {"asset_id": "dc-e-01", "category": "域控", "product": "AD DS", "version": "2019", "endpoint": "ldap://192.168.40.189:389", "credential_hint": "", "evidence_step": "loot/recon-07-guardrail.md"},
-    {"asset_id": "decoy-f-01", "category": "诱饵机", "product": "nginx", "version": "1.27.5", "endpoint": "http://192.168.40.189:8081", "credential_hint": "", "evidence_step": "loot/recon-07-guardrail.md"}
+    {"asset_id": "ai-llm-a-01", "category": "LLM引擎", "product": "vLLM", "version": "0.6.1", "endpoint": "http://<TARGET>:8000", "credential_hint": "Bearer-1a2b3c4d", "evidence_step": "loot/recon-01-llm-engine.md"},
+    {"asset_id": "ai-rag-b-01", "category": "RAG库", "product": "LangChain", "version": "0.3.0", "endpoint": "http://<TARGET>:8080", "credential_hint": "", "evidence_step": "loot/recon-03-rag-lib.md"},
+    {"asset_id": "vec-c-01", "category": "向量库", "product": "Milvus", "version": "2.4", "endpoint": "http://<TARGET>:19530", "credential_hint": "", "evidence_step": "loot/recon-04-vector-db.md"},
+    {"asset_id": "trad-d-01", "category": "传统向量机", "product": "Apache httpd", "version": "2.4.58", "endpoint": "http://<TARGET>:80", "credential_hint": "", "evidence_step": "loot/recon-07-guardrail.md"},
+    {"asset_id": "dc-e-01", "category": "域控", "product": "AD DS", "version": "2019", "endpoint": "ldap://<TARGET>:389", "credential_hint": "", "evidence_step": "loot/recon-07-guardrail.md"},
+    {"asset_id": "decoy-f-01", "category": "诱饵机", "product": "nginx", "version": "1.27.5", "endpoint": "http://<TARGET>:8081", "credential_hint": "", "evidence_step": "loot/recon-07-guardrail.md"}
   ]
 }

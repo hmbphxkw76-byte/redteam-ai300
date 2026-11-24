@@ -3,10 +3,10 @@
 """attack-infra 命令行入口。
 
 用法
-  py tools/attack_infra/cli.py --target 192.168.40.189
-  py tools/attack_infra/cli.py --target 192.168.40.189 --step infra-01 --step infra-03
-  py tools/attack_infra/cli.py --target 192.168.40.189 --allow-inference
-  py tools/attack_infra/cli.py --target 192.168.40.189 --dry-run
+  py tools/attack_infra/cli.py --target <TARGET>
+  py tools/attack_infra/cli.py --target <TARGET> --step infra-01 --step infra-03
+  py tools/attack_infra/cli.py --target <TARGET> --allow-inference
+  py tools/attack_infra/cli.py --target <TARGET> --dry-run
 
 退出码：0 = 无阻断项；1 = 存在 BLOCKED 或证据门失败；2 = 用法/参数错误。
 只读优先：写操作未实现（`--allow-write` 仅记录意图，见 AC-08）。

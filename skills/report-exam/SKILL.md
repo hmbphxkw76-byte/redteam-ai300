@@ -133,7 +133,7 @@ Table of Contents                              (official，须含 "Offsec AI Red
 
 | 现有 evidence | 来源技能 | 报告落位 | 备注 |
 |---|---|---|---|
-| `evidence/attack-ai-agent-real/aia-01.md` | `attack-ai-agent` | **Standalone / AI-vector host → Initial Access/Exploitation**（agent I/O 通道、系统提示、护栏基线枚举）+ **Appendix D AI 会话历史** | 真实目标主机 `http://192.168.40.189/api/labs/MM_0x/chat` |
+| `evidence/attack-ai-agent-real/aia-01.md` | `attack-ai-agent` | **Standalone / AI-vector host → Initial Access/Exploitation**（agent I/O 通道、系统提示、护栏基线枚举）+ **Appendix D AI 会话历史** | 真实目标主机 `http://<TARGET>/api/labs/<LAB>/chat`（目标由运行期注入，`tools/target_profile.py`） |
 | `evidence/attack-ai-agent-real/aia-02..aia-12.md` | `attack-ai-agent` | 同上，按 step 顺序归入该主机小节的"漏洞描述与完整利用"段落（提示注入 / 记忆滥用 / 工具滥用） | 当前均**未提供 flag 双通道**（`| flag 双通道 | 否 | 未提供 |`），报告须如实记"未达成/推进中"，不虚构 |
 | `evidence/attack-ai-agent/aia-*.md` | `attack-ai-agent`（演练/仿真） | 同结构，小节级标注「非 OSAI 正式考试 / 演练」 | 与 `-real` 区分，避免混入正式提交 |
 

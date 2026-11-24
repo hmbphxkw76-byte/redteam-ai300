@@ -1,7 +1,8 @@
-# 威胁模型（threat-model）— 192.168.40.189
+# 威胁模型（threat-model）— <TARGET>
 
 > 规划产出，不含实际攻击利用；所有结论由对应攻击子技能在实战中验证。
 > 资产可被下游按 `asset_id` 直接复用（衔接 report-exam / verify-evidence / decoy-detect）。
+> **目标占位**：`<TARGET>` 表示运行期注入的任意目标，具体主机由 `tools/target_profile.py` 画像提供；flag 语法与报告命名等考试格式契约不在此列，保持不变。
 
 ## 1. 资产计分排序（杠杆优先）
 

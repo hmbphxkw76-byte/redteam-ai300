@@ -6,7 +6,7 @@
 
 | 路径 | 来源技能 | 形态 | 现状 |
 |---|---|---|---|
-| `evidence/attack-ai-agent-real/aia-01.md` … `aia-12.md` | `attack-ai-agent` | `collect_evidence.py` 片段（五件套/三件套） | 真实目标主机 `http://192.168.40.189/api/labs/MM_0x/chat`；**flag 双通道均为「未提供」** |
+| `evidence/attack-ai-agent-real/aia-01.md` … `aia-12.md` | `attack-ai-agent` | `collect_evidence.py` 片段（五件套/三件套） | 真实目标主机 `http://<TARGET>/api/labs/<LAB>/chat`（目标由运行期注入，见 `tools/target_profile.py`）；**flag 双通道均为「未提供」** |
 | `evidence/attack-ai-agent/aia-*.md` | `attack-ai-agent` | 同上 | 演练/仿真；非 OSAI 正式考试 |
 | `loot/registry.md` | `loot-manage` | 战利品登记簿（单一事实源） | 当前未生成（需在实战流水线中产生） |
 | `tools/collect_evidence.py` | 通用 | 证据片段渲染器 | 已就位（CI 校验一致） |

@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
 from tools.pyrit_compat import TARGET_VERSION
+from tools import target_profile as target_profile_mod
 
 from .steps import STEP_SPECS
 
@@ -147,9 +148,11 @@ class FakePyRITBackend:
 ATTACK_ENV = ("OPENAI_CHAT_KEY", "OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_MODEL")
 SCORER_ENV = ("OPENAI_SCORER_KEY", "OPENAI_SCORER_ENDPOINT", "OPENAI_SCORER_MODEL")
 
-# 当 target_config["kind"] == "http" 时，对接 OWASP AIVP 靶机的原始 HTTP 请求模板。
+# 当 target_config["kind"] == "http" 时，对接目标靶机的原始 HTTP 请求模板。
 # HTTPTarget 用 `{PROMPT}` 占位符替换攻击载荷；Host 头用于推断目标 URL。
-AIVP_HOST = "192.168.40.189"
+# 具体主机 / lab ID 不再写为代码常量：由 target_config 显式注入，或经目标画像
+# （tools/target_profile.py）解析；缺省为通用占位符，须由调用方填实。
+DEFAULT_HTTP_HOST = target_profile_mod.PLACEHOLDER_HOST
 
 
 def aivp_sse_callback(response):
@@ -240,11 +243,16 @@ class RealPyRITBackend:
         return self._build_openai_target(SCORER_ENV)
 
     def make_target(self, role):
-        # 角色 "tool" 或 target_config 指定 http → 对接 OWASP AIVP 靶机（路径 C）
+        # 角色 "tool" 或 target_config 指定 http → 对接目标靶机 HTTP 端点（路径 C）
         if role == "tool" or self.target_config.get("kind") == "http":
             from pyrit.prompt_target import HTTPTarget
-            lab_id = self.target_config.get("lab_id", "MM_04")
-            host = self.target_config.get("host", AIVP_HOST)
+            profile = (self.target_config.get("target_profile")
+                       or target_profile_mod.current())
+            lab_id = (self.target_config.get("lab_id")
+                      or self.target_config.get("lab")
+                      or profile.lab("chat"))
+            host = (self.target_config.get("host")
+                    or profile.host)
             http_request = (
                 "POST /api/labs/%s/chat HTTP/1.1\r\n"
                 "Host: %s\r\n"

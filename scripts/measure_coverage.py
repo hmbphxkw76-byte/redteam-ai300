@@ -50,6 +50,7 @@ ALL_TARGET_ORDER = (
     "attack-multimodal",
     "pyrit-compat",
     "osai-orchestrator",
+    "target-profile",
 )
 
 

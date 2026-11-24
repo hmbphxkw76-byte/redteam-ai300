@@ -3,8 +3,8 @@
 """recon-ai 命令行入口。
 
 用法
-  py tools/recon_ai/cli.py run --target http://192.168.40.189 --profile passive
-  py tools/recon_ai/cli.py run --target http://192.168.40.189 --no-shots
+  py tools/recon_ai/cli.py run --target http://<TARGET> --profile passive
+  py tools/recon_ai/cli.py run --target http://<TARGET> --target-profile my-target --no-shots
   py tools/recon_ai/cli.py inventory --path evidence/recon-ai/ai-assets.json
   py tools/recon_ai/cli.py verify --run evidence/recon-ai/runs/<run_id>
   py tools/recon_ai/cli.py analyze --input observations.json --out ch2-analysis.json
@@ -23,8 +23,10 @@ _ROOT = os.path.dirname(os.path.dirname(_HERE))
 if __package__ in (None, ""):
     sys.path.insert(0, _ROOT)
     from tools.recon_ai import ch2, policy, runner, verifier
+    from tools import target_profile as target_profile_mod
 else:
     from . import ch2, policy, runner, verifier
+    from tools import target_profile as target_profile_mod
 
 
 def _build_parser():
@@ -33,10 +35,12 @@ def _build_parser():
     sub = ap.add_subparsers(dest="cmd")
 
     run = sub.add_parser("run", help="对目标执行 7 步枚举并落盘证据与资产清单")
-    run.add_argument("--target", required=True, help="目标入口，如 http://192.168.40.189")
+    run.add_argument("--target", required=True, help="目标入口，如 http://<TARGET>")
     run.add_argument("--profile", default="passive", choices=policy.PROFILES,
                      help="执行分级：passive（默认，被动）/ active（追加定向端口探测）")
-    run.add_argument("--lab", default="MM_04", help="实验面标识（用于 chat 端点模板）")
+    run.add_argument("--lab", default="", help="chat 角色实验面标识（覆盖画像映射；缺省取画像）")
+    run.add_argument("--target-profile", default=None,
+                     help="目标画像名或 JSON 路径（默认读 REDTEAM_TARGET_PROFILE 环境变量，均无则 generic 全占位）")
     run.add_argument("--out-dir", default="", help="产物目录（默认 evidence/recon-ai）")
     run.add_argument("--manifest", default="", help="证据清单 JSONL 路径")
     run.add_argument("--no-shots", action="store_true", help="不截图（证据标注待补录）")
@@ -186,12 +190,16 @@ def main(argv=None):
         return 2
 
     try:
+        target_obj = (target_profile_mod.resolve(args.target_profile)
+                      if getattr(args, "target_profile", None)
+                      else target_profile_mod.current())
         report = runner.run_recon(
             target=args.target, profile=profile, lab=args.lab,
             out_dir=args.out_dir or None,
             capture_shots=not args.no_shots,
             manifest=args.manifest or None,
             timeout=args.timeout,
+            target_profile=target_obj,
         )
     except ValueError as exc:
         print("ERROR: %s" % exc, file=sys.stderr)

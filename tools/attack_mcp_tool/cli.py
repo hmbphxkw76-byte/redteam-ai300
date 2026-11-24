@@ -4,7 +4,7 @@
 
 示例（演练目标，agent 会话形态）：
   python tools/attack_mcp_tool/cli.py --step mcp-01 --mode agent-sse \
-      --target http://192.168.40.189 --lab MCP_01
+      --target http://<TARGET> --lab <LAB>
 
 示例（本地恶意 server 对照组，裸 JSON-RPC 形态）：
   python tools/serve_malicious_mcp.py --host 127.0.0.1 --port 8080 &
@@ -22,6 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 if ROOT not in sys.path:  # 支持 `python tools/attack_mcp_tool/cli.py` 直跑
     sys.path.insert(0, ROOT)
 
+from tools import target_profile as target_profile_mod  # noqa: E402
 from tools.attack_mcp_tool import Runtime, run_attack  # noqa: E402
 from tools.attack_mcp_tool.model import AttackRequest  # noqa: E402
 from tools.attack_mcp_tool.runner import DEFAULT_EVIDENCE_DIR  # noqa: E402
@@ -34,7 +35,9 @@ def build_parser():
     ap.add_argument("--mode", choices=("agent-sse", "jsonrpc"), default="agent-sse",
                     help="形态：agent-sse=会话 SSE；jsonrpc=裸 MCP JSON-RPC")
     ap.add_argument("--lab", action="append", default=None,
-                    help="agent-sse 形态的 lab 标识（可重复）；缺省 MCP_01")
+                    help="agent-sse 形态的 lab 标识（可重复）；缺省取目标画像映射")
+    ap.add_argument("--target-profile", default=None,
+                    help="目标画像名或 JSON 路径（默认读 REDTEAM_TARGET_PROFILE，均无则 generic）")
     ap.add_argument("--path", action="append", choices=("A", "B", "C", "D", "E", "F"), default=None,
                     help="攻击路径（可重复）；缺省全选")
     ap.add_argument("--step", default="", help="仅执行单步：%s" % ", ".join(STEP_IDS))
@@ -49,11 +52,14 @@ def build_parser():
 def main(argv=None, runtime=None):
     """命令行主函数；`runtime` 可注入（测试用替身即离线，AC-18）。"""
     args = build_parser().parse_args(argv)
+    profile = (target_profile_mod.resolve(args.target_profile)
+               if args.target_profile else target_profile_mod.current())
     request = AttackRequest(
         target=args.target, mode=args.mode,
-        labs=tuple(args.lab or ("MCP_01",)),
+        labs=tuple(args.lab) if args.lab else (),
         paths=tuple(args.path or ("A", "B", "C")),
-        step=args.step, evidence_dir=args.evidence_dir, emit=not args.no_emit)
+        step=args.step, evidence_dir=args.evidence_dir, emit=not args.no_emit,
+        target_profile=profile)
     if runtime is None:
         runtime = Runtime(browser_path=args.browser, shot_enabled=not args.no_shot)
     try:

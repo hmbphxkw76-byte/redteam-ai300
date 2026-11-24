@@ -49,6 +49,7 @@ ALL_TARGET_ORDER = (
     "attack-jailbreak",
     "attack-multimodal",
     "pyrit-compat",
+    "osai-orchestrator",
 )
 
 

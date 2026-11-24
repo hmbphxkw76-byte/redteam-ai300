@@ -45,4 +45,10 @@
 
 ## 4. 收尾验证
 
-待执行。
+- 主干文档提交 `9f2dd39194e59419cd6ffacc91659fe1a8c3b645`，经 SSH `git push origin main` 一次成功（未走 HTTPS 备援、未 force push）。远端 main `origin/main = 9f2dd39`。
+- 远端 main 上两份文档 SHA-256 与本地/备份完全一致：`27867f1a…1503c0d`（gap）、`79bf79af…a87d518d`（mainline prompt），零数据丢失。
+- PR #440 `MERGED`（合并提交 `5372162`），S1/S2/AC-12 PASS，S3/S4 按配置 skipping。
+- 12 个 worktree 活跃分支核对：`ahead=0` 共 11 个（含 main）；`feat/pyrit-compat` 显示 `behind 2 / ahead 2`，其两个 ahead commit 为本地合并父提交与冲突解决提交，内容已通过 squash 合入 main，无未合并业务改动。
+- `backup/*` 与历史 `feat/*` 依确认范围排除；未删除任何 worktree，未改动 hooks、SKILL.md 或契约。
+
+结论：活跃会话零遗留未合并业务工作；两份 Ch8 文档零丢失；全部合并与推送已完成。

@@ -19,7 +19,8 @@
       "tools/threat_model",
       "tools/tooling_automate",
       "tools/attack_jailbreak",
-      "tools/attack_multimodal"
+      "tools/attack_multimodal",
+      "tools/osai_orchestrator"
     ],
     "scripts": [
       "tools/_evidence_contract.py",
@@ -417,6 +418,26 @@
         "tests.pyrit_compat.test_versions",
         "tests.pyrit_compat.test_manifest_mapper",
         "tests.pyrit_compat.test_compat_checker"
+      ]
+    },
+    {
+      "name": "osai-orchestrator",
+      "modules": [
+        "tools.osai_orchestrator.models",
+        "tools.osai_orchestrator.supervision",
+        "tools.osai_orchestrator.planning",
+        "tools.osai_orchestrator.governance",
+        "tools.osai_orchestrator.tooling",
+        "tools.osai_orchestrator.runner",
+        "tools.osai_orchestrator.cli"
+      ],
+      "tests": [
+        "tests.osai_orchestrator.test_supervision",
+        "tests.osai_orchestrator.test_planning",
+        "tests.osai_orchestrator.test_governance",
+        "tests.osai_orchestrator.test_tooling",
+        "tests.osai_orchestrator.test_runner",
+        "tests.osai_orchestrator.test_orchestrator_evidence_contract"
       ]
     }
   ]

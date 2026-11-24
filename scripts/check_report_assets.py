@@ -3,7 +3,8 @@
 """提交前断图校验（OSAI §6.1）：报告图片引用必须可解析、PNG 必须完整。
 
 证据目录默认 gitignore，本脚本在打包前本地执行，校验 report/ 与 evidence/
-的相对结构未被破坏；不做脱敏、不改动任何文件。
+的相对结构未被破坏；不做脱敏、不改动任何文件。围栏代码块与行内代码中的
+图片语法示例不计入校验（仅校验真正会渲染的图片引用）。
 """
 import argparse
 import os
@@ -12,10 +13,29 @@ import re
 MD_IMAGE_RE = re.compile(r"!\[[^\]]*\]\(\s*([^)\s]+)")
 HTML_IMAGE_RE = re.compile(r"<img[^>]+src=[\"']([^\"']+)[\"']", re.I)
 REMOTE_PREFIXES = ("http://", "https://", "data:", "#")
+INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
+
+
+def _strip_code(text):
+    """移除围栏代码块与行内代码，保留行结构；仅作用于内存文本。"""
+    out, fence = [], None
+    for line in text.splitlines(keepends=True):
+        stripped = line.lstrip()
+        marker = "```" if stripped.startswith("```") else ("~~~" if stripped.startswith("~~~") else None)
+        if marker is not None:
+            if fence is None:
+                fence = marker
+            elif fence == marker:
+                fence = None
+            out.append("\n" if line.endswith("\n") else "")
+            continue
+        out.append("" if fence else line)
+    return INLINE_CODE_RE.sub("", "".join(out))
 
 
 def image_refs(text):
-    return MD_IMAGE_RE.findall(text) + HTML_IMAGE_RE.findall(text)
+    cleaned = _strip_code(text)
+    return MD_IMAGE_RE.findall(cleaned) + HTML_IMAGE_RE.findall(cleaned)
 
 
 def _png_complete(path):

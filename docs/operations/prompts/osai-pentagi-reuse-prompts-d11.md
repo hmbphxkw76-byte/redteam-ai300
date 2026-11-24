@@ -14,7 +14,7 @@
 <目标主机>=<IP 或域名>
 <命令与输出路径>=<路径>
 <proof 内容>=<仅在本地处理，不外发>
-【上下文注入】贴入 scripts/collect_evidence.py 的严格门要求与 report_exam.index.parse_fragment 的段落契约。
+【上下文注入】贴入 tools/collect_evidence.py 的严格门要求与 report_exam.index.parse_fragment 的段落契约。
 【操作步骤】
 1. 按三件套/五件套要求落盘：命令文本、完整输出、截图、AI 交互日志、flag 双通道记录。
 2. 保留 flag 段的原值块，不重写、不摘要、不转义其 fenced 结构。

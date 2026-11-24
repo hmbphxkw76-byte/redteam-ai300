@@ -2,7 +2,7 @@
 
 > **版本** v1.2 · **状态** 生效 · **性质** 唯一可信源
 > **适用范围**：`skills/*/SKILL.md` 全部技能，以及 `docs/skill-specs-backlog.md` 中待实例化的技能
-> **依据**：[GOVERNANCE.md](../governance/GOVERNANCE.md) §4.2 / §6 / §8 · [CI-CD.md](../standards/CI-CD.md) · [GLOSSARY.md](../../GLOSSARY.md) · [pyrit-implementation-workflow.md](pyrit-implementation-workflow.md)（PyRIT 对象映射参考） · [osai-ai300-framework-decision.md](osai-ai300-framework-decision.md)（框架选型决策） · [osai-skill-framework-matrix.md](osai-skill-framework-matrix.md)（技能×框架组合对照）
+> **依据**：[GOVERNANCE.md](../governance/GOVERNANCE.md) §4.2 / §6 / §8 · [CI-CD.md](../standards/CI-CD.md) · [GLOSSARY.md](../../GLOSSARY.md) · [pyrit-implementation-workflow.md](pyrit-implementation-workflow.md)（PyRIT 对象映射参考） · [osai-ai300-framework-decision.md](../research/osai-ai300-framework-decision.md)（框架选型决策） · [osai-skill-framework-matrix.md](../research/osai-skill-framework-matrix.md)（技能×框架组合对照）
 > **冲突优先级**：官方考试事实（S1/S2/S3）> GOVERNANCE「必须」条款 > CI-CD 门禁 > 本规范 > `pyrit-implementation-workflow.md` 历史映射草案 > 技能局部约定
 
 ---

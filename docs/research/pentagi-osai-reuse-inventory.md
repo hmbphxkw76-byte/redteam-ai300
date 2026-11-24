@@ -34,7 +34,7 @@
 |---|---|---|---|---|---|---|
 | A-01 | 11 阶段主线流程与逐阶段 G0 门禁 | 流程方法论 | 已落地并验证 | 每个技能的落地与收口，防跳步 | `docs/operations/skill-mainline-workflow.md` | 本仓库唯一可信源，直接复用 |
 | A-02 | to-spec 两遍（v1/v2）独立留痕 | 流程方法论 | 已落地并验证 | 新技能规格定稿 | 同上 §2 | 已是硬约束，无需学习 |
-| A-03 | 证据三/五件套与 flag 双通道 | 证据契约 | 已落地并验证 | 报告关（文档缺失即零分风险） | `scripts/collect_evidence.py`、`skills/verify-evidence/` | `report-exam` 既有契约，直接复用 |
+| A-03 | 证据三/五件套与 flag 双通道 | 证据契约 | 已落地并验证 | 报告关（文档缺失即零分风险） | `tools/collect_evidence.py`、`skills/verify-evidence/` | `report-exam` 既有契约，直接复用 |
 | A-04 | 五段式主机报告结构 | 报告方法论 | 已落地并验证 | 每台计分主机报告 | `skills/report-exam/`、`GLOSSARY.md` 五段式 | 已对齐 S1 §7.2 |
 | A-05 | PyRIT 深度内核（多轮编排+证据） | 攻击框架 | 已落地并验证 | AI 向量主机主分面 | `tools/attack_ai_agent/`、`docs/research/pyrit-canonical-references.md` | 规范内核已建成，含版本适配框架 `tools/pyrit_compat/` |
 | A-06 | 框架分层组合方法论（首扫→深度→固化→点解→落地） | 技术选型方法论 | 已落地并验证 | 开局到报告的全栈选型 | `docs/research/osai-ai300-framework-decision.md` §4 | 决策已固化，直接复用 |

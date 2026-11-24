@@ -185,7 +185,7 @@
 **与既有 seam 的衔接**：
 
 - 涉及工具执行的提示词（D3 / D7）统一经 `tooling-automate` 的 S-1 统一入口，命令执行器可注入，不新建调用路径。
-- 涉及证据的提示词（D1 / D5 / D11）输出必须能被 `scripts/collect_evidence.py` 严格门接受，flag 段保留原值块。
+- 涉及证据的提示词（D1 / D5 / D11）输出必须能被 `tools/collect_evidence.py` 严格门接受，flag 段保留原值块。
 - 涉及 PyRIT 的提示词（D3-01 / D3-06）使用双模型命名空间，版本事实读 `tools/pyrit_compat/data/versions/`，不在提示词内转抄。
 
 **回归命令**：

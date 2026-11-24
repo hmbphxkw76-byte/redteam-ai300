@@ -53,6 +53,15 @@ class ReportAssetTests(unittest.TestCase):
             report = self._write(tmp, "report.md", b"![x](nope.png)")
             self.assertEqual(checker.main([report]), 1)
 
+    def test_code_examples_are_not_treated_as_images(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = self._write(
+                tmp, "report.md",
+                "示例 `![...](...)` 与 `![a](missing.png)` 仅为语法说明。\n\n"
+                "```markdown\n![fenced](missing-fenced.png)\n```\n".encode("utf-8"))
+            ok, problems = checker.check_report(report)
+        self.assertTrue(ok, problems)
+
 
 if __name__ == "__main__":
     unittest.main()

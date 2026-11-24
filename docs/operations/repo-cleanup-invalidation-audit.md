@@ -35,4 +35,11 @@ MERGED PR 证据（23 个）：`docs/repo-cleanup-audit` #409、`feat/a2a-ch4-ma
 
 ## 5. 执行与验证结果
 
-待执行。
+1. **worktree**：11 个陈旧 worktree 全部 clean，逐个 `git worktree remove <path>`（未用 `--force`）成功；`git worktree prune` 后仅剩主 worktree `D:/文档/GitHub/redteam-ai300`。
+2. **本地分支**：按祖先/MERGED PR + 无合并后提交证据删除 38 个；保留 29 个（main、23 个 backup、5 个无 PR/BLOCKED feat、1 个 docs/ai-range-target-selection）。
+3. **远端分支**：首次批量删除因 Windows Python 写出 CRLF 导致分支名带尾部 `\r`，50 次全部失败；修正后对同一仓库删除 50 个分支，其中 42 个成功、8 个返回 `remote ref does not exist`（属诊断阶段已删或早先不存在），无一次 force push，未走 HTTPS 备援。
+4. **跟踪引用**：`git fetch origin --prune` 成功；`git fetch origin-https --prune` 一次失败（`Empty reply from server`），按 SSH/HTTPS 互备各试一次即停的约定不再重试；因两个 remote 指向同一 GitHub 仓库，手工 `git branch -rd` 清理 42 个已确认删除的 `origin-https/*` 陈旧引用。
+5. **GitHub API 实测**：远端真实分支 14 个，全部为白名单（main、4 个 backup、docs/ai-range-target-selection、feat/a2a-ch4-alignment、feat/attack-ma-regression-verify、feat/recon-ai-ch6、3 个 verify-evidence BLOCKED、fix/report-image-path-relative、wip/archive-orphans）。
+6. **完整性**：本地 main 与 `origin/main` 同为 `c2919f02`；工作树 clean；两份 Ch8 文档在远端 main 的 SHA-256 与删除前一致（`27867f1a…1503c0d`、`79bf79af…a87d518d`）；tag 2 个、stash 空、hooks 与 `.workbuddy/` 未动。
+
+结论：S0 清理完成，零数据丢失；BLOCKED 与 S2 引用全部保留，待人工判定。

@@ -22,6 +22,7 @@ from . import policy, probes, shot as shot_mod
 from . import transport as transport_mod
 from . import verifier as verifier_mod
 from .model import Existence, ProbeResult
+from tools import target_profile as target_profile_mod
 
 ECHO_PATH_HINT = ("POST",)
 
@@ -80,7 +81,7 @@ class RunReport:
 def _base_target(target):
     target = (target or "").strip()
     if not target:
-        raise ValueError("必须提供目标（如 http://192.168.40.189）")
+        raise ValueError("必须提供目标入口（形如 http://<TARGET>）")
     target = target.rstrip("/")
     # 目标若是具体文件（如报告页 x.html），端点探测须回到其 origin，
     # 否则会拼出 `/x.html/v1/models` 这类不存在的路径。
@@ -98,13 +99,33 @@ def _make_run_id(target):
     return "%s-%s-%s" % (stamp, (slug or "target")[:32], os.urandom(2).hex())
 
 
-def build_url(target, path, lab=""):
-    """拼 URL：绝对路径原样，模板占位 {lab}/{host} 替换后再拼。"""
+def build_url(target, path, lab="", labs=None):
+    """拼 URL：绝对路径原样；替换 {lab}/{lab:<role>}/{host} 占位后再拼。
+
+    ``{lab}`` 为兼容旧模板的聊天角色占位；``{lab:<role>}`` 按目标画像的
+    角色映射展开，令同一份探测模板适配任意目标对象（C1：映射单一事实源）。
+    """
     host = inventory_mod.host_of(target)
+    labs = labs or {}
     path = (path or "").replace("{lab}", lab).replace("{host}", host)
+    for role, value in labs.items():
+        path = path.replace("{lab:%s}" % role, value)
     if path.startswith("http://") or path.startswith("https://"):
         return path
     return target + path
+
+
+def resolve_body(body, labs=None):
+    """把请求体中的 {lab:<role>} 占位按画像展开（只处理字符串值）。"""
+    if not isinstance(body, dict) or not labs:
+        return body
+    resolved = {}
+    for key, value in body.items():
+        if isinstance(value, str):
+            for role, lab_id in labs.items():
+                value = value.replace("{lab:%s}" % role, lab_id)
+        resolved[key] = value
+    return resolved
 
 
 def _request(transport, spec, req, url, step_id, timeout, body=None):
@@ -142,13 +163,21 @@ def _request(transport, spec, req, url, step_id, timeout, body=None):
     return result
 
 
-def run_recon(target, profile="passive", lab="MM_04", out_dir=None,
+def run_recon(target, profile="passive", lab="", out_dir=None,
               transport=None, shot=None, writer=None, capture_shots=True,
-              manifest=None, timeout=120, timebox_minutes=None):
-    """执行一次完整侦察，返回 RunReport（AC-24 的端到端入口）。"""
+              manifest=None, timeout=120, timebox_minutes=None,
+              target_profile=None):
+    """执行一次完整侦察，返回 RunReport（AC-24 的端到端入口）。
+
+    ``target_profile`` 可注入任意目标画像（显式参数优先于环境变量，二者皆无
+    则用 generic 全占位画像）；``lab`` 仅覆盖 chat 角色，其余角色按画像映射。
+    """
     requested = (target or "").strip().rstrip("/")
     target = _base_target(target)
     profile = policy.normalize_profile(profile)
+    target_obj = target_profile or target_profile_mod.current()
+    labs = target_profile_mod.role_labs(target_obj, lab)
+    chat_lab = labs["chat"]
     out_dir = out_dir or os.path.join("evidence", "recon-ai")
     transport = transport or transport_mod.make_transport()
     shot = shot or shot_mod.make_shot(enabled=capture_shots)
@@ -177,7 +206,8 @@ def run_recon(target, profile="passive", lab="MM_04", out_dir=None,
     timebox = policy.TIMEOUT_MINUTES if timebox_minutes is None else timebox_minutes
     deadline = time.time() + timebox * 60
     started = datetime.now().astimezone().isoformat(timespec="seconds")
-    ctx = {"profile": profile, "headers": {}, "lab": lab, "plan": plan}
+    ctx = {"profile": profile, "headers": {}, "lab": chat_lab, "labs": labs,
+           "target_profile": target_obj, "plan": plan}
     budget = policy.FailureBudget()
     judgements, evidence_paths, shots, endpoints = {}, [], {}, {}
     step_results, step_records = {}, []
@@ -205,8 +235,9 @@ def run_recon(target, profile="passive", lab="MM_04", out_dir=None,
                     if req.when is not None and not req.when(ctx):
                         continue
                     path = req.path_fn(ctx) if req.path_fn else req.path
-                    url = build_url(target, path, lab)
-                    body = req.body_fn(ctx) if req.body_fn is not None else None
+                    url = build_url(target, path, chat_lab, labs)
+                    body = req.body_fn(ctx) if req.body_fn is not None else \
+                        resolve_body(req.json_body, labs)
                     result = _request(transport, spec, req, url, spec.step_id,
                                       timeout, body=body)
                     results.append(result)
@@ -221,7 +252,7 @@ def run_recon(target, profile="passive", lab="MM_04", out_dir=None,
                 if spec.requests and spec.step_id not in endpoints:
                     fallback = (getattr(plan, "entry_url", "") if plan is not None
                                 else "") or build_url(
-                                    target, spec.requests[0].path, lab)
+                                    target, spec.requests[0].path, chat_lab, labs)
                     endpoints[spec.step_id] = fallback
                 if plan is not None:
                     results.extend(plan.step_results.get(spec.step_id, []))

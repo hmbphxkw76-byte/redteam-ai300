@@ -218,11 +218,12 @@ class AttackRequest:
 
     target: str
     mode: str = "agent-sse"          # agent-sse | jsonrpc
-    labs: Tuple[str, ...] = ("MCP_01",)
+    labs: Tuple[str, ...] = ()    # 缺省由目标画像解析；显式传入时覆盖
     paths: Tuple[str, ...] = ("A", "B", "C")
     step: str = ""
     evidence_dir: str = ""
     emit: bool = True
+    target_profile: object = None   # 可选目标画像；缺省经环境变量解析或 generic 全占位
 
 
 @dataclass(frozen=True)

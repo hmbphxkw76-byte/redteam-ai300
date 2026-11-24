@@ -8,14 +8,22 @@
 """
 from dataclasses import dataclass, field
 
+from tools import target_profile as target_profile_mod
+
 DEFAULT_PARAMS = {"r": 16, "lora_alpha": 32, "lora_dropout": 0.05,
                   "target_modules": ["q_proj", "v_proj"],
                   "epochs": 15, "lr": "3e-4"}
 PARAM_RATIO = 0.0014
 ADAPTER_MB = 8
 BASE_MB = 3000
-SMB_HOSTS = ("hou-fs01.biogenai.corp", "dal-fs01.biogenai.corp",
-             "10.10.20.10", "10.10.30.10")
+def _smb_hosts():
+    """待替换的合法 SMB 主机来自目标画像 extra.smb_hosts（课件示例画像已登记），
+    不再作为代码字面量硬绑定；画像可经环境变量 / 显式参数指向任意目标。"""
+    return target_profile_mod.current().extra_list("smb_hosts")
+
+
+# 向后兼容视图：模块导入时按当前画像求值（tests 引导先设画像，生产默认 generic）。
+SMB_HOSTS = _smb_hosts()
 
 
 @dataclass
@@ -47,7 +55,7 @@ def replace_smb_refs(text, attacker_ip):
         raise ValueError("attacker_ip 不得为空")
     count = 0
     out = text
-    for host in SMB_HOSTS:
+    for host in _smb_hosts():
         n = out.count(host)
         if n:
             out = out.replace(host, attacker_ip)

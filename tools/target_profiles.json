@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "note": "目标画像注册表（tools/target_profile.py 单一事实源）。generic 为内置全占位画像；下列画像为可选配置示例，经 REDTEAM_TARGET_PROFILES 指向本文件、REDTEAM_TARGET_PROFILE 选名或 CLI --target-profile 注入。新增同类目标只需在此追加一条画像，核心代码零改动（ADR-0005/0006）。labs 的键既可为语义角色（chat/vector/agent/mcp），也可为步骤级符号标签，由 TargetProfile.map_lab 重映射。",
+  "profiles": [
+    {
+      "name": "aivp-rehearsal",
+      "host": "192.168.40.189",
+      "model": "LongCat-2.5",
+      "description": "OWASP AIVP 演练目标（55 lab / 4 phase）；仅作演练，非 OSAI 正式考试环境。",
+      "labs": {
+        "chat": "MM_04",
+        "vector": "MM_05",
+        "agent": "DE_01",
+        "mcp": "MCP_01",
+        "secret": "MCP_01",
+        "mcp_poison": "MCP_03",
+        "mcp_write": "MCP_05",
+        "mcp_inject": "MCP_06",
+        "mcp_admin": "MCP_02",
+        "mcp_escape": "MCP_12",
+        "mcp_chain": "MCP_14",
+        "mcp_logs": "MCP_08",
+        "MCP_01": "MCP_01",
+        "MCP_02": "MCP_02",
+        "MCP_03": "MCP_03",
+        "MCP_05": "MCP_05",
+        "MCP_06": "MCP_06",
+        "MCP_12": "MCP_12"
+      },
+      "extra": {
+        "smb_hosts": ["hou-fs01.biogenai.corp", "dal-fs01.biogenai.corp", "10.10.20.10", "10.10.30.10"]
+      }
+    }
+  ]
+}

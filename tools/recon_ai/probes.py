@@ -745,7 +745,7 @@ STEP_SPECS: Tuple[StepSpec, ...] = (
         purpose="发现向量数据库端口与健康检查；无证据时记「不可判定」",
         judge="vector",
         requests=(
-            RequestSpec("向量库实验面", "GET", "/api/labs/MM_05/summary", timeout=10),
+            RequestSpec("向量库实验面", "GET", "/api/labs/{lab:vector}/summary", timeout=10),
         ),
         active_requests=(
             _port(6333, "qdrant"), _port(8080, "weaviate"),
@@ -757,7 +757,7 @@ STEP_SPECS: Tuple[StepSpec, ...] = (
         purpose="识别编排/多智能体痕迹与遥测面",
         judge="agent",
         requests=(
-            RequestSpec("agentic 实验面", "GET", "/api/labs/DE_01/summary", timeout=10),
+            RequestSpec("agentic 实验面", "GET", "/api/labs/{lab:agent}/summary", timeout=10),
             RequestSpec("运行遥测", "GET", "/api/me/runs?limit=1", timeout=10),
             RequestSpec("A2A Agent Card", "GET", "/.well-known/agent.json", timeout=10),
         ),
@@ -768,9 +768,9 @@ STEP_SPECS: Tuple[StepSpec, ...] = (
         judge="mcp",
         requests=(
             RequestSpec("凭据校验（错误答案，单次）", "POST", "/api/secrets/validate",
-                        json_body={"labId": "MCP_01", "answer": "recon-probe"},
+                        json_body={"labId": "{lab:mcp}", "answer": "recon-probe"},
                         timeout=10),
-            RequestSpec("MCP 实验面", "GET", "/api/labs/MCP_01/summary", timeout=10),
+            RequestSpec("MCP 实验面", "GET", "/api/labs/{lab:mcp}/summary", timeout=10),
         ),
     ),
     StepSpec(

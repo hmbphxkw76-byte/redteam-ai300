@@ -41,8 +41,9 @@ class BudgetRulesTests(unittest.TestCase):
         )
 
     def test_report_exam_has_its_own_cap(self):
-        self.assertEqual(ctb.budget_for("skills/report-exam/SKILL.md"), 21000)
-        self.assertEqual(ctb.budget_for("skills/recon-ai/SKILL.md"), 12000)
+        # 与 ADR-0005「基线 + 必要增量」上调后的 BUDGETS 单一事实源对齐。
+        self.assertEqual(ctb.budget_for("skills/report-exam/SKILL.md"), 22000)
+        self.assertEqual(ctb.budget_for("skills/recon-ai/SKILL.md"), 14000)
 
     def test_unmanaged_file_has_no_cap(self):
         self.assertIsNone(ctb.budget_for("README.md"))

@@ -4,8 +4,9 @@
 
 职责（对齐用户 2026-11-14 双模型要求）：
   1. 攻击 / 目标模型：OPENAI_CHAT_* 命名空间（默认模型，类似 workbuddy 提供的模型）。
-     - 当 --target http（默认）：通过 HTTPTarget 对接 OWASP AIVP 靶机
-       http://192.168.40.189/api/labs/{lab_id}/chat（靶机后端模型即 LongCat-2.5）。
+     - 当 --target http（默认）：通过 HTTPTarget 对接目标 HTTP 端点
+       http://<HOST>/api/labs/<LAB>/chat；主机与 lab 由 --host / --lab 显式注入，
+       或由 --target-profile 指向的目标画像解析（tools/target_profile.py）。
      - 当 --target openai：直接以 OPENAI_CHAT_* 模型作为被攻击目标。
   2. 评分模型：OPENAI_SCORER_* 命名空间，独立 OpenAIChatTarget 实例，
      注入 SelfAskTrueFalseScorer，与攻击模型职责清晰分离。
@@ -15,9 +16,9 @@
         因此同一份脚本在任意环境、任意会话均可直接运行，无需重复设置。
 
 用法：
-  py tools/attack_ai_agent/run_real.py --lab MM_04 --paths A C
+  py tools/attack_ai_agent/run_real.py --host <TARGET> --lab <LAB> --paths A C
+  py tools/attack_ai_agent/run_real.py --target-profile aivp-rehearsal --paths A
   py tools/attack_ai_agent/run_real.py --target openai --paths A
-  py tools/attack_ai_agent/run_real.py --lab MM_04 --step aia-02
 """
 import argparse
 import os
@@ -30,10 +31,12 @@ if __package__ in (None, ""):
     from tools.attack_ai_agent import runner
     from tools.attack_ai_agent.backends import RealPyRITBackend
     from tools.attack_ai_agent.steps import STEP_SPECS
+    from tools import target_profile as target_profile_mod
 else:
     from . import runner
     from .backends import RealPyRITBackend
     from .steps import STEP_SPECS
+    from tools import target_profile as target_profile_mod
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -72,11 +75,12 @@ def require_env():
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="attack-ai-agent 真实双模型运行器")
-    ap.add_argument("--lab", default="MM_04", help="AIVP 靶机实验室 ID（MM_04/05/07）")
-    ap.add_argument("--host", default="192.168.40.189",
-                    help="AIVP 靶机地址（http）")
+    ap.add_argument("--target-profile", default=None,
+                    help="目标画像名或 JSON 路径（默认读 REDTEAM_TARGET_PROFILE，均无则 generic 全占位）")
+    ap.add_argument("--lab", default="", help="chat 角色实验室 ID（覆盖画像映射）")
+    ap.add_argument("--host", default="", help="目标地址（http；覆盖画像 host）")
     ap.add_argument("--target", default="http", choices=("http", "openai"),
-                    help="被攻击目标形态：http=靶机 HTTP 端点；openai=直接 LLM 模型")
+                    help="被攻击目标形态：http=目标 HTTP 端点；openai=直接 LLM 模型")
     ap.add_argument("--paths", default="A C", help="执行路径，空格分隔，如 'A C'")
     ap.add_argument("--step", default="", help="仅执行单个步骤，如 aia-02")
     ap.add_argument("--evidence-dir", default="", help="证据片段输出目录")
@@ -85,10 +89,16 @@ def main(argv=None):
     loaded = load_dotenv(os.path.join(ROOT, ".env"))
     require_env()
 
+    profile = (target_profile_mod.resolve(args.target_profile)
+               if args.target_profile else target_profile_mod.current())
+    lab_id = args.lab or profile.lab("chat")
+    host = args.host or profile.host
+
     target_config = {
         "kind": args.target,
-        "lab_id": args.lab,
-        "host": args.host,
+        "lab_id": lab_id,
+        "host": host,
+        "target_profile": profile,
     }
     backend = RealPyRITBackend(target_config=target_config)
     print("后端：%s" % backend.describe())
@@ -116,7 +126,7 @@ def main(argv=None):
     out_dir = args.evidence_dir or os.path.join(ROOT, "evidence", "attack-ai-agent-real")
     os.makedirs(out_dir, exist_ok=True)
 
-    target_label = ("http://%s/api/labs/%s/chat" % (args.host, args.lab)
+    target_label = ("http://%s/api/labs/%s/chat" % (host, lab_id)
                     if args.target == "http" else "OPENAI_CHAT_* (direct model)")
 
     print("目标：%s　步骤数：%d" % (target_label, len(specs)))

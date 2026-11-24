@@ -42,7 +42,8 @@
       "tools/trigger_poison.py",
       "tools/vector_lookup.py",
       "tools/verify_evidence.py",
-      "tools/workflow_disrupt.py"
+      "tools/workflow_disrupt.py",
+      "tools/target_profile.py"
     ],
     "helper_scripts": [
       "scripts/check_contract_consumers.py",
@@ -442,6 +443,15 @@
         "tests.osai_orchestrator.test_orchestrator_evidence_contract",
         "tests.osai_orchestrator.test_handoff",
         "tests.osai_orchestrator.test_d11_gateway"
+      ]
+    },
+    {
+      "name": "target-profile",
+      "modules": [
+        "tools.target_profile"
+      ],
+      "tests": [
+        "tests.test_target_profile"
       ]
     }
   ]

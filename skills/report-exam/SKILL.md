@@ -78,6 +78,8 @@ Table of Contents                              (official，须含 "Offsec AI Red
 
 > **T05 修正**：S1 的 `# Appendix` 为一段无编号说明，A/D/E 属仓库 (extension)，非官方逐字要求（canonical F-1.7 / 快照 §10）；改标不得删减——§6.3、§7.1 仍强制 AI 会话与截图入附录。
 
+**Recommendations 段建议格式（extension，课件语境）**：以四列表格呈现——根因 / 修复位置（file:line 或配置键）/ 复验方式（对应攻击步骤 ID + 命令）/ 状态（`待执行` / `已复验` / `不适用`）。复验方式须指向已落盘的 `collect_evidence.py` 步骤，不虚构复验结果；本段属 extension，不进入 official 逐字章节，考试报告无真实复验输入时整表留空并标 `不适用`。
+
 **章节验收（§7.1）**：四章齐全（Introduction/Objective/Requirements → Executive Summary → Attack Walkthrough → Appendix）；Executive Summary 含 High-Level Attack Path；每台计分目标有独立小节；域控在 Chain 1 与 Chain 2 **两处**均有记录；诱饵机记为"确认不可利用"。
 
 > **可选：防御复盘段**（Ch11 §11.6，非官方四章、不进必填、不改 `parse_fragment`）：置于 High-Level Attack Path 后或附录。三条结论——SQL 面用 **allowlist**/blocklist 限 `sp_configure`/`xp_cmdshell`；RAG `read_file` 限定 KB 目录或执行前人工确认；AI 组件按**特权服务账户**管控（unvalidated tool access 使 AI 助手成攻击向量）。演练片段不入`-real`（canonical §4）。

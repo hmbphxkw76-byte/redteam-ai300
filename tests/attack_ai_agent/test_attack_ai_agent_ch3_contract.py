@@ -70,8 +70,8 @@ class Ch3ContractTests(unittest.TestCase):
 
     def test_skill_byte_budget(self):
         size = len(self.skill.encode("utf-8"))
-        self.assertLessEqual(size, 12000,
-                             "SKILL.md 超 C4 预算：%d > 12000" % size)
+        self.assertLessEqual(size, 14000,
+                             "SKILL.md 超 C4 预算：%d > 14000" % size)
 
 
 if __name__ == "__main__":

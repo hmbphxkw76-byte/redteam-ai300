@@ -77,11 +77,18 @@ BUDGETS: dict[str, int] = {
     # 压缩后实测 10,971 字节，保留约 1KB 余量以容纳后续门禁条目。
     "docs/standards/CI-CD.md": 12000,
     "docs/skill-specs-backlog.md": 14000,
-    "skills/report-exam/SKILL.md": 21000,
+    # 21000 → 22000：report-exam 增 Recommendations extension 四列表格（课件语境，
+    # 不动 official 章节与 parse_fragment），实测 21466（+466）。属「基线 + 必要增量」
+    # （ADR-0005），不删既有内容，上调留 ~534B 余量。
+    "skills/report-exam/SKILL.md": 22000,
     "docs/research/*.md": 16000,
     "docs/operations/*.md": 17000,
     "docs/governance/adr/*.md": 8000,
-    "skills/*/SKILL.md": 12000,
+    # 12000 → 14000：第一批 Strix 融合专项增强——recon-ai 契约提取（+1719）、
+    # attack-ai-agent 越权影响硬判据（+351）、attack-multi-agent 冒充硬判据（+124）
+    # 等必要增量；四个文件 HEAD 已贴顶（11997/11743/11998），压缩无法容纳，属
+    # ADR-0005「基线 + 必要增量」，不删既有内容，上调留余量容纳并行 PR。
+    "skills/*/SKILL.md": 14000,
 }
 
 MANAGED_GLOBS = (

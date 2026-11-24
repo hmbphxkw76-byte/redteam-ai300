@@ -31,6 +31,7 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
    - 证据：`python tools/collect_evidence.py --step recon-05 --out loot/recon-05-agent-sys.md --strict`
    - 命令：`curl -s <AGENT_ENDPOINT>/<agent_probe>`
    - A2A 补录（沿用 recon-05）：`curl -s <EP>/.well-known/agent.json | jq '{name,description,url,protocolVersion,capabilities,skills,securitySchemes}'`；`curl -s <EP>/openapi.json | jq '.paths|keys'` + `/a2a/workflow` schema `$ref`；`curl -s <EP>/agents` + `/agents/deregister`。记 skills/tags 与注册/注销端点；基线见 `attack-multi-agent` a2a-01。null/404 记 `ABSENT`，超限按 `policy` 降级。
+   - 契约提取（沿用 recon-05，不新增 step_id）：复用上方已取的 `/openapi.json` 与 `/.well-known/agent.json` 响应，补记路径清单、`.security` 鉴权要求与能力清单到本步「关键输出」，按 `loot/recon-05-agent-sys.md` 路径引用供下游按资产 ID 复用（C1，不另立平行清单）；GraphQL 端点仅在 introspection 开放时探测一次 `curl -s <EP>/graphql -H 'Content-Type: application/json' -d '{"query":"{__schema{queryType{name}}}"}'`；`.proto` 仅作关联文件路径登记，不作独立端点探测。新增读取计入「请求 ≤12 且只读」预算，超出时 GraphQL introspection 降为可选并在缺口台账记依据；null/404 记 `ABSENT`。
 6. **MCP·工具面发现（recon-06）**：枚举 MCP 服务、工具定义（`/tools/list`）、function-calling 面与身份边界。
    - 证据：`python tools/collect_evidence.py --step recon-06 --out loot/recon-06-mcp.md --strict`
    - 命令：`curl -s -X POST <TARGET>/api/secrets/validate -H "Content-Type: application/json" -d '{"labId":"<LAB>","answer":"<单次错误答案>"}'`（被动枚举工具面；`ffuf` 仅 active 且已授权时用，禁爆破；资产按类别聚合 1 条）
@@ -38,6 +39,7 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
    - 证据：`python tools/collect_evidence.py --step recon-07 --out loot/recon-07-guardrail.md --strict`
    - 命令：`curl -s <AI_ENDPOINT>/v1/chat/completions -H "Content-Type: application/json" -d '{"model":"<MODEL>","messages":[{"role":"user","content":"<PROBE>"}]}'`
    - A2A 检测面基线（C5/§4.2）：授权可见 SIEM 时仅记规则名/触发（注册、DNS、hosts、`xp_cmdshell`、跳步、Unicode）；不改规则、不转抄正文，只写路径引用；不可访问记 `UNDETERMINED`。
+   - 契约护栏基线（沿用 recon-07，不新增 step_id）：从 recon-05 契约提取所得的路径清单中，以只读方式记录写端点（POST/PUT/PATCH/DELETE）与 `.security` 鉴权要求，作为护栏行为对照的一部分写入本步「关键输出」；按 `loot/recon-05-agent-sys.md` 路径引用，不另立清单。无契约或不可判定记 `ABSENT` / `UNDETERMINED`，不外推鉴权状态。
 
 证据通用参数：各步另加 `--cmd` / `--shot-cmd` / `--target`；recon-07 另加 `--ai-log` 与 flag 双通道。
 
@@ -134,11 +136,14 @@ Ch2 §2.1–2.4 行为级侦察旁路：`tools/recon_ai/ch2.py`，零网络只�
 
 A2A 命中时 recon-05 须含 Card/OpenAPI/注册端点与 `ABSENT`，recon-07 须含检测基线或 `UNDETERMINED`；不新增 step_id、不改七字段契约。
 
+API/OpenAPI 契约命中时 recon-05「关键输出」须含路径清单与 `.security` 鉴权要求（或 `ABSENT`），recon-07 须含写端点/鉴权护栏基线（或 `ABSENT`/`UNDETERMINED`）；契约信息按 `loot/recon-05-agent-sys.md` 路径引用，不写入七字段资产清单、不新增 step_id；GraphQL introspection 与新增读取计入「请求 ≤12 且只读」预算。
+
 ## 校验标准
 
 - 资产清单可被 `loot-manage` 与 `attack-ai-agent` / `attack-rag` / `attack-mcp-tool` 等**按资产ID复用**，无需二次枚举。
 - 枚举过程可被 **copy/paste 复现**；术语符合 `GLOSSARY.md`，禁用 `_Avoid_` 废弃术语。
-- **资产清单契约**（7 字段：资产ID/组件类别/产品引擎/版本/暴露端点/凭证线索仅指纹/关联 step_id），唯一定义见 `tools/recon_ai/model.py#ASSET_FIELDS`。
+- **资产清单契约**（7 字段：资产ID/组件类别/产品引擎/版本/暴露端点/凭证线索仅指纹/关联 step_id），唯一定义见 `tools/recon_ai/model.py#ASSET_FIELDS`；契约提取产物不侵入该七字段契约。
+- 契约提取结果可被 `threat-model` 与各 `attack-*` 按资产 ID 路径引用复用，不重复枚举、不新增 step_id。
 
 ## 失败与豁免
 

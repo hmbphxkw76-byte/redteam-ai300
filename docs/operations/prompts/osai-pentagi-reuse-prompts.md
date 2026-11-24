@@ -197,4 +197,15 @@ python scripts/check_token_budget.py --check
 python scripts/check_evidence_contract.py
 ```
 
+**证据命令的必填形态**（核验时按此写，避免假 FAIL）：
+
+```text
+# A-04 / B-09 断图校验：报告路径为必填参数，裸跑报 usage error
+python scripts/check_report_assets.py <报告 Markdown 路径>
+# A-05 PyRIT 兼容测试：用 discover 指向目录，-m unittest <包名> 会跑 0 例
+python -m unittest discover -s tests/pyrit_compat -t .
+# A-13 匿名化：凭据须写成 "token: <值>" 或 "token=<值>"，无分隔符时占位符规则不命中
+python -m tools.osai_orchestrator --anonymize "<文本> token: <值>"
+```
+
 **边界**：本集合仅为提示词文本，不含可执行载荷、真实目标地址或凭据；所有目标值均以占位符表示。不得据此声称已具备对应攻击能力，能力以 `skills/*/` 实现与门禁记录为准。

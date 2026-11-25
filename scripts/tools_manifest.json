@@ -21,7 +21,8 @@
       "tools/attack_jailbreak",
       "tools/attack_multimodal",
       "tools/osai_orchestrator",
-      "tools/foothold_ad"
+      "tools/foothold_ad",
+      "tools/foothold_traditional"
     ],
     "scripts": [
       "tools/_evidence_contract.py",
@@ -44,7 +45,8 @@
       "tools/vector_lookup.py",
       "tools/verify_evidence.py",
       "tools/workflow_disrupt.py",
-      "tools/target_profile.py"
+      "tools/target_profile.py",
+      "tools/evidence_pipeline.py"
     ],
     "helper_scripts": [
       "scripts/check_contract_consumers.py",
@@ -58,7 +60,18 @@
       "scripts/ci_cleanup.py",
       "scripts/mainline_worktree.py",
       "scripts/measure_coverage.py",
-      "scripts/validate_skill.py"
+      "scripts/validate_skill.py",
+      "scripts/validate_skill_mainline.py",
+      "scripts/verify_asc_b6_coverage.py",
+      "scripts/verify_asc_b6_skill_refs.py",
+      "scripts/verify_ch9_ft_coverage.py",
+      "scripts/verify_lm_b5_coverage.py",
+      "scripts/verify_lm_b5_skill_refs.py",
+      "scripts/verify_ra_c1_coverage.py",
+      "scripts/verify_ra_c1_skill_refs.py",
+      "scripts/verify_skill_refs.py",
+      "scripts/verify_tm_c3_coverage.py",
+      "scripts/verify_tm_c3_skill_refs.py"
     ]
   },
   "coverage_targets": [

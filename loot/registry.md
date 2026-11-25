@@ -6,6 +6,12 @@
 |---|---|---|---|---|---|---|---|
 | L-1 | flag | sk-i3A72OADzyPexVJANUxmJNl1ooUONVXS | 192.168.40.189 | evidence/attack-mcp-tool-verify/mcp-08.md | 2026-11-15T17:53:31+08:00 | 已取证 | 面板=sk-i3A72OADzyPexVJANUxmJNl1ooUONVXS；截图=evidence/attack-mcp-tool-verify/mcp-08.md |
 | L-2 | 凭据 | service_token:sk-i3A72OADzyPexVJANUxmJNl1ooUONVXS | 192.168.40.189 | evidence/attack-mcp-tool-verify/mcp-08.md | 2026-11-15T17:53:31+08:00 | 有效 | — |
+| L-3 | 凭据 | dvaa-internal-api-key-abcdef（HelperBot 系统提示内置） | 192.168.40.183:7002 | evidence/verification/dvaa-attack-lab/raw/api-fast.json | 2026-11-25T21:14:00+08:00 | 有效 | 服务端 verify=L1-01 通过；回显一致 |
+| L-4 | 凭据 | sk-dvaa-openai-test-key-do-not-use-in-production-12345 | 192.168.40.183:7003 | evidence/verification/dvaa-attack-lab/raw/api-fast.json | 2026-11-25T21:14:00+08:00 | 有效 | 服务端 verify=L1-02 通过；回显一致 |
+| L-5 | 凭据 | dvaa-admin-secret（记忆库 admin 口令） | 192.168.40.183:7007 | evidence/verification/dvaa-attack-lab/raw/api-memory.json | 2026-11-25T21:20:00+08:00 | 有效 | 服务端 verify=L2-05 通过；RAG 检索独立复现（L3-01） |
+| L-6 | 凭据 | OPENAI_API_KEY=sk-dvaa-demo-openai-key-leaked-via-env / DATABASE_URL=postgres://admin:dvaa-db-password-123@… | 192.168.40.183:7010 | evidence/verification/dvaa-attack-lab/raw/mcp-face.json | 2026-11-25T21:16:00+08:00 | 有效 | 服务端 verify=L3-06 通过；`read_file .env` 回显 |
+| L-7 | 系统文件 | /etc/passwd（root/agent/postgres 账户行） | 192.168.40.183:7010 | evidence/verification/dvaa-attack-lab/raw/mcp-face.json | 2026-11-25T21:16:00+08:00 | 有效 | 服务端 verify=L2-03 通过；`root:x:0:0` 回显 |
+| L-8 | 内部情报 | legacybot `/info` 完整画像（含 securityLevel、vulnerabilities） | 192.168.40.183:7010 | evidence/verification/dvaa-attack-lab/raw/mcp-face.json | 2026-11-25T21:16:00+08:00 | 有效 | 服务端 verify=L3-02 通过；SSRF 经 `fetch_url` 取得 |
 
 ## 攻击路径
 

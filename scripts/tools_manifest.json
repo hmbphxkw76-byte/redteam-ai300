@@ -20,7 +20,8 @@
       "tools/tooling_automate",
       "tools/attack_jailbreak",
       "tools/attack_multimodal",
-      "tools/osai_orchestrator"
+      "tools/osai_orchestrator",
+      "tools/foothold_ad"
     ],
     "scripts": [
       "tools/_evidence_contract.py",
@@ -469,6 +470,31 @@
         "tests.osai_orchestrator.test_exam_flow",
         "tests.report_exam.test_preflight",
         "tests.shared_tools.test_validate_skill_mainline"
+      ]
+    },
+    {
+      "name": "foothold-ad",
+      "modules": [
+        "tools.foothold_ad.model",
+        "tools.foothold_ad.artifact",
+        "tools.foothold_ad.analyze",
+        "tools.foothold_ad.evidence",
+        "tools.foothold_ad.runner",
+        "tools.foothold_ad.cli",
+        "tools.foothold_ad.provenance",
+        "tools.foothold_ad.preflight"
+      ],
+      "tests": [
+        "tests.foothold_ad.test_model",
+        "tests.foothold_ad.test_artifact",
+        "tests.foothold_ad.test_analyze",
+        "tests.foothold_ad.test_evidence",
+        "tests.foothold_ad.test_runner",
+        "tests.foothold_ad.test_cli",
+        "tests.foothold_ad.test_no_plaintext",
+        "tests.foothold_ad.test_hardening",
+        "tests.foothold_ad.test_provenance",
+        "tests.foothold_ad.test_preflight"
       ]
     }
   ]

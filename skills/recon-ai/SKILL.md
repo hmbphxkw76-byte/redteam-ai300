@@ -31,7 +31,8 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
    - 证据：`python tools/collect_evidence.py --step recon-05 --out loot/recon-05-agent-sys.md --strict`
    - 命令：`curl -s <AGENT_ENDPOINT>/<agent_probe>`
    - A2A 补录（沿用 recon-05）：`curl -s <EP>/.well-known/agent.json | jq '{name,description,url,protocolVersion,capabilities,skills,securitySchemes}'`；`curl -s <EP>/openapi.json | jq '.paths|keys'` + `/a2a/workflow` schema `$ref`；`curl -s <EP>/agents` + `/agents/deregister`。记 skills/tags 与注册/注销端点；基线见 `attack-multi-agent` a2a-01。null/404 记 `ABSENT`，超限按 `policy` 降级。
-   - 契约提取（沿用 recon-05，不新增 step_id）：复用上方已取的 `/openapi.json` 与 `/.well-known/agent.json` 响应，补记路径清单、`.security` 鉴权要求与能力清单到本步「关键输出」，按 `loot/recon-05-agent-sys.md` 路径引用供下游按资产 ID 复用（C1，不另立平行清单）；GraphQL 端点仅在 introspection 开放时探测一次 `curl -s <EP>/graphql -H 'Content-Type: application/json' -d '{"query":"{__schema{queryType{name}}}"}'`；`.proto` 仅作关联文件路径登记，不作独立端点探测。新增读取计入「请求 ≤12 且只读」预算，超出时 GraphQL introspection 降为可选并在缺口台账记依据；null/404 记 `ABSENT`。
+   - 契约提取（沿用 recon-05，不新增 step_id）：复用已取的 `/openapi.json` 与 `/.well-known/agent.json`，补记路径清单、`.security` 鉴权与能力清单到本步「关键输出」，按 `loot/recon-05-agent-sys.md` 路径引用（C1）；GraphQL 仅在 introspection 开放时探测一次 `curl -s <EP>/graphql -d '{"query":"{__schema{queryType{name}}}"}'`；`.proto` 仅登记路径。新增读取计入「请求 ≤12 且只读」预算，超出时 GraphQL 降为可选并在缺口台账记依据；null/404 记 `ABSENT`。
+   - 影子端点（Ch2 C8，沿用 recon-05）：OpenAPI `paths` 与前端字面量差集（`tools/recon_ai/shadow.py`），按置信度记入「关键输出」；命中≠可用、不入七字段。
 6. **MCP·工具面发现（recon-06）**：枚举 MCP 服务、工具定义（`/tools/list`）、function-calling 面与身份边界。
    - 证据：`python tools/collect_evidence.py --step recon-06 --out loot/recon-06-mcp.md --strict`
    - 命令：`curl -s -X POST <TARGET>/api/secrets/validate -H "Content-Type: application/json" -d '{"labId":"<LAB>","answer":"<单次错误答案>"}'`（被动枚举工具面；`ffuf` 仅 active 且已授权时用，禁爆破；资产按类别聚合 1 条）

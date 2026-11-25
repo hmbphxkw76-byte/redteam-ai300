@@ -6,11 +6,11 @@
 
 | 判定 | 数量 | 占比 |
 |---|---|---|
-| 完整覆盖 | 29 | 58% |
+| 完整覆盖 | 30 | 60% |
 | 部分覆盖 | 13 | 26% |
-| 未覆盖 | 8 | 16% |
+| 未覆盖 | 7 | 14% |
 
-**总体判定：主体覆盖，两处结构性缺口。**
+**总体判定：主体覆盖，结构性缺口仅剩 AD 域渗透。**
 
 1. **AI 攻面向覆盖度高**：Ch3–Ch10 的 agent / A2A / RAG / embedding / MCP / 供应链 / 基础设施 / 威胁建模场景，均有对应技能的稳定 step_id 与证据契约承载，未发现「文档有、技能无」的整类 AI 攻击面缺失。
 2. **传统侧存在结构性缺口**：Ch11 的 AD 域渗透（Kerberos、ADCS、DCSync、跨域信任）在 `skills/` 内**无任何承载技能**；`foothold-traditional` 止于入口/横向/本地提权，`capstone-rehearse` 仅做走查与缺口登记。该缺口直接对应 capstone 的 Domain Admin 目标与 `proof.txt` 计分。
@@ -37,7 +37,7 @@
 | ch02 | 模型指纹（`/v1/models`、`/health`、错误页差异） | `recon-ai` recon-01/02 + `tools/recon_ai/ch2.py` | 完整 |
 | ch02 | MCP 协议发现（`/.well-known/mcp.json`） | `recon-ai` recon-06 | 完整 |
 | ch02 | GitLab 凭据泄露（仓库 `.env`） | `foothold-traditional` trad-05（Ch11 PAT 场景） | 部分：覆盖 Ch11 dev 主机 PAT，无 Ch2 克隆取 `.env` 路径 |
-| ch02 | 影子 API 端点（webapp02 未公开 location） | 无 | **未覆盖** |
+| ch02 | 影子 API 端点（webapp02 未公开 location） | `recon-ai` recon-05 + `tools/recon_ai/shadow.py` | 完整 |
 | ch02 | RAG 知识库会话式接口 | `recon-ai` recon-03/04；`attack-rag` rag-00 | 完整 |
 | ch02 | SIEM 可观测与日志分析闭环 | `attack-ai-agent` 五步闭环；`attack-rag` detect/confirm；`recon-ai` recon-07 | 完整 |
 
@@ -109,7 +109,7 @@
 | 优先级 | 缺口 | 得分相关性 | 实现成本 | 建议落点 |
 |---|---|---|---|---|
 | P0 | AD 域渗透与域控收敛 | 高：capstone 目标为 Domain Admin，`proof.txt` 属高杠杆计分 | 高：需新增技能与证据契约 | 新增 `foothold-ad`（或不扩充 `foothold-traditional` 的 Ch11 章），以离线解析器 + 工件夹具为主，无域环境标 `BLOCKED` |
-| P0 | 影子 API 端点发现 | 中：Ch2 明确侦察目标，直接影响资产清单完整性 | 低：`recon-ai` 增判据 | 评估新增 `recon-08` 的契约成本；否则并入 recon-05/07 的「关键输出」 |
+| P0 | 影子 API 端点发现 | 中：Ch2 明确侦察目标，直接影响资产清单完整性 | 低：`recon-ai` 增判据 | **已实施**（recon-05「关键输出」+ `shadow.py`，不新增 step_id） |
 | P1 | 追踪服务未授权（Phoenix/MLflow UI） | 中：数据面外泄入口，常与 RAG 链串联 | 低：`attack-rag` 增一步 | rag-11（或并入 rag-00 面定位） |
 | P1 | 元数据聚合枚举（GraphQL Aggregate） | 中：Ch6 目标 3 的独立攻击面 | 低：`attack-embeddings` 增 emb-c9 | 复用 recon-05 introspection 结果 |
 | P1 | 社工诱饵与凭据诱导 | 中：Ch3/Ch5 双处场景 | 低：话术剧本 + 证据模板 | 由 `decoy-detect` 扩展为「诱饵识别 + 社工面处置」 |

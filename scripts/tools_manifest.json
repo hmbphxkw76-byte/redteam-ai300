@@ -110,14 +110,16 @@
         "tools.recon_ai.cli",
         "tools.recon_ai.ch2",
         "tools.recon_ai.ch9_cloud_surface",
-        "tools.recon_ai.emb_surface"
+        "tools.recon_ai.emb_surface",
+        "tools.recon_ai.shadow"
       ],
       "tests": [
         "tests.recon_ai.test_recon_ai",
         "tests.recon_ai.test_recon_ai_units",
         "tests.recon_ai.test_recon_ai_ch2",
         "tests.recon_ai.test_recon_ai_ch9",
-        "tests.recon_ai.test_recon_ai_ch6"
+        "tests.recon_ai.test_recon_ai_ch6",
+        "tests.recon_ai.test_recon_ai_shadow"
       ]
     },
     {

@@ -1,7 +1,42 @@
-# PyRIT 原生实现依赖（CI-CD §3 S2 登记）
+# ─────────────────────────────────────────────────────────────────────
+# 依赖登记表（非必装清单）。核心路径零第三方依赖（ADR-0003）：
+# 实现 = 标准库 + 延迟导入 + 假后端；CI S1/S2 不安装本文件。
+# 测试 = 标准库 unittest，运行 `python -m unittest discover -s tests -t . -q`。
+#
+# 审计口径（2026-11-25 全仓复扫）：对全部 .py 做 AST 顶层 import 提取，
+# 排除标准库与本地模块后，外部模块恰为 4 个 —— pyrit / pyarrow / art /
+# a2asecbench。四者均为延迟导入：缺失时显式报错或降级 NOT_AVAILABLE，
+# 不静默伪造结果（B9 透明）。本节之外的任何 Python 依赖都属遗漏。
+# ─────────────────────────────────────────────────────────────────────
+
+# ── 一、PyRIT 原生执行后端（攻击类技能的实弹后端）────────────────────
 # 目标版本 1.2.1；版本事实唯一来源 tools/pyrit_compat/data/versions/，
 # 哈希锁用 `python -m tools.pyrit_compat.checker lock --version 1.2.1` 即时生成。
 # 版本追踪与迁移依据：docs/research/pyrit-version-tracking-1.2.x.md
-# 注意：CI S1/S2 不安装本文件；实现采用延迟导入 + 标准库假后端，保持零依赖（ADR-0003）。
-# 测试框架：标准库 unittest（零外部依赖），运行 `python -m unittest discover -s tests -q`。
+# 延迟导入契约：顶层不得 import pyrit（见 tools/attack_ai_agent/backends.py）。
 pyrit==1.2.1
+
+# ── 二、能力扩展（按需安装；缺失时显式报错，不静默降级）──────────────
+# 未锁定版本：本仓库不依赖其 API 稳定性，各 seam 均以注入式设计隔离，
+# 故升级不会破坏既有测试；需要确定性时请在本地另行 pin。
+#
+#   pyarrow                          → tools/attack_embeddings/exporter.py
+#                                      写 .parquet 嵌入向量；缺失返回 NOT_AVAILABLE
+#   adversarial-robustness-toolbox   → tools/attack_supply_chain/poison_engine.py
+#                                      ArtPoisonBackend（import 名为 art）
+#   a2asecbench                      → tools/attack_multi_agent/scanner.py
+#                                      A2ASecBench 外部扫描器适配；亦可注入 runner 替代
+#
+# 安装：pip install pyarrow adversarial-robustness-toolbox a2asecbench
+#
+# 不取消注释的原因：本文件若被 `pip install -r` 全量安装，会破坏零依赖设计，
+# 并使 CI 与本地环境偏离（CI 刻意不装）。上述包名即权威清单。
+
+# ── 三、非 Python 构建工具链（pip 不可安装，CI 固定版本）──────────────
+# 报告渲染与打包依赖：pandoc 3.14 / typst 0.15.1 / 7z
+# 固定版本来源：.github/workflows/report-toolchain.yml（与本机便携工具链一致）
+# 本机安装位置：%USERPROFILE%\.workbuddy\binaries\pandoc-3.14\
+#               %USERPROFILE%\.workbuddy\binaries\typst-0.15.1\
+#               %USERPROFILE%\.workbuddy\binaries\7zr.exe
+# 渲染命令：pandoc --toc --pdf-engine=typst --resource-path=reports:. \
+#             reports/<NAME>.md -o reports/build/<NAME>.pdf

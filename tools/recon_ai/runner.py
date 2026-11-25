@@ -128,6 +128,34 @@ def resolve_body(body, labs=None):
     return resolved
 
 
+def _unresolved(*values):
+    """返回仍未展开的镜像占位符（画像缺该角色映射时出现，禁止外发）。"""
+    found = []
+    for value in values:
+        if isinstance(value, dict):
+            text = json.dumps(value, ensure_ascii=False, sort_keys=True)
+        else:
+            text = value or ""
+        for marker in (target_profile_mod.PLACEHOLDER_LAB,
+                       target_profile_mod.PLACEHOLDER_HOST,
+                       target_profile_mod.PLACEHOLDER_MODEL):
+            if marker in text and marker not in found:
+                found.append(marker)
+    return found
+
+
+def _skipped(step_id, req, url, missing):
+    """占位符未展开时记录「已跳过」而非外发请求（判定为不可判定）。"""
+    reason = ("已跳过：目标画像未提供该角色映射，%s 未展开，不外发占位符"
+              % "、".join(missing))
+    return ProbeResult(
+        step_id=step_id, url=url, method=req.method,
+        command="# %s（%s）" % (reason, url),
+        note=req.tag, error=reason,
+        existence=Existence.UNDETERMINED,
+    )
+
+
 def _request(transport, spec, req, url, step_id, timeout, body=None):
     """发一次请求并包装为 ProbeResult（不抛异常：网络失败转 error）。"""
     payload = req.json_body if body is None else body
@@ -238,6 +266,12 @@ def run_recon(target, profile="passive", lab="", out_dir=None,
                     url = build_url(target, path, chat_lab, labs)
                     body = req.body_fn(ctx) if req.body_fn is not None else \
                         resolve_body(req.json_body, labs)
+                    missing = _unresolved(path, url, body)
+                    if missing:
+                        # 画像缺该角色映射：宁可记「不可判定」，也不把
+                        # <LAB_ID>/<TARGET>/<MODEL> 字面量发到目标上。
+                        results.append(_skipped(spec.step_id, req, url, missing))
+                        continue
                     result = _request(transport, spec, req, url, spec.step_id,
                                       timeout, body=body)
                     results.append(result)
@@ -254,6 +288,8 @@ def run_recon(target, profile="passive", lab="", out_dir=None,
                                 else "") or build_url(
                                     target, probes.request_path(spec.requests[0], ctx),
                                     chat_lab, labs)
+                    if _unresolved(fallback):
+                        fallback = target + "/"
                     endpoints[spec.step_id] = fallback
                 if plan is not None:
                     results.extend(plan.step_results.get(spec.step_id, []))

@@ -146,6 +146,30 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(entries[0]["scope"], "read")
         self.assertEqual(entries[0]["server"], "main_server")
 
+    def test_parse_tool_entries_supports_inline_bullet_format(self):
+        """回归：`- name — Server: x (trusted) — Required scope: y` 行内清单须可解析。
+
+        实测（AIVP MCP_01）：目标以该形态枚举工具，旧解析器只认「工具名：」标签，
+        导致工具面被判「已跳过」——真实的工具声明被漏采。
+        """
+        text = ("Available MCP tools:\n"
+                "- get_config — Server: main_server (trusted) — "
+                "Description: Get server configuration — Required scope: read\n"
+                "- get_token — Server: main_server (trusted) — "
+                "Description: Retrieve service token for backend calls — "
+                "Required scope: read:token\n")
+        entries = model.parse_tool_entries(text)
+        self.assertEqual([e["name"] for e in entries], ["get_config", "get_token"])
+        self.assertEqual(entries[0]["server"], "main_server")
+        self.assertEqual(entries[0]["scope"], "read")
+        self.assertEqual(entries[1]["scope"], "read:token")
+        self.assertEqual(entries[0]["trust"], "trusted")
+
+    def test_parse_tool_entries_ignores_plain_bullets(self):
+        """无声明字段的普通列表不得被误判为工具面。"""
+        entries = model.parse_tool_entries("- 先侦察\n- 再枚举\n- 最后取证\n")
+        self.assertEqual(entries, [])
+
     def test_parse_tool_entries_ignores_table_header(self):
         text = "| Tool Name | Scope |\n|---|---|\n| `run_command` | `write` |"
         entries = model.parse_tool_entries(text)

@@ -13,7 +13,7 @@
   classify_disclosure / detect_canary / DETECTION_RULES
   assess_detection / covert_rewrite / pacing_plan / mine_repository
   parse_self_describing / parse_response_metadata / parse_client_js
-  probe_threshold_series / assess_log_visibility
+  probe_threshold_series / assess_log_visibility / parse_shadow_endpoints
   analyze / validate_analysis
 """
 import json
@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List
 
+from . import shadow
 from .model import Existence, credential_hint
 
 # §2.1 分层枚举属性分类法：文档四层 → 现有 7 步组件类别（C1 单一事实源）
@@ -346,6 +347,17 @@ def detect_canary(text):
                    "仅识别与留痕，不尝试使用任何凭据")
 
 
+def parse_shadow_endpoints(observation):
+    """§2.3 Ch2 C8：影子端点差集（OpenAPI 声明 vs 前端字面量）。"""
+    result = shadow.analyze(observation)
+    signals = [
+        Signal("shadow:%s" % item["confidence"], item["path"], item["reason"],
+               "高" if item["confidence"] == shadow.HIGH else "中")
+        for item in result["candidates"]
+    ]
+    return Finding("影子端点", result["status"], signals, result["basis"])
+
+
 def assess_detection(query):
     """§2.4 规则命中分析：关键词匹配检测规则（匹配关键词而非语义意图）。"""
     low = (query or "").lower()
@@ -601,6 +613,8 @@ def analyze(observations):
             extra_findings.append(probe_threshold_series(item.get("stages")))
         elif kind == "log_view":
             extra_findings.append(assess_log_visibility(item.get("log")))
+        elif kind == "shadow":
+            extra_findings.append(parse_shadow_endpoints(item))
     findings = [
         fingerprint_behavior(behavior_obs),
         map_knowledge_base(source_groups),

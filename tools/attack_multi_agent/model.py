@@ -7,6 +7,7 @@
   - 效果等级取值固定为四值，供 `grade` 与报告共用；
   - 敏感值识别用正则，不引入第三方库。
 """
+import json
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, Tuple
@@ -57,13 +58,57 @@ def redact(text, keep=6):
     return text[:keep] + "<REDACTED>" + text[-2:]
 
 
+# 结构化拓扑字段：不同实现的 A2A/agent 服务用不同键暴露对端清单。
+# 按「数组值 + 允许标量」两种形态取值，避免把单个字符串切成字符。
+_AGENT_LIST_KEYS = ("trustedAgents", "trusted_agents", "agents", "peers", "workers",
+                    "members", "nodes", "targets")
+_BUS_KEYS = ("bus", "busUrl", "bus_url", "broker", "transport", "messageBus")
+
+
+def _structured_topology(text):
+    """从 JSON 拓扑文档中抽取 agent 清单与总线标识；非 JSON 或无字段时返回 None。"""
+    try:
+        data = json.loads(text or "")
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    agents, bus = [], ""
+    for key in _AGENT_LIST_KEYS:
+        val = data.get(key)
+        if isinstance(val, list):
+            for item in val:
+                if isinstance(item, str) and item:
+                    agents.append(item)
+                elif isinstance(item, dict):
+                    name = item.get("id") or item.get("name") or item.get("agentId")
+                    if name:
+                        agents.append(str(name))
+    for key in _BUS_KEYS:
+        val = data.get(key)
+        if isinstance(val, str) and val:
+            bus = val
+            break
+    self_id = data.get("id") or data.get("agentId") or data.get("name")
+    if not agents and not bus and not self_id:
+        return None
+    return {"agents": tuple(agents), "bus": bus, "self_id": str(self_id or "")}
+
+
 def parse_topology(text):
     """从拓扑发现输出中抽取 agent/bus/memory 要素，返回计数与样本。
 
-    只抽取显式声明的字段，缺失即留空（不臆造）。
+    只抽取显式声明的字段，缺失即留空（不臆造）。先按结构化 JSON 取，
+    再回退到标签式正则；两种形态共用同一返回结构。
     """
+    structured = _structured_topology(text)
     agents = set(_AGENT_RE.findall(text or ""))
     has_bus = bool(_BUS_RE.search(text or ""))
+    if structured:
+        agents.update(structured["agents"])
+        has_bus = has_bus or bool(structured["bus"])
+        if structured["self_id"]:
+            agents.discard(structured["self_id"])
     memory_keys = _MEMORY_KEY_RE.findall(text or "")
     return {
         "agents": tuple(sorted(agents)),
@@ -74,9 +119,15 @@ def parse_topology(text):
 
 
 def message_accepted(text):
-    """消息操纵/冒充是否被接受：出现典型受理回执或转发/广播指示。"""
-    return bool(re.search(r"(accepted|已接收|published|已发布|broadcast|转发|enqueued|acked)",
-                          text or "", re.IGNORECASE))
+    """消息操纵/冒充是否被接受：出现典型受理回执或转发/广播指示。
+
+    不同实现的回执用词不同（accepted/completed/processed/received），
+    统一在此归一，避免把「已受理」误判为「未被受理」。
+    """
+    return bool(re.search(
+        r"(accepted|received|processed|completed|published|broadcast|enqueued|acked"
+        r"|taskId|已接收|已发布|已处理|转发)",
+        text or "", re.IGNORECASE))
 
 
 def before_after_diff(before, after):

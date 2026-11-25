@@ -91,6 +91,30 @@ class _StepOutcome:
     response_for_shot: str = ""
 
 
+# 语义角色 → 候选工具名（按优先级）。步骤契约绑定「能力」而非「某一目标的命名」，
+# 使同一份步骤定义可作用于工具命名不同的同类目标（run_command/execute/shell…）。
+TOOL_ROLES = {
+    "exec": ("run_command", "execute", "exec", "shell", "run_shell", "bash", "terminal"),
+    "admin": ("admin_action", "admin", "config", "set_config", "admin_panel", "privileged_action"),
+    "read": ("read_file", "read", "cat", "get_file", "read_text_file"),
+    "fetch": ("fetch_url", "fetch", "http_get", "request", "url_open"),
+    "register": ("register_tool", "register", "add_tool", "install_tool"),
+}
+
+# 工具名 → 参数键。未知工具按首个候选键发起，失败后由调用方以另一键重试。
+TOOL_ARG_KEY = {
+    "run_command": "cmd", "exec": "cmd", "shell": "cmd", "bash": "cmd",
+    "execute": "command", "run_shell": "command", "terminal": "command",
+    "admin_action": "action", "admin": "action", "privileged_action": "action",
+    "read_file": "path", "read": "path", "cat": "path", "get_file": "path",
+    "read_text_file": "path",
+    "fetch_url": "url", "fetch": "url", "http_get": "url", "request": "url",
+    "url_open": "url",
+    "register_tool": "name", "register": "name", "add_tool": "name",
+    "install_tool": "name",
+}
+
+
 class _Session:
     """一次运行的执行上下文（持有客户端与中间结果）。"""
 
@@ -108,6 +132,32 @@ class _Session:
         self.server_started = False
         self.started_server: Optional[poison.PoisonedMcpServer] = None
         self._writer = runtime.writer
+        self._tool_names = None   # tools/list 缓存（None=未探测）
+
+    # —— 跨目标工具适配 ——
+    def tool_names(self):
+        """返回目标实际暴露的工具名集合；不可达时为空集（只探一次）。"""
+        if self._tool_names is None:
+            names = set()
+            if self.mode == "jsonrpc":
+                surface, _obs = self.rpc.list_tools()
+                names = {t.name for t in surface.tools if t.name}
+            self._tool_names = names
+        return self._tool_names
+
+    def resolve_tool(self, role, default=""):
+        """按语义角色解析目标实际工具名与参数键。
+
+        命中优先级：TOOL_ROLES[role] 中目标真实存在的名字 → 契约默认名。
+        目标未暴露任何工具时回退默认名，保持对静态契约既有行为不变。
+        """
+        names = self.tool_names()
+        for cand in TOOL_ROLES.get(role, ()):
+            if cand in names:
+                return cand, TOOL_ARG_KEY.get(cand, "cmd")
+        if default:
+            return default, TOOL_ARG_KEY.get(default, "cmd")
+        return "", ""
 
     # —— 工具 ——
     def lab(self, spec):
@@ -332,18 +382,21 @@ def _step_mcp_04(sess, spec):
 
 def _step_mcp_05(sess, spec):
     if sess.mode == "jsonrpc":
-        obs, cmd = sess.rpc_call(spec.tool, {"cmd": "id; whoami"})
+        name, key = sess.resolve_tool("exec", spec.tool)
+        obs, cmd = sess.rpc_call(name, {key: "id; whoami"})
         executed = not obs.error
     else:
+        name, key = spec.tool, "cmd"
         obs, cmd = sess.probe(spec)
         executed = bool((obs.telemetry or {}).get("selected_tool"))
     if obs.secrets:
         sess.last_secret = obs.secrets[0]
     return _StepOutcome(observation=obs, command=cmd,
                         ctx={"tool_executed": executed, "prompted": True,
+                             "tool_name": name,
                              "lab": sess.lab(spec)},
-                        note="以合法工具（run_command，scope=write）执行边界外命令；"
-                             "回显为空时按「执行未取得回显」记录，不夸大。",
+                        note="以合法工具（%s，scope=write）执行边界外命令；"
+                             "回显为空时按「执行未取得回显」记录，不夸大。" % name,
                         response_for_shot=_render(obs))
 
 
@@ -382,13 +435,23 @@ def _step_mcp_07(sess, spec):
     且首个成功即停。
     """
     if sess.mode == "jsonrpc":
-        obs, cmd = sess.rpc_call("admin_action", {"action": "status"})
+        name, key = sess.resolve_tool("admin", "")
+        degraded = ""
+        if not name:
+            # 目标未提供 admin 语义工具时，降级到最高权限的写/执行工具，
+            # 语义仍在「以低权工具达成越界动作」，不虚报为 admin 工具。
+            name, key = sess.resolve_tool("exec", "admin_action")
+            degraded = "目标无 admin 语义工具，降级至 exec 角色（%s）" % name
+        args = {"status": "status"} if key == "action" else {"cmd": "id; whoami"}
+        obs, cmd = sess.rpc_call(name, args)
         admin = '"admin": true' in (obs.tool_result or "").replace("True", "true")
         return _StepOutcome(
             observation=obs, command=cmd,
-            ctx={"tool_name": "admin_action", "admin_confirmed": admin,
-                 "scope_map": {"admin_action": "admin"}},
-            note="本地对照组：scope=admin 的工具在无授权校验下被执行。",
+            ctx={"tool_name": name, "admin_confirmed": admin,
+                 "scope_map": {name: "admin" if not degraded else "write"}},
+            note=("本地对照组：scope=admin 的工具在无授权校验下被执行。"
+                  if not degraded else
+                  "本地对照组：%s；以该工具执行越界动作，按实际权限计级。" % degraded),
             response_for_shot=_render(obs))
 
     profile = (getattr(sess.request, "target_profile", None)

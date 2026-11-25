@@ -40,7 +40,8 @@ class EvidenceWriterContract(Protocol):
              **options) -> Tuple[str, int, str]:
         """写一份片段，返回 (片段路径, 退出码, 标准错误摘要)。
 
-        退出码语义沿用共享收集器：0 成功；1 严格模式未过质量门；2 用法/运行错误。
+        退出码语义唯一事实源见 docs/contracts/collect_evidence.contract.md §5
+        （0 成功；1 错误，含缺必需输入/严格质量门未过/写入失败；2 用法错误）。
         """
         ...
 

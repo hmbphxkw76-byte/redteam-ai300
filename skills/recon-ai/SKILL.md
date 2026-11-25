@@ -41,7 +41,7 @@ output: 结构化 AI 资产清单（组件、暴露面、依赖、证据）
    - A2A 检测面基线（C5/§4.2）：授权可见 SIEM 时仅记规则名/触发（注册、DNS、hosts、`xp_cmdshell`、跳步、Unicode）；不改规则、不转抄正文，只写路径引用；不可访问记 `UNDETERMINED`。
    - 契约护栏基线（沿用 recon-07，不新增 step_id）：从 recon-05 契约提取所得的路径清单中，以只读方式记录写端点（POST/PUT/PATCH/DELETE）与 `.security` 鉴权要求，作为护栏行为对照的一部分写入本步「关键输出」；按 `loot/recon-05-agent-sys.md` 路径引用，不另立清单。无契约或不可判定记 `ABSENT` / `UNDETERMINED`，不外推鉴权状态。
 
-证据通用参数：各步另加 `--cmd` / `--shot-cmd` / `--target`；recon-07 另加 `--ai-log` 与 flag 双通道。
+证据通用参数：各步另加 `--cmd` / `--shot-cmd` / `--target`，运行期须注入 `--output-file <实测输出>`（`docs/contracts/collect_evidence.contract.md` §1，缺失则 `--strict` 必退出 1）；recon-07 另加 `--ai-log` 与 flag 双通道。
 
 ## Ch9 云暴露面（不新增 step_id）
 

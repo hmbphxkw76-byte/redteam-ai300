@@ -35,6 +35,14 @@ class CompatTests(unittest.TestCase):
         self.assertEqual(adapted["params_type"], "PromptSendingAttackParameters")
         self.assertTrue(any(a.severity == "warn" for a in alerts))
 
+    def test_trace_config_additive_since_120(self):
+        for v in ("1.2.0", "1.2.1"):
+            adapted, alerts = compat.adapt_kwargs(
+                "pyrit.prompt_target.HTTPTarget",
+                {"http_request": object(), "trace_config": {}}, v)
+            self.assertIn("trace_config", adapted)
+            self.assertTrue(any(a.code == "PARAM_ADDED" for a in alerts))
+
     def test_runtime_version_guard(self):
         with mock.patch("tools.pyrit_compat.compat.metadata.version", return_value="1.2.0"):
             with self.assertRaises(compat.CompatibilityError):

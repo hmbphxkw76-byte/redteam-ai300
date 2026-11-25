@@ -89,7 +89,7 @@ output: 每台主机「命令 + 输出 + 截图」证据、横向路径图、提
 - **提权前后权限证明**（`whoami`/`id` 对照，§7.2）。
 - **横向路径图**（入口 → 横向 → 各主机的路径证据链）。
 - 2 台传统向量机 `trad_vector.txt` 的「面板提交 + 截图」**双通道一致**。
-- 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 GOVERNANCE §质量门），保证三件套/五件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。
+- 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 GOVERNANCE §质量门），保证三件套/五件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。关键输出运行期须注入 `--output-file`（`docs/contracts/collect_evidence.contract.md` §1）。
 - 每个取得的凭据/会话/flag 已即时登记 `loot-manage`。
 
 ## 校验标准

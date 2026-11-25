@@ -38,6 +38,7 @@ GENERIC_ENDPOINTS: Dict[str, str] = {
     "explore": "/explore",
     "bundle": "/assets/index.js",
     "chat": "/api/labs/{lab}/chat",
+    "agent_chat": "/api/agents/{agent}/chat",
     "summary": "/api/labs/{lab}/summary",
     "secret_validate": "/api/secrets/validate",
     "agent_card": "/.well-known/agent.json",

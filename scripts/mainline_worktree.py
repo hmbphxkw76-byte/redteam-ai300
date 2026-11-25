@@ -23,8 +23,10 @@ import os
 import subprocess
 import sys
 
-# 缺省 worktree 根目录（与既有并行工作树 /d/_*_wt 约定一致）。
-DEFAULT_WORKTREE_ROOT = "D:/" if os.name == "nt" else "/"
+# 缺省 worktree 根目录：环境变量覆盖 > 仓库父目录（同级 sibling，无盘符/根目录假设）。
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_WORKTREE_ROOT = (os.environ.get("REDTEAM_WORKTREE_ROOT")
+                         or os.path.dirname(_REPO_ROOT))
 
 
 def _run(cmd: list[str], cwd: str | None = None, check: bool = True) -> subprocess.CompletedProcess:

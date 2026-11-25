@@ -269,7 +269,14 @@
           "kind": "reject_param",
           "param": "http_target",
           "replacement": "http_request"
-        },
+        }
+      ]
+    },
+    {
+      "id": "ADP-LEGACY-HTTP-TRACE",
+      "symbol": "pyrit.prompt_target.HTTPTarget",
+      "until": "1.2.0",
+      "actions": [
         {
           "kind": "reject_param",
           "param": "trace_config",

@@ -14,6 +14,7 @@ from typing import Callable, Dict, Optional, Tuple
 
 from .model import Category, Existence
 from . import fingerprint
+from tools import target_profile
 
 ECHO_MARKER = "RECON-PROBE-OK"
 SECURITY_HEADERS = ("Content-Security-Policy", "X-Frame-Options",
@@ -28,7 +29,12 @@ BUNDLE_RE = re.compile(r'src="(/assets/[^"]+\.js)"')
 # --------------------------------------------------------------------------
 @dataclass(frozen=True)
 class RequestSpec:
-    """一次请求的声明。`path_fn` 用于依赖前序响应的动态路径（如前端 bundle 名）。"""
+    """一次请求的声明。`path_fn` 用于依赖前序响应的动态路径（如前端 bundle 名）。
+
+    `endpoint_key` 引用目标画像端点模板（tools/target_profile.py GENERIC_ENDPOINTS
+    单源），运行期经画像解析，外部画像可覆盖；`lab_role` 把模板的 {lab} 占位
+    指到非 chat 角色。无 endpoint_key 时沿用 `path` 字面默认。
+    """
 
     label: str
     method: str
@@ -40,6 +46,8 @@ class RequestSpec:
     when: Optional[Callable[[dict], bool]] = None
     collect: Optional[Callable[[object], dict]] = None
     tag: str = ""    # 请求标签（如 port-probe），供判据区分主动端口探测
+    endpoint_key: str = ""
+    lab_role: str = ""
 
 
 @dataclass(frozen=True)
@@ -687,11 +695,25 @@ def _family(ctx, name):
 
 
 def _chat_path(ctx):
+    profile = ctx.get("target_profile") or target_profile.GENERIC
     plan = ctx.get("plan")
     if plan is not None and getattr(plan, "family", "") == "dvaa" \
             and getattr(plan, "chat_agent_id", ""):
-        return "/api/agents/%s/chat" % plan.chat_agent_id
-    return "/api/labs/{lab}/chat"
+        return profile.endpoint("agent_chat", agent=plan.chat_agent_id)
+    return profile.endpoint("chat")
+
+
+def request_path(req, ctx):
+    """运行期路径解析：path_fn > 画像端点（外部画像可覆盖）> 声明默认。"""
+    if req.path_fn is not None:
+        return req.path_fn(ctx)
+    if req.endpoint_key:
+        profile = ctx.get("target_profile") or target_profile.GENERIC
+        template = profile.endpoint(req.endpoint_key)
+        if req.lab_role:
+            template = template.replace("{lab}", "{lab:%s}" % req.lab_role)
+        return template
+    return req.path
 
 
 def _chat_body(ctx):
@@ -709,8 +731,8 @@ STEP_SPECS: Tuple[StepSpec, ...] = (
         purpose="从运行时响应命名模型与引擎族；模型清单端点缺失时记「不存在」",
         judge="engine",
         requests=(
-            RequestSpec("部署配置", "GET", "/api/config", timeout=10),
-            RequestSpec("模型清单（可选）", "GET", "/v1/models", timeout=10),
+            RequestSpec("部署配置", "GET", endpoint_key="config", timeout=10),
+            RequestSpec("模型清单（可选）", "GET", endpoint_key="models", timeout=10),
         ),
     ),
     StepSpec(
@@ -718,11 +740,11 @@ STEP_SPECS: Tuple[StepSpec, ...] = (
         purpose="枚举模型服务端点、会话面与流式结构（单次无害回显）",
         judge="model_service",
         requests=(
-            RequestSpec("聊天端点（无害回显）", "POST", "/api/labs/{lab}/chat",
+            RequestSpec("聊天端点（无害回显）", "POST", endpoint_key="chat",
                         json_body={"prompt": "Reply with exactly: " + ECHO_MARKER},
                         path_fn=_chat_path, body_fn=_chat_body, timeout=120,
                         when=lambda ctx: not _family(ctx, "streamlit")),
-            RequestSpec("运行遥测", "GET", "/api/me/runs?limit=1", timeout=10,
+            RequestSpec("运行遥测", "GET", endpoint_key="runs", timeout=10,
                         when=lambda ctx: not _family(ctx, "streamlit")),
             RequestSpec("聊天前端入口", "GET", "",
                         path_fn=lambda ctx: (
@@ -735,9 +757,11 @@ STEP_SPECS: Tuple[StepSpec, ...] = (
         purpose="以检索链路痕迹判定 RAG 存在与框架族",
         judge="rag",
         requests=(
-            RequestSpec("入口页", "GET", "/explore", timeout=15, collect=_collect_bundle),
+            RequestSpec("入口页", "GET", endpoint_key="explore", timeout=15, collect=_collect_bundle),
             RequestSpec("前端产物", "GET", "", timeout=20,
-                        path_fn=lambda ctx: ctx.get("bundle") or "/assets/index.js"),
+                        path_fn=lambda ctx: ctx.get("bundle") or (
+                            ctx.get("target_profile") or target_profile.GENERIC
+                        ).endpoint("bundle")),
         ),
     ),
     StepSpec(
@@ -745,7 +769,7 @@ STEP_SPECS: Tuple[StepSpec, ...] = (
         purpose="发现向量数据库端口与健康检查；无证据时记「不可判定」",
         judge="vector",
         requests=(
-            RequestSpec("向量库实验面", "GET", "/api/labs/{lab:vector}/summary", timeout=10),
+            RequestSpec("向量库实验面", "GET", endpoint_key="summary", lab_role="vector", timeout=10),
         ),
         active_requests=(
             _port(6333, "qdrant"), _port(8080, "weaviate"),
@@ -757,9 +781,9 @@ STEP_SPECS: Tuple[StepSpec, ...] = (
         purpose="识别编排/多智能体痕迹与遥测面",
         judge="agent",
         requests=(
-            RequestSpec("agentic 实验面", "GET", "/api/labs/{lab:agent}/summary", timeout=10),
-            RequestSpec("运行遥测", "GET", "/api/me/runs?limit=1", timeout=10),
-            RequestSpec("A2A Agent Card", "GET", "/.well-known/agent.json", timeout=10),
+            RequestSpec("agentic 实验面", "GET", endpoint_key="summary", lab_role="agent", timeout=10),
+            RequestSpec("运行遥测", "GET", endpoint_key="runs", timeout=10),
+            RequestSpec("A2A Agent Card", "GET", endpoint_key="agent_card", timeout=10),
         ),
     ),
     StepSpec(
@@ -767,10 +791,10 @@ STEP_SPECS: Tuple[StepSpec, ...] = (
         purpose="枚举工具面与凭据校验预言机，记录失败语义",
         judge="mcp",
         requests=(
-            RequestSpec("凭据校验（错误答案，单次）", "POST", "/api/secrets/validate",
+            RequestSpec("凭据校验（错误答案，单次）", "POST", endpoint_key="secret_validate",
                         json_body={"labId": "{lab:mcp}", "answer": "recon-probe"},
                         timeout=10),
-            RequestSpec("MCP 实验面", "GET", "/api/labs/{lab:mcp}/summary", timeout=10),
+            RequestSpec("MCP 实验面", "GET", endpoint_key="summary", lab_role="mcp", timeout=10),
         ),
     ),
     StepSpec(

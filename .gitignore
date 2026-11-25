@@ -17,3 +17,6 @@ evidence/
 # 运行时战利品/侦察/证据（含目标 IP，不入库；仅 registry.md 登记簿入库）
 loot/*
 !loot/registry.md
+
+# 本地真实目标画像覆盖（含演练目标 IP/主机名，禁止提交；库内仅留占位示例）
+tools/target_profiles.local.json

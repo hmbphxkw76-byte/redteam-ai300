@@ -1,12 +1,12 @@
 {
   "schema_version": "1.0",
-  "note": "目标画像注册表（tools/target_profile.py 单一事实源）。generic 为内置全占位画像；下列画像为可选配置示例，经 REDTEAM_TARGET_PROFILES 指向本文件、REDTEAM_TARGET_PROFILE 选名或 CLI --target-profile 注入。新增同类目标只需在此追加一条画像，核心代码零改动（ADR-0005/0006）。labs 的键既可为语义角色（chat/vector/agent/mcp），也可为步骤级符号标签，由 TargetProfile.map_lab 重映射。",
+  "note": "目标画像注册表（tools/target_profile.py 单一事实源）。generic 为内置全占位画像；下列画像为全占位/示例值配置（host 与 smb_hosts 不含真实目标），经 REDTEAM_TARGET_PROFILES 指向本文件、REDTEAM_TARGET_PROFILE 选名或 CLI --target-profile 注入。真实演练值放 gitignored 的 tools/target_profiles.local.json（同名画像覆盖，REDTEAM_TARGET_PROFILES 指向该文件或含两文件的目录）。新增同类目标只需追加一条画像，核心代码零改动（ADR-0005/0006）。labs 的键既可为语义角色（chat/vector/agent/mcp），也可为步骤级符号标签，由 TargetProfile.map_lab 重映射。",
   "profiles": [
     {
       "name": "aivp-rehearsal",
-      "host": "192.168.40.189",
+      "host": "<TARGET>",
       "model": "LongCat-2.5",
-      "description": "OWASP AIVP 演练目标（55 lab / 4 phase）；仅作演练，非 OSAI 正式考试环境。",
+      "description": "OWASP AIVP 演练目标形态示例（55 lab / 4 phase）；host/smb_hosts 为占位与 TEST-NET 示例值，真实值经本地覆盖画像注入；仅作演练，非 OSAI 正式考试环境。",
       "labs": {
         "chat": "MM_04",
         "vector": "MM_05",
@@ -28,7 +28,7 @@
         "MCP_12": "MCP_12"
       },
       "extra": {
-        "smb_hosts": ["hou-fs01.biogenai.corp", "dal-fs01.biogenai.corp", "10.10.20.10", "10.10.30.10"]
+        "smb_hosts": ["hou-fs01.example.corp", "dal-fs01.example.corp", "192.0.2.10", "192.0.2.11"]
       }
     }
   ]

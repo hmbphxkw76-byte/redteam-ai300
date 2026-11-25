@@ -19,6 +19,9 @@
   py tools/attack_ai_agent/run_real.py --host <TARGET> --lab <LAB> --paths A C
   py tools/attack_ai_agent/run_real.py --target-profile aivp-rehearsal --paths A
   py tools/attack_ai_agent/run_real.py --target openai --paths A
+
+真实演练目标值经 gitignored 的 tools/target_profiles.local.json 注入
+（REDTEAM_TARGET_PROFILES 指向该文件或含两文件的目录；库内注册表仅占位示例）。
 """
 import argparse
 import os

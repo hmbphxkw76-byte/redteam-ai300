@@ -29,6 +29,8 @@
 | `--strict` | 三件套不全或 flag 不一致时退出码 1 | v1 |
 | `--glossary` | GLOSSARY.md 路径 | v1 |
 
+**运行期注入（单源声明）**：`--output` / `--output-file` 是「关键输出」必需件的唯一注入通道。各 skill 的证据命令模板为骨架（含占位符），运行期**必须**以实测输出注入 `--output-file <文件>`（或 `--output <文本>`）；缺失时 `--strict` 必退出 1（§5）。各 skill 按路径引用本声明，不另立平行说明（C1）。
+
 ## 2. build_fragment 参数与 report 键
 
 `build_fragment(step_id, command, output, screenshot, shot_cmd, ai_log, flag, flag_panel, flag_shot, target, title, timestamp, out_path, avoid_terms, script, script_src, script_note, profile, shot_kind, note)`
@@ -48,7 +50,9 @@ report 键（消费者 / 报告器依赖，字段名与语义即契约）：
 
 ## 3. build_manifest_record 字段
 
-`step_id, command, sha256, timestamp, profile, retention, target, screenshot, screenshot_sha256, shot_kind, script, script_sha256, pieces{确切命令, 关键输出, 截图, AI 交互日志, flag 双通道, 脚本/PoC}, flag_dual, complete`
+`step_id, command, sha256, timestamp, profile, retention, target, screenshot, screenshot_sha256, shot_kind, shot_status, script, script_sha256, pieces{确切命令, 关键输出, 截图, AI 交互日志, flag 双通道, 脚本/PoC}, flag_dual, complete`
+
+`shot_status`（v3 引入，取值同 §2）：manifest 行与片段 report 同源落盘。
 
 v4 追加变更登记字段（均默认空串，向后兼容）：`change_kind`（变更类型，如 `module-hijack` / `disable-defender`）、`change_target`（被改系统/文件）、`change_ts`（变更时间）、`cleanup_state`（取值域 `pending` / `done` / `n/a`；登记变更未声明清理时诚实记 `pending`）、`cleanup_owner`（清理责任人）。
 
@@ -73,6 +77,8 @@ v4 追加变更登记字段（均默认空串，向后兼容）：`change_kind`�
 - `2`：用法错误
 
 ## CHANGELOG
+
+- `v4 勘误`（2026-11-25）审查 P7 收口 破坏性:否 变更:§3 清单补记 `shot_status`（v3 已实现并落盘，契约文档漂移修复，无实现变更）；`tools/_evidence_contract.py` emit 退出码 docstring 改引本契约 §5（消除「2 用法/运行错误」矛盾口径）。before→after:§3 缺 shot_status → 与实现一致；兼容性:纯文档同步，消费者无感。
 
 - `v4`（2026-11-22）commit:`15803c5` PR:#413 破坏性:否 变更:新增变更登记字段 `change_kind`/`change_target`/`change_ts`/`cleanup_state`/`cleanup_owner`（默认空串）；`--note` 结构化 JSON 时经 `parse_change_note` 注入；`--strict` 对 `cleanup_state=pending` 不阻断。before→after:manifest 行无 change_* 字段 → 含 5 字段（默认空）；兼容性:旧调用签名/返回键形态不变，普通 `--note` 语义不变。消费者:tooling-automate、attack-rag（upload_manifest 改指向本节）。
 - `v3`（2026-11-15）commit:`e9f8bdd` PR:#250 破坏性:是 变更:`shot_status` 三态字段新增（`已提供`/`待补录`/`缺失`）；`--shot-cmd` 单独存在时「截图」由「已提供」改为「待补录（钩子命令已记录）」，`complete` 语义不变。

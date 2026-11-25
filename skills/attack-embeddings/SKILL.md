@@ -50,7 +50,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、反演/提取前�
 
 ### Ch6 增量执行体（向量库反演实战链）
 
-> 课程 Ch6 §6.2–§6.4；一手源见 `docs/research/attack-embeddings-ch6-gap-canonical.md`。与 emb-01..08 互补：已知向量库时先把攻击面从全库缩到高价值块再反演。每步证据统一 `python tools/collect_evidence.py --step <id> --cmd "<命令>" --out loot/<id>.md --shot-cmd "screenshot --region <id>" --strict`（emb-c3 另加 `--ai-log`）；命令均可 copy/paste。
+> 课程 Ch6 §6.2–§6.4；一手源见 `docs/research/attack-embeddings-ch6-gap-canonical.md`。与 emb-01..08 互补：已知向量库时先把攻击面从全库缩到高价值块再反演。每步证据统一 `python tools/collect_evidence.py --step <id> --cmd "<命令>" --out loot/<id>.md --shot-cmd "screenshot --region <id>" --strict`（emb-c3 另加 `--ai-log`）；攻击命令均可 copy/paste，证据模板运行期须注入 `--output-file <实测输出>`（`docs/contracts/collect_evidence.contract.md` §1，缺失则 `--strict` 必退出 1）。
 
 1. **emb-c1 导出向量**：游标分页导出 `.npy/.csv/.parquet`（无 pyarrow 标 `NOT_AVAILABLE` 不伪造）。`python -m tools.attack_embeddings.exporter --store <VDB> --out ./export`
 2. **emb-c2 维度指纹**：共享维度输出候选非唯一。`python -m tools.attack_embeddings.fingerprint --vec export/embeddings.npy`

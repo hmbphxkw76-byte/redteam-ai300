@@ -25,7 +25,7 @@ class EvidenceContractTest(unittest.TestCase):
         module = ROOT / "tools" / "osai_orchestrator"
         for py in module.glob("*.py"):
             text = py.read_text(encoding="utf-8")
-            self.assertNotIn("http://192.168.40.189", text)
+            self.assertNotIn("http://192.0.2.189", text)
             self.assertNotIn("OPENAI_CHAT_API_KEY", text)
 
     def test_module_has_no_third_party_imports(self):

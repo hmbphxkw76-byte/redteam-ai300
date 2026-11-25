@@ -248,18 +248,25 @@ def _step_a2a_08(sess, spec):
     found = False    # 无站点根可探；flag 文件通道不适用（离线/对照组）
     ok = bool(flag)  # 有实测值即可提交；双通道一致由同一来源保证
     obs = Observation(raw=flag, text=flag, tool_result=flag)
+    # 预言机校验 ≠ 控制面板提交：仅离线对照组允许等价双通道；正式路径面板通道
+    # 留空，由 verify-evidence vrf-04 阻断缺失，强制补录真实面板提交值。
+    panel_ok = ok and sess.runtime.local_only
     reason = ("目标存在 flag 文件时按官方双通道取证；此处以面板校验预言机 "
              "success=%s 作为等价双通道（值来源为 host 层实测）。" % ok)
-    note = "flag 通道：%s。面板提交值 == 正文回显值 ==%s" % (reason, flag)
     if sess.runtime.local_only:
+        note = "flag 通道：%s。面板提交值 == 正文回显值 ==%s" % (reason, flag)
         note += "\n\n**注意**：离线对照组，本步仅本地自证，封顶为部分生效。"
+    else:
+        note = ("flag 通道：预言机 success=%s（host 层实测）。正文回显值 ==%s；"
+                "面板通道留空——预言机校验不等价于控制面板提交，正式提交前须补录"
+                "真实面板提交值（verify-evidence vrf-04 阻断缺失）。" % (ok, flag))
     return _StepOutcome(
         observation=obs,
         ctx={"oracle_success": ok, "flag_value": flag, "flag_file_found": found,
              "flag_reason": reason, "local_only": sess.runtime.local_only,
-             "flag_panel": flag if ok else "", "flag_shot": flag if ok else ""},
+             "flag_panel": flag if panel_ok else "", "flag_shot": flag if ok else ""},
         command="whoami; id; find / -name ai_vector.txt 2>/dev/null -exec cat {} \\;",
-        note=note, flag_panel=flag if ok else "", flag_shot=flag if ok else "",
+        note=note, flag_panel=flag if panel_ok else "", flag_shot=flag if ok else "",
         response_for_shot="whoami; id; find ...\n%s" % flag)
 
 

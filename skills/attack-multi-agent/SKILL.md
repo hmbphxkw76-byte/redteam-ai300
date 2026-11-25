@@ -85,9 +85,9 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、操纵前后对照
 - **操纵前后对照**证据（协作结果/记忆 before/after）。
 - **下游决策影响取证**（协同结果差异，含 AI 交互日志 §6.3）。
 - **冒充/消息操纵硬判据**：智能体冒充或跨 agent 消息注入须证明响应含受害者 agent 上下文的实体内容或动作（C19 判据之一成立：外泄端点收到请求/响应、card.url 指向攻击者且拦截端有任务、响应出现与基线不同的敏感字段）；仅 `200`、仅回显自身输入、仅协同步骤数变化不得判生效。
-- `ai_vector.txt` flag 的「面板提交 + 截图」双通道一致。
+- `ai_vector.txt` flag 的「面板提交 + 截图」双通道一致。runner 仅在离线对照组（`local_only`）以预言机校验作等价双通道；正式路径面板通道留空，须补录真实控制面板提交值后由 `verify-evidence` vrf-04 判定（缺失即阻断）。
 - A2A 前置/判据随 `a2a-01`/`a2a-07` 落盘，缺项记 `ABSENT`，清理留证。
-- 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 §质量门），保证三件套/五件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。
+- 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 §质量门），保证三件套/五件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。关键输出运行期须注入 `--output-file`（`docs/contracts/collect_evidence.contract.md` §1）。
 
 ## 校验标准
 

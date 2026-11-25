@@ -234,7 +234,7 @@ def run_recon(target, profile="passive", lab="", out_dir=None,
                 for req in policy.gate_requests(spec, profile):
                     if req.when is not None and not req.when(ctx):
                         continue
-                    path = req.path_fn(ctx) if req.path_fn else req.path
+                    path = probes.request_path(req, ctx)
                     url = build_url(target, path, chat_lab, labs)
                     body = req.body_fn(ctx) if req.body_fn is not None else \
                         resolve_body(req.json_body, labs)
@@ -252,7 +252,8 @@ def run_recon(target, profile="passive", lab="", out_dir=None,
                 if spec.requests and spec.step_id not in endpoints:
                     fallback = (getattr(plan, "entry_url", "") if plan is not None
                                 else "") or build_url(
-                                    target, spec.requests[0].path, chat_lab, labs)
+                                    target, probes.request_path(spec.requests[0], ctx),
+                                    chat_lab, labs)
                     endpoints[spec.step_id] = fallback
                 if plan is not None:
                     results.extend(plan.step_results.get(spec.step_id, []))
@@ -282,7 +283,8 @@ def run_recon(target, profile="passive", lab="", out_dir=None,
             kind = ("transcript" if spec.reuse or any(
                 r.method in ECHO_PATH_HINT for r in results) else "url")
             shot_url = ((judgement.context or {}).get("endpoint")
-                        or endpoints.get(spec.step_id) or (target + "/explore"))
+                        or endpoints.get(spec.step_id)
+                        or build_url(target, target_obj.endpoint("explore"), chat_lab, labs))
             shot_path, shot_kind = "", ""
             if capture_shots:
                 shot_path, shot_kind = shot.capture(

@@ -23,7 +23,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、投毒前后对照
 
 ### 攻击路径 A — 数据集/模型/适配器投毒
 
-> 以下命令均为示意脚本，执行前标注来源、不伪造目标回显；证据统一经 `collect_evidence.py --strict` 落盘。
+> 以下命令均为示意脚本，执行前标注来源、不伪造目标回显；证据统一经 `collect_evidence.py --strict` 落盘，关键输出运行期须注入 `--output-file`（`docs/contracts/collect_evidence.contract.md` §1）。
 
 1. **sc-01 发现供应链面**：枚举模型仓库、依赖源、数据管道端点与信任边界。
    - 命令：`curl -s <REGISTRY>/api/models` 或 `pip index versions <pkg>`

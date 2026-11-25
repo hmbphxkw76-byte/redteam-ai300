@@ -69,7 +69,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、工具投毒前后
 - **工具投毒前后对照**证据（工具清单 before/after）。
 - **下游 agent/工具被操纵取证**（越权调用/劫持的决策差异，含 AI 交互日志 §6.3）。
 - `ai_vector.txt` flag 的「面板提交 + 截图」双通道一致。
-- 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 GOVERNANCE §质量门），保证三件套/五件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。
+- 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 GOVERNANCE §质量门），保证三件套/五件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。关键输出运行期须注入 `--output-file`（`docs/contracts/collect_evidence.contract.md` §1）。
 
 ## 校验标准
 

@@ -31,7 +31,7 @@ from tools.threat_model.classify import enrich  # noqa: E402
 
 # —— 共享 fixture：recon 七字段清单 + 分析师分类层 ——
 INVENTORY = {
-    "target": "192.168.40.189",
+    "target": "192.0.2.189",
     "profile": "passive",
     "assets": [
         {"asset_id": "ai-llm-a-01", "category": "LLM引擎", "product": "vLLM",

@@ -68,7 +68,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、检索层操纵前
 - **决策影响硬判据**：投毒前后决策差异须体现他人实体内容泄露或受害者上下文动作（跨查询/跨用户/跨会话）；仅输出风格变化、仅检索排名变化而无实际内容或动作差异，不得判「决策被影响」，排名变化单独记「检索层已操纵、决策未证实」。
 - 每步 detect/confirm 的**检测证据**：触发的规则名、规避手法盲点、规避后 Kibana 无新告警的确认结果（写入 AI 交互日志或分析注记；Ch3 §3.1）；Kibana 不可达记 `UNDETERMINED` 并说明。
 - `ai_vector.txt` flag 的「面板提交 + 截图」双通道一致。
-- 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 GOVERNANCE §质量门），保证五件套/三件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。
+- 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 GOVERNANCE §质量门），保证五件套/三件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。关键输出运行期须注入 `--output-file`（`docs/contracts/collect_evidence.contract.md` §1）。
 
 ## Ch6 复用接口
 

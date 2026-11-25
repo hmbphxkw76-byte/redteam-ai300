@@ -14,6 +14,7 @@ from typing import Tuple
 from . import fingerprint as fp
 from .command import argv_to_text, curl_json
 from .model import Outcome, RunContext, StepVerdict
+from tools import target_profile
 
 # 易变字段：时间戳与耗时在两次相同请求间必然不同，不构成「影响」证据（AC-12）
 VOLATILE_KEYS = (
@@ -135,9 +136,13 @@ def privesc(ctx: RunContext) -> StepVerdict:
                        command=command, output=output)
 
 
+def _inference_port(ctx):
+    return 11434 if not ctx.ports else tuple(ctx.ports)[0]
+
+
 def _inference_call(ctx: RunContext):
-    port = 11434 if not ctx.ports else tuple(ctx.ports)[0]
-    model = ctx.inference_model or "llama3.2:latest"
+    port = _inference_port(ctx)
+    model = ctx.inference_model or target_profile.current().model
     if ctx.inference_endpoint:
         url = ctx.inference_endpoint
         body = {"model": model, "prompt": ctx.inference_prompt, "stream": False}
@@ -160,8 +165,10 @@ def impact(ctx: RunContext) -> StepVerdict:
             summary="未开启 --allow-inference，未发起推理请求（无法取得对照）",
             output="判定依据：impact 需要两次推理响应，开关关闭时不发包",
             command="curl -s --noproxy '*' %s -d '{...}'" % (ctx.inference_endpoint
-                                                              or "http://%s:11434/api/generate"
-                                                              % ctx.target))
+                                                              or fp.endpoint_url(
+                                                                  fp.normalize_target(ctx.target),
+                                                                  _inference_port(ctx),
+                                                                  "/api/generate")))
     url, body, first = _inference_call(ctx)
     _, _, second = _inference_call(ctx)
     command = curl_json(url, body)

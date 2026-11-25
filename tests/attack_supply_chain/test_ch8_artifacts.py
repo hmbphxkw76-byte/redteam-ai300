@@ -23,14 +23,14 @@ class TestAdapterPoison(unittest.TestCase):
         self.assertEqual(ap.restore_params({"r": 8})["r"], 8)
 
     def test_replace_smb(self):
-        text = "use hou-fs01.biogenai.corp and 10.10.20.10"
+        text = "use hou-fs01.example.corp and 192.0.2.10"
         new, count = ap.replace_smb_refs(text, "192.0.2.1")
         self.assertEqual(count, 2)
         self.assertIn("192.0.2.1", new)
-        self.assertNotIn("10.10.20.10", new)
+        self.assertNotIn("192.0.2.10", new)
 
     def test_plan_ratio(self):
-        plan = ap.build_plan({}, "dal-fs01.biogenai.corp", "192.0.2.1")
+        plan = ap.build_plan({}, "dal-fs01.example.corp", "192.0.2.1")
         self.assertEqual(plan.param_ratio, 0.0014)
         self.assertEqual(plan.replaced_count, 1)
 

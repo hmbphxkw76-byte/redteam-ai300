@@ -19,7 +19,7 @@ from tools.threat_model.model import ThreatModel  # noqa: E402
 
 
 INVENTORY = {
-    "target": "192.168.40.189",
+    "target": "192.0.2.189",
     "assets": [
         {"asset_id": "ai-llm-a-01", "category": "LLM引擎", "product": "vLLM",
          "version": "0.6.1", "endpoint": "http://t:8000",

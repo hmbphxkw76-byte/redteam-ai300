@@ -40,7 +40,7 @@ class TestCh8StepRegistry(unittest.TestCase):
         self.assertAlmostEqual(out.ratio, 30 / 104, places=4)
 
     def test_sc12_adapter(self):
-        out = ch8_steps.run_ch8("sc-12", {"config": {"r": 16}, "text": "host 10.10.20.10",
+        out = ch8_steps.run_ch8("sc-12", {"config": {"r": 16}, "text": "host 192.0.2.10",
                                           "ip": "192.0.2.1"})
         self.assertEqual(out.params["r"], 16)
         self.assertEqual(out.replaced_count, 1)

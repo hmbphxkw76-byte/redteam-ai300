@@ -23,6 +23,7 @@ from tools.recon_ai import shot as shot_mod  # noqa: E402
 from tools.recon_ai.model import (Asset, AssetInventory, Category, Existence,  # noqa: E402
                                   ProbeResult, credential_hint)
 from tools.recon_ai.transport import FakeTransport, HttpResponse  # noqa: E402
+from tools import target_profile  # noqa: E402
 
 COLLECT = os.path.join(ROOT, "tools", "collect_evidence.py")
 TARGET = "http://t"
@@ -385,6 +386,35 @@ class PolicyTests(unittest.TestCase):
         self.assertIn("recon-03", report.failed_steps)
         self.assertGreaterEqual(len(report.evidence_paths), 6,
                                 "其余步骤仍须产出证据（失败隔离）")
+
+
+class EndpointOverrideTests(unittest.TestCase):
+    """审查 P3 收口：画像 endpoints 覆盖必须改变实际请求路径（端点维度解耦）。"""
+
+    def test_profile_endpoints_override_request_paths(self):
+        custom = target_profile.from_mapping({
+            "name": "custom-endpoints",
+            "endpoints": {"config": "/custom/config", "explore": "/custom/home"},
+        })
+        routes = {
+            ("GET", TARGET + "/custom/config"):
+                HttpResponse(200, CONFIG, {}, "application/json"),
+            ("GET", TARGET + "/custom/home"):
+                HttpResponse(200, HTML_FALLBACK, {}, "text/html"),
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            report = runner.run_recon(
+                target=TARGET, lab="MM_04", out_dir=tmp,
+                transport=FakeTransport(routes), shot=shot_mod.FakeShot(),
+                writer=evidence_mod.EvidenceWriter(
+                    tmp, manifest=os.path.join(tmp, "MANIFEST.jsonl")),
+                capture_shots=False, target_profile=custom)
+            with open(report.manifest, encoding="utf-8") as f:
+                commands = "\n".join(json.loads(line)["command"] for line in f)
+        self.assertIn("/custom/config", commands)
+        self.assertIn("/custom/home", commands)
+        self.assertNotIn("/api/config", commands)
+        self.assertNotIn(TARGET + "/explore", commands)
 
 
 class CodeHygieneTests(unittest.TestCase):

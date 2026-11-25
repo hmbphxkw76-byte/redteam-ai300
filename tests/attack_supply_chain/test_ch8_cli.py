@@ -20,7 +20,7 @@ ARGV = {
     "pickle_rce": ["--base", "resnet18", "--epoch", "99", "--files", "resnet18_epoch_015.pt"],
     "format_matrix": [],
     "amplification": ["--samples", "3", "--base", "74", "--factor", "10"],
-    "adapter_poison": ["--ip", "192.0.2.1", "--text", "host 10.10.20.10"],
+    "adapter_poison": ["--ip", "192.0.2.1", "--text", "host 192.0.2.10"],
     "tokenizer_swap": ["--vocab", "/v.json", "--fast", "/t.json"],
     "pickle_bypass": ["--list"],
     "stealth_backdoor": ["--encode", "import sys"],

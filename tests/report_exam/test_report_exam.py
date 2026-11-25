@@ -123,7 +123,7 @@ OSAI{proof}
         self.assertEqual(m.hosts["standalone"], [])
 
     def test_noncanonical_host_normalized_to_standalone(self):
-        src = MemoryEvidenceSource([frag(host="http://192.168.40.189/api/chat")])
+        src = MemoryEvidenceSource([frag(host="http://192.0.2.189/api/chat")])
         m = build_index(src, expected_hosts=EXPECTED)
         self.assertEqual(set(m.hosts), set(EXPECTED))
         self.assertEqual(len(m.hosts["standalone"]), 1)

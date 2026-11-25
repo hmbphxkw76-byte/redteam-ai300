@@ -31,7 +31,8 @@ def _results(card_body, status=200):
 class ReconA2ATests(unittest.TestCase):
     def test_recon05_declares_agent_card_probe(self):
         spec = probes.find("recon-05")
-        self.assertIn("/.well-known/agent.json", [r.path for r in spec.requests])
+        self.assertIn("/.well-known/agent.json",
+                      [probes.request_path(r, {}) for r in spec.requests])
 
     def test_agent_card_alone_is_present(self):
         verdict = probes.judge_agent(_results(json.dumps(CARD)), {})

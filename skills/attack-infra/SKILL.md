@@ -81,7 +81,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、利用前后对照
 - **利用前后对照**证据（部署/权限 before/after）。
 - **下游影响取证**（模型服务器/推理行为差异，含 AI 交互日志 §6.3）。
 - `ai_vector.txt` flag 的「面板提交 + 截图」双通道一致。
-- 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 §质量门），保证三件套/五件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。
+- 上述每步证据统一通过共享工具 `tools/collect_evidence.py` 产出（对齐 §质量门），保证三件套/五件套结构稳定、与 `report-exam` 的 Attack Walkthrough 兼容、并可由 CI 校验。关键输出运行期须注入 `--output-file`（`docs/contracts/collect_evidence.contract.md` §1）。
 
 ## 校验标准
 

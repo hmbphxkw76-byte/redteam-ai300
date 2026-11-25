@@ -381,7 +381,7 @@ class _redirect_stderr:
 
 class SurfaceTests(unittest.TestCase):
     INVENTORY = {
-        "target": "192.168.40.189", "profile": "ai-llm",
+        "target": "192.0.2.189", "profile": "ai-llm",
         "assets": [
             {"asset_id": "ai-rag-01", "category": "RAG库", "product": "Chroma",
              "version": "0.4.24", "endpoint": "http://t:8000/ingest",

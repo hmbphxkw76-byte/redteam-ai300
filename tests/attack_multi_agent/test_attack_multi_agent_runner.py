@@ -48,6 +48,19 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(rep.by_step("a2a-08").observation.tool_result, "AIVEC-xyz")
         self.assertEqual(rep.object_graph["framework"][:12], "pyrit==" + TARGET_VERSION)
 
+    def test_a2a08_panel_channel_gated_by_local_only(self):
+        """审查 P6 收口：正式路径面板通道留空（vrf-04 阻断缺失），仅离线对照组等价双通道。"""
+        for local_only, expected_panel in ((False, ""), (True, "AIVEC-xyz")):
+            writer = RecordingWriter()
+            rt = Runtime(
+                client=FakeHttpClient(default=Response(200, BODY, "application/json")),
+                writer=writer, capture=NullCapture(), scanner=BuiltinAnalyzer(),
+                shot_enabled=False, local_only=local_only)
+            run(runtime=rt)
+            call = next(c for c in writer.calls if c["step_id"] == "a2a-08")
+            self.assertEqual(call["flag_panel"], expected_panel)
+            self.assertEqual(call["flag_shot"], "AIVEC-xyz")
+
     def test_paths_override_branch(self):
         # 触发 run_attack(paths=...) 重建 AttackRequest 的分支
         req = AttackRequest(target="http://t", paths=("A", "B", "C"),

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""verify-evidence 机读校验器（GOVERNANCE §8.2 八项检查单 + §2.2 单次约束）。
+"""verify-evidence 机读校验器（GOVERNANCE §8.2 八项检查单 + vrf-09/proof-single 扩展，共十项 checks）。
 
 仓库级共享组件：`skills/verify-evidence` 的**执行体**，`report-exam` 的提交前置。
 独立于任何报告组装实现，避免门禁判据被下游重实现放宽。
@@ -692,7 +692,7 @@ def check_proof_single(inp):
 
 
 def verify(payload, require_artifacts=True, tools=None):
-    """执行八项检查单 + 单次约束，返回 schema 版本化的机读结果。
+    """执行十项 checks（vrf-01…vrf-09 + proof-single），返回 schema 版本化的机读结果。
 
     兼容既有调用：`payload` 可为原始字典（此处自动归一）。输入非法（时间戳格式
     等）不抛异常：归一化失败按「阻断 + 用法提示」返回，避免调用方拿到半真结果。
@@ -752,7 +752,7 @@ def render_summary(result):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="verify-evidence 八项检查单机读校验")
+    ap = argparse.ArgumentParser(description="verify-evidence 十项 checks 机读校验")
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument("--payload", help="JSON 载荷文件路径")
     src.add_argument("--from-loot", help="战利品登记簿路径（registry.md）")

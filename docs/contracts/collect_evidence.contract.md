@@ -80,7 +80,7 @@ v4 追加变更登记字段（均默认空串，向后兼容）：`change_kind`�
 
 ## CHANGELOG
 
-- `v5`（2026-11-25）commit:待合入后回填 PR:待回填 破坏性:否（默认语义不变） 变更:新增 `--exam` / `--scored-target` 两个显式开关；`--exam` 下仅真实 PNG/JPEG 文件计入截图必需件，`--scored-target` 下双通道一致才计入完整；节标题与 manifest 字段不变。before→after:钩子-only 片段仅在显式考试模式判为不完整 → 演练模式仍判完整；兼容性:消费端无需改动，考试模式为 opt-in。消费者:report-exam、verify-evidence、tooling-automate。
+- `v5`（2026-11-25）commit:`4ec49d8` PR:#451 破坏性:否（默认语义不变） 变更:新增 `--exam` / `--scored-target` 两个显式开关；`--exam` 下仅真实 PNG/JPEG 文件计入截图必需件，`--scored-target` 下双通道一致才计入完整；节标题与 manifest 字段不变。before→after:钩子-only 片段仅在显式考试模式判为不完整 → 演练模式仍判完整；兼容性:消费端无需改动，考试模式为 opt-in。消费者:report-exam、verify-evidence、tooling-automate。
 - `v4 勘误`（2026-11-25）审查 P7 收口 破坏性:否 变更:§3 清单补记 `shot_status`（v3 已实现并落盘，契约文档漂移修复，无实现变更）；`tools/_evidence_contract.py` emit 退出码 docstring 改引本契约 §5（消除「2 用法/运行错误」矛盾口径）。before→after:§3 缺 shot_status → 与实现一致；兼容性:纯文档同步，消费者无感。
 
 - `v4`（2026-11-22）commit:`15803c5` PR:#413 破坏性:否 变更:新增变更登记字段 `change_kind`/`change_target`/`change_ts`/`cleanup_state`/`cleanup_owner`（默认空串）；`--note` 结构化 JSON 时经 `parse_change_note` 注入；`--strict` 对 `cleanup_state=pending` 不阻断。before→after:manifest 行无 change_* 字段 → 含 5 字段（默认空）；兼容性:旧调用签名/返回键形态不变，普通 `--note` 语义不变。消费者:tooling-automate、attack-rag（upload_manifest 改指向本节）。

@@ -52,6 +52,7 @@ ALL_TARGET_ORDER = (
     "osai-orchestrator",
     "target-profile",
     "osai-exam-readiness",
+    "foothold-ad",
 )
 
 

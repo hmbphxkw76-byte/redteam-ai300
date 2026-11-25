@@ -416,3 +416,17 @@ _Avoid_: 假设表
 Ch10 §10.2 六段式版本化交付物（TARGET SUMMARY/CROWN JEWELS/ASSUMPTION REGISTER STATUS/SCOPE CONSTRAINTS/ESCALATION PATHS/NEXT ACTIONS），版本史=决策日志。
 来源：同上 §1.4 R-21/22。
 _Avoid_: 攻击简报
+
+## 域渗透
+
+**域信任 (domain trust)**:
+父子域或跨森林的信任关系，可被滥用为跨域通道；SID 过滤关闭与双向可传递为主要判据（`foothold-ad` ad-06）。
+
+**票据攻击 (ticket attack)**:
+以 Kerberoast（有 SPN 且启用）或 AS-REP（关闭预认证）获取票据并离线处理，须记录加密类型（`foothold-ad` ad-02/ad-03）。
+
+**目录复制 (directory replication)**:
+非域控主体持有 `DS-Replication-Get-Changes-All` 即可复制目录凭据（DCSync 面）；仅 `Get-Changes` 记部分能力（`foothold-ad` ad-05）。
+
+**模板利用 (template abuse)**:
+ADCS 证书模板滥用，ESC1（可控主体 + 客户端认证 EKU + 低权可注册）与 ESC8（HTTP 注册可中继）分别判定（`foothold-ad` ad-04）。

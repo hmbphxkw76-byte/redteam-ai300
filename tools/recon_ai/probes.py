@@ -11,6 +11,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Optional, Tuple
+from urllib.parse import urljoin
 
 from .model import Category, Existence
 from . import fingerprint
@@ -21,7 +22,9 @@ SECURITY_HEADERS = ("Content-Security-Policy", "X-Frame-Options",
                     "X-Content-Type-Options", "Strict-Transport-Security",
                     "Referrer-Policy", "Permissions-Policy")
 SPA_SIGNATURE = re.compile(r"<!doctype html", re.I)
-BUNDLE_RE = re.compile(r'src="(/assets/[^"]+\.js)"')
+# 前端产物：任意 <script src> 指向的 .js（不限定 /assets/ 前缀、不限定引号风格）。
+# 旧的 `/assets/` 硬前缀会让非 Vite/Hash 布局（如 /js/app.js）漏采并回落到默认端点。
+BUNDLE_RE = re.compile(r"<script[^>]+src=[\"']([^\"']+\.js)(?:\?[^\"']*)?[\"']", re.I)
 
 
 # --------------------------------------------------------------------------
@@ -679,8 +682,14 @@ JUDGES: Dict[str, Callable] = {
 # 步骤表（7 步，与 SKILL.md 一一对应）
 # --------------------------------------------------------------------------
 def _collect_bundle(resp):
+    """从前端入口页解析脚本产物的绝对 URL；兼容相对路径与任意 .js 布局。"""
     m = BUNDLE_RE.search(resp.body or "")
-    return {"bundle": m.group(1)} if m else {}
+    if not m:
+        return {}
+    path = m.group(1).strip()
+    if path.startswith(("http://", "https://")):
+        return {"bundle": path}
+    return {"bundle": urljoin(resp.url or "", path)}
 
 
 def _port(port, label):

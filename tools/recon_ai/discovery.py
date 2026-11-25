@@ -131,7 +131,9 @@ def _candidate_bases(body):
         path = href.split("#")[0].split("?")[0].rstrip("/")
         if not path or path == "/" or path.count("/") > 2:
             continue
-        if re.search(r"\.(?:html?|js|css|png|jpe?g|gif|svg|json|md)$", path, re.I):
+        # 末段含「.」即静态文件（favicon.ico、site.webmanifest、index-*.js 等），
+        # 不依赖扩展名白名单：任意同类站点的静态资源都不得被当作应用基路径。
+        if "." in path.rsplit("/", 1)[-1]:
             continue
         if path not in out:
             out.append(path)

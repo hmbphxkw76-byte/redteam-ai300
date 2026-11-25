@@ -82,5 +82,9 @@
 
 | 检查 | 结果 | 命令/证据 |
 |---|---|---|
-| B1–B9 | 待推送后回填 | 本地门禁全绿；PR 正文与推送记录在后续段落回填 |
-| 结论 | 待回填 | — |
+| B1–B9（本地） | 符合 | 1469 tests OK；覆盖率 89.2%；术语/预算/技能/契约消费者断言全 PASS；PR 正文 2470/3000B PASS |
+| 推送 | 符合 | `checkout_lock --check` PASS；SSH 一次成功（HTTPS 未用）；分支 `feat/osai-exam-readiness` |
+| 提交 | 符合 | `4ec49d8` 实现；`9fe28b4` 契约 v5 commit/PR 回填 |
+| PR | 符合 | #451；契约 PR 门禁 PASS；Closes #446 |
+| CI S1–S4 | 未验证 | `gh pr checks 451` 返回 `no checks reported`；须在门户确认 |
+| 结论 | **BLOCKED**（严格 G0） | 停留阶段 11，待 CI 回报后复验；本地交付物已完成 |

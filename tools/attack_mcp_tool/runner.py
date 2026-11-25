@@ -46,6 +46,23 @@ OBJECT_GRAPH: Dict[str, Any] = {
 }
 
 
+def object_graph_with_execution(backend: str) -> Dict[str, Any]:
+    """设计映射 + 运行时真相。
+
+    `OBJECT_GRAPH` 是 PyRIT 对象图的**设计映射**（迁移对照用），不等于已执行。
+    本器执行层恒为标准库 HTTP 客户端，故 `executed.pyrit_executed` 恒为 False；
+    单独列出以防读者把 `framework: pyrit==1.2.1` 误读为「由 PyRIT 执行」。
+    """
+    graph = dict(OBJECT_GRAPH)
+    graph["executed"] = {
+        "backend": backend,
+        "pyrit_executed": False,
+        "reason": ("本器以标准库 HTTP 客户端直发 JSON-RPC / SSE，PyRIT 未参与执行"
+                   "（ADR-0003 零依赖默认路径）；上方 framework/target/scorer 为设计映射"),
+    }
+    return graph
+
+
 def _now():
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
@@ -761,4 +778,5 @@ def run_attack(request: AttackRequest, runtime: Optional[Runtime] = None,
     finally:
         sess.close()
     return AttackReport(request=request, backend=runtime.client.describe(),
-                        verdicts=tuple(verdicts), object_graph=dict(OBJECT_GRAPH))
+                        verdicts=tuple(verdicts),
+                        object_graph=object_graph_with_execution(runtime.client.describe()))

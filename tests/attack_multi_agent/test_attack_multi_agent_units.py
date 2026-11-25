@@ -79,6 +79,21 @@ class ModelTests(unittest.TestCase):
         self.assertTrue(message_accepted("accepted"))
         self.assertTrue(message_accepted("已接收"))
         self.assertFalse(message_accepted("nope"))
+
+    def test_message_accepted_rejects_negated_receipt(self):
+        """否定语境守卫：含受理词但语义相反的表述不得判为已受理。
+
+        对应 DVAA 5 条挑战假阳性的同型错误（拒绝句命中关键词）。
+        """
+        for text in ("The task was not accepted",
+                     "Message could not be processed",
+                     "未被受理",
+                     "Request was never completed"):
+            with self.subTest(text=text):
+                self.assertFalse(message_accepted(text))
+        # 肯定语境不受影响
+        self.assertTrue(message_accepted('{"status":"completed"}'))
+        self.assertTrue(message_accepted("Task received and processed"))
         self.assertTrue(before_after_diff("a", "b"))
         self.assertFalse(before_after_diff("a", "a"))
         self.assertFalse(before_after_diff(None, "x"))

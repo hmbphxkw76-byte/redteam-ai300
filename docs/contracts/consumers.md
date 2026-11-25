@@ -23,3 +23,4 @@
 | capstone-rehearse | 已合入 | tools/capstone_rehearse/evidence.py | --step, --cmd, --out, --strict, --shot-cmd, --screenshot, --flag, --flag-panel, --flag-shot, complete, required_status, flag_status, #### 确切命令, #### 关键输出, #### 截图（访问证明）, #### flag 取证（双通道一致）, #### 证据校验（五件套 / 三件套） |
 | tooling-automate | 已合入 | skills/tooling-automate/SKILL.md | --step, --cmd, --out, --strict, --shot-cmd, --screenshot, --manifest, complete, required_status, build_manifest_record, #### 确切命令, #### 关键输出, #### 截图（访问证明）, #### 证据校验（五件套 / 三件套） |
 | verify-evidence | 已合入 | tools/verify_evidence.py | --step, --cmd, --out, --strict, --shot-cmd, --screenshot, --flag, --flag-panel, --flag-shot, complete, required_status, flag_status, #### 确切命令, #### 关键输出, #### 截图（访问证明）, #### flag 取证（双通道一致）, #### 证据校验（五件套 / 三件套） |
+| osai-exam-readiness | 未合入 | tools/evidence_pipeline.py | --exam, --scored-target, complete, shot_status, flag_status, #### 截图（访问证明） |

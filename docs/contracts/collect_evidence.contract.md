@@ -1,6 +1,6 @@
 # 共享工具契约清单：tools/collect_evidence.py
 
-> **contract_version**: v4
+> **contract_version**: v5
 > **性质**：单一事实源（`AGENTS.md` C1）。消费者与报告器只引本文件 `路径#锚点`，不转抄契约正文。
 > **维护规则**：每次改动 `tools/collect_evidence.py` 语义，必须同步本清单元素并递增 `contract_version`，并在 CHANGELOG 追加一条「commit + PR + before→after + 兼容性判定」。
 
@@ -27,18 +27,20 @@
 | `--retention` | 留存入径 | v2 |
 | `--append` | 追加模式 | v1 |
 | `--strict` | 三件套不全或 flag 不一致时退出码 1 | v1 |
+| `--exam` | 考试模式：截图必需件须为真实 PNG(IEND)/JPEG(EOI) 文件；`--shot-cmd` 只记待补录，不计入完整 | v5 |
+| `--scored-target` | 计分目标模式：`flag_status != 一致` 时 `complete=false`；`--flag` 单值仍视为一致 | v5 |
 | `--glossary` | GLOSSARY.md 路径 | v1 |
 
 **运行期注入（单源声明）**：`--output` / `--output-file` 是「关键输出」必需件的唯一注入通道。各 skill 的证据命令模板为骨架（含占位符），运行期**必须**以实测输出注入 `--output-file <文件>`（或 `--output <文本>`）；缺失时 `--strict` 必退出 1（§5）。各 skill 按路径引用本声明，不另立平行说明（C1）。
 
 ## 2. build_fragment 参数与 report 键
 
-`build_fragment(step_id, command, output, screenshot, shot_cmd, ai_log, flag, flag_panel, flag_shot, target, title, timestamp, out_path, avoid_terms, script, script_src, script_note, profile, shot_kind, note)`
+`build_fragment(step_id, command, output, screenshot, shot_cmd, ai_log, flag, flag_panel, flag_shot, target, title, timestamp, out_path, avoid_terms, script, script_src, script_note, profile, shot_kind, note, exam=False, scored_target=False)`
 
 report 键（消费者 / 报告器依赖，字段名与语义即契约）：
 
-- `complete`（bool）：三件套是否齐全
-- `missing`（list[str]）：缺失的必需件名
+- `complete`（bool）：三件套是否齐全；v5 起在 `--exam` 下要求真实截图文件、在 `--scored-target` 下要求 flag 双通道一致（默认语义不变）
+- `missing`（list[str]）：缺失的必需件名；v5 考试模式使用标签「截图（真实文件）」，计分目标模式追加「flag 双通道（面板+截图）」
 - `required_status`（dict）：`{"确切命令": bool, "关键输出": bool, "截图": bool}`
 - `optional_status`（dict）：`{"AI 交互日志": bool, "flag 双通道": bool}`
 - `shot_status`（str）：`已提供` / `待补录` / `缺失`（v3 引入）
@@ -78,6 +80,7 @@ v4 追加变更登记字段（均默认空串，向后兼容）：`change_kind`�
 
 ## CHANGELOG
 
+- `v5`（2026-11-25）commit:待合入后回填 PR:待回填 破坏性:否（默认语义不变） 变更:新增 `--exam` / `--scored-target` 两个显式开关；`--exam` 下仅真实 PNG/JPEG 文件计入截图必需件，`--scored-target` 下双通道一致才计入完整；节标题与 manifest 字段不变。before→after:钩子-only 片段仅在显式考试模式判为不完整 → 演练模式仍判完整；兼容性:消费端无需改动，考试模式为 opt-in。消费者:report-exam、verify-evidence、tooling-automate。
 - `v4 勘误`（2026-11-25）审查 P7 收口 破坏性:否 变更:§3 清单补记 `shot_status`（v3 已实现并落盘，契约文档漂移修复，无实现变更）；`tools/_evidence_contract.py` emit 退出码 docstring 改引本契约 §5（消除「2 用法/运行错误」矛盾口径）。before→after:§3 缺 shot_status → 与实现一致；兼容性:纯文档同步，消费者无感。
 
 - `v4`（2026-11-22）commit:`15803c5` PR:#413 破坏性:否 变更:新增变更登记字段 `change_kind`/`change_target`/`change_ts`/`cleanup_state`/`cleanup_owner`（默认空串）；`--note` 结构化 JSON 时经 `parse_change_note` 注入；`--strict` 对 `cleanup_state=pending` 不阻断。before→after:manifest 行无 change_* 字段 → 含 5 字段（默认空）；兼容性:旧调用签名/返回键形态不变，普通 `--note` 语义不变。消费者:tooling-automate、attack-rag（upload_manifest 改指向本节）。

@@ -453,6 +453,21 @@
       "tests": [
         "tests.test_target_profile"
       ]
+    },
+    {
+      "name": "osai-exam-readiness",
+      "modules": [
+        "tools.evidence_pipeline",
+        "tools.osai_orchestrator.exam_flow",
+        "tools.report_exam.preflight",
+        "scripts.validate_skill_mainline"
+      ],
+      "tests": [
+        "tests.shared_tools.test_evidence_pipeline",
+        "tests.osai_orchestrator.test_exam_flow",
+        "tests.report_exam.test_preflight",
+        "tests.shared_tools.test_validate_skill_mainline"
+      ]
     }
   ]
 }

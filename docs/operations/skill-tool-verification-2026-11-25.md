@@ -1,6 +1,6 @@
 # 技能与工具全量验证报告（2026-11-25）
 
-> 验证对象：`http://192.168.40.183:9000`（DVAA）、`http://192.168.40.189/explore`（AIVP）、K8s 控制节点 `192.168.40.189`（含 GitLab / Harbor / ArgoCD / Monitoring 等部署）。
+> 验证对象：DVAA 入口（HTTP `:9000`）、AIVP 入口（`/explore`）、K8s 控制节点（含 GitLab / Harbor / ArgoCD / Monitoring 等部署）。具体地址一律经目标画像注入，不以字面量进入本仓库，见 §8。
 > 基线提交：`7f5fe0dde3399d2e180b988c41795f89b87343c9`（main，工作区干净）。
 
 ## 1. 结论
@@ -28,9 +28,9 @@
 
 | 目标 | 识别结果 | 关键探测 | 判定 |
 |---|---|---|---|
-| `192.168.40.183:9000` | DVAA（Damn Vulnerable AI Agent，OpenA2A），21 agent | `/health` 200（`status=ok,agents=21`）；`/api/llm/status` 200（LongCat-2.5）；`/api/agents/helperbot/chat` 200 JSON 回显 | PASS |
-| `192.168.40.189:80` | AIVP（AI Vulnerabilities Playground），nginx/1.27.5，SPA | `/explore` 200；`/api/config` 200（`llm_model_default=LongCat-2.5`）；`/api/me/runs?limit=1` 200 | PASS |
-| `192.168.40.189`（K8s） | v1.37.2，containerd 2.4.2，3 节点 | `kubectl get nodes` 3/3 Ready；17 个 namespace；API Server 版本与客户端一致 | PASS |
+| DVAA 入口（`:9000`） | DVAA（Damn Vulnerable AI Agent，OpenA2A），21 agent | `/health` 200（`status=ok,agents=21`）；`/api/llm/status` 200（LongCat-2.5）；`/api/agents/helperbot/chat` 200 JSON 回显 | PASS |
+| AIVP 入口（`:80`） | AIVP（AI Vulnerabilities Playground），nginx/1.27.5，SPA | `/explore` 200；`/api/config` 200（`llm_model_default=LongCat-2.5`）；`/api/me/runs?limit=1` 200 | PASS |
+| K8s 控制节点 | v1.37.2，containerd 2.4.2，3 节点 | `kubectl get nodes` 3/3 Ready；17 个 namespace；API Server 版本与客户端一致 | PASS |
 
 **重要观测**：两个 HTTP 目标对未知路径均返回 `200 + text/html`（SPA 回退页）。DVAA 的 `/mcp/tools`、`/api/config`（无该端点时）与 AIVP 的 `/v1/models`、`/assets/index.js` 均命中回退页。任何仅按状态码判定的检查都会产生**假阳性**；本项目已有 `probes.is_spa_fallback` 判据（200 + html + doctype），实测该判据正确将 `/v1/models` 记为「不存在」。
 
@@ -38,7 +38,7 @@
 
 | 命名空间 | 组件 | 端点实测 | 结论 |
 |---|---|---|---|
-| gitlab | webservice 1/1、sidekiq 3/3、gitaly、minio、postgresql、redis | `:30080/-/readiness` 200、`:30080/users/sign_in` 200 | PASS（外部 URL `host: 192.168.40.189, port: 30080` 与实际暴露一致） |
+| gitlab | webservice 1/1、sidekiq 3/3、gitaly、minio、postgresql、redis | `:30080/-/readiness` 200、`:30080/users/sign_in` 200 | PASS（GitLab 配置的 host/port 与 NodePort 实际暴露一致） |
 | harbor | core/registry/portal/jobservice/nginx 均 1/1 | `https://:30003/api/v2.0/health` 200 | 可用；HTTP 入口见 S1 |
 | argocd | server、repo-server、controller、redis | `:30700` → 307 → `https://:30701` 200；3 个 Application 全 Synced/Healthy | PASS |
 | monitoring | prometheus、grafana、kube-state-metrics、node-exporter | `:30907/login` 200；`:30909/-/ready` 200 | PASS |
@@ -91,16 +91,30 @@
 
 | ID | 问题 | 根因 | 建议 |
 |---|---|---|---|
-| S1 | Harbor HTTP 入口 `:30002` 301 到 `https://192.168.40.189/`（丢端口）→ 落到宿主机 443 的另一 nginx → 404 | harbor-nginx 以 `$host` 重定向，未带 `$server_port`；externalURL 未含端口 | 统一以 `:30003` 对外，或 egress 重定向带端口；修正 externalURL |
+| S1 | Harbor HTTP 入口 `:<http-nodeport>` 301 到 `https://$host/`（丢端口）→ 落到宿主机 443 的另一 nginx → 404 | harbor-nginx 以 `$host` 重定向，未带 `$server_port`；externalURL 未含端口 | 以 HTTPS NodePort 统一对外，或重定向补 `$server_port`；externalURL 由部署变量注入（示例见下） |
 | S2 | `ai-weekly` 26 个 ContainerStatusUnknown 孤儿 + 2 个 Error | 节点曾 ephemeral-storage 压力导致副本驱逐，旧副本集未回收 | 清理 Failed/Unknown pod，配置 ephemeral-storage 配额与告警 |
 | S3 | `gitlab-runner` 重启 11 次、sidekiq 探针失败历史 | 节点重启窗口内探针超时，非配置错误 | 观察；必要时放宽 startupProbe |
 | S4 | 两个 Web 目标对未知路径返回 200 + SPA HTML | 前端 history 路由回退 | 已由 `is_spa_fallback` 判据覆盖；对接新目标时不得只判状态码 |
 
-另：`tools/target_profiles.local.json` 的 `extra.smb_hosts` 仍指向与本环境无关的主机（`*.biogenai.corp`、`10.10.x`）。foothold 类技能据此会产生无效目标，建议清理或改为实际演练值（属本地数据，未擅改）。
+另：`tools/target_profiles.local.json` 的 `extra.smb_hosts` 原为课件示例值（与本环境无关）。已于 2026-11-25 置空并留档 `smb_hosts_legacy`；`adapter_poison` 在空清单下降级为 `replaced_count=0`，不再对幻影主机作业。
+
+**S1 的修正参数化示例**（主机与端口运行时取自集群，不落字面量）：
+
+```bash
+HTTPS_NODEPORT=$(kubectl -n harbor get svc harbor \
+  -o jsonpath='{.spec.ports[?(@.name=="https")].nodePort}')
+NODE_IP=$(kubectl get nodes \
+  -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+helm upgrade <RELEASE> <CHART> -n <NAMESPACE> --reuse-values \
+  --set expose.tls.enabled=true \
+  --set externalURL="https://${NODE_IP}:${HTTPS_NODEPORT}"
+```
+
+该形态适用于任意 Harbor 实例：地址与端口均来自集群当前状态，仓库与 values 文件都不需要出现具体目标。
 
 ## 8. 通用适配性说明
 
-1. **单一事实源**：所有目标字面量只存在于画像；`tools/`、`scripts/`、`skills/`、配置层实测零命中（`git grep` 空结果），18 份文档中的 IP 仅为历史验证记录。
+1. **单一事实源**：所有目标字面量只存在于画像；`tools/`、`scripts/`、`skills/`、配置层实测零命中（`git grep` 空结果）。本报告自身亦不承载地址：主机以「DVAA 入口 / AIVP 入口 / K8s 控制节点」代称，端口按服务名引用；仓库内其余 IP 仅见于历史验证记录。
 2. **零代码切换已实测**：本轮仅在本地画像追加 `dvaa-rehearsal` 一条（`host`/`model`/`labs`/`endpoints`），核心代码未改一行，DVAA 即完成 7 步侦察并 C1–C12 全 PASS；AIVP 与 DVAA 使用同一套代码与同一份步骤定义。
 3. **端点差异由画像吸收**：AIVP 有 `/explore` 与 `/api/labs/{lab}/chat`；DVAA 无 `/explore`、聊天面为 `/api/agents/{id}/chat`。后者由 `agent_chat` 模板 + `family=dvaa` 发现逻辑处理，未写死任何目标分支。
 4. **发现优于假设**：前端产物路径按实际 `<script src>` 解析（D2 修复后不再假设 `/assets/`），基路径按目录形态推导（D1），角色缺失即如实记「不可判定」（D3）。

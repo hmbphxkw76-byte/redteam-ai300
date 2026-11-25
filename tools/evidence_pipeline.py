@@ -110,6 +110,8 @@ def main(argv: Iterable[str] | None = None) -> int:
     ap.add_argument("--target-map", default="docs/operations/osai-target-map.md")
     ap.add_argument("--fragments-dir", default="evidence")
     ap.add_argument("--root", default=".")
+    ap.add_argument("--report-only", action="store_true",
+                    help="只报告缺口，退出码恒为 0（用于 CI 发现态门禁）")
     args = ap.parse_args(list(argv) if argv is not None else None)
     ready, gaps = check_targets(args.target_map, args.fragments_dir, args.root)
     if ready:
@@ -118,7 +120,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     print("八目标证据链：BLOCKED（%d 项缺口）" % len(gaps))
     for g in gaps:
         print("  - %s" % g)
-    return 1
+    return 0 if args.report_only else 1
 
 
 if __name__ == "__main__":

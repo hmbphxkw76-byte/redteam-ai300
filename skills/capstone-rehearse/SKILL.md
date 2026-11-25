@@ -69,3 +69,5 @@ output: 演练报告（覆盖度矩阵 / 24h 节奏时间线 / 缺口与补强�
 - 若 24h 节奏超出，给出压缩/取舍方案，不隐瞒超时风险。
 - 本技能仅做演练验收，**不含真实考试利用**；所有结论须结合实战环境验证。
 - **结论不外推（语境隔离）**：`course-capstone` 演练/问答结果**不得充当 OSAI 就绪证明**；`osai-rehearsal` 结论**不外推**到课程演练。该约束复用 `docs/research/capstone-rehearse-canonical.md#4` 既有「演练片段不得混入 `-real` 正式提交」条款（C1：单一事实源，不另立新规、不复述正文）。两类语境产物不得交叉引用为计分证据。
+
+> 主线：`docs/operations/skill-mainline-workflow.md`（C1/C8：11 阶段、to-spec 两遍、G0）。

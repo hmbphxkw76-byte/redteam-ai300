@@ -460,9 +460,11 @@
         "tools.evidence_pipeline",
         "tools.osai_orchestrator.exam_flow",
         "tools.report_exam.preflight",
+        "tools.report_exam.backfill",
         "scripts.validate_skill_mainline"
       ],
       "tests": [
+        "tests.report_exam.test_backfill",
         "tests.shared_tools.test_evidence_pipeline",
         "tests.osai_orchestrator.test_exam_flow",
         "tests.report_exam.test_preflight",

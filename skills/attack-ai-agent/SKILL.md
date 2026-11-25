@@ -116,3 +116,5 @@ output: 每步「命令+输出+截图」证据、AI 交互日志、检测规则�
 - 朴素攻击触发规则后不得跳过 Detect/Evade：记录规则名与特征，按盲点改写载荷复验无告警，换新手法而非重放（§3.1）。
 - 某规避手法对特定模型无效（如 Qwen 拒多数编码却接受字符间距），记录各格式接受情况后换用其它格式，不以单一手法失败判向量无效（§3.2 Tip）。
 - Kibana/SIEM 不可达时 detect/confirm 记 `UNDETERMINED`，标注「无法验证告警」，恢复后补验，不臆断无告警（§3.1 Info）。
+
+> 主线：`docs/operations/skill-mainline-workflow.md`（C1/C8：11 阶段、to-spec 两遍、G0）。

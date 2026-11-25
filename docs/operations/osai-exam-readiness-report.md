@@ -17,7 +17,8 @@
 
 - 修改：`tools/collect_evidence.py`、`docs/contracts/collect_evidence.contract.md`、`docs/contracts/consumers.md`、`scripts/tools_manifest.json`、`scripts/measure_coverage.py`、`tests/shared_tools/test_collect_evidence.py`。
 - 新增：`tools/evidence_pipeline.py`、`tools/osai_orchestrator/exam_flow.py`、`tools/report_exam/preflight.py`、`scripts/validate_skill_mainline.py`；对应四个测试模块；规格/调研/设计/门禁/状态/目标映射六类文档。
-- 未改：17 份 `SKILL.md`、`GLOSSARY.md`、CI 工作流长行、官方报告模板、既有演练证据。
+- 本轮追加改动：17 份 `SKILL.md` 主线指针、24 份根层影子规格归档、两份幽灵技能 `SKILL.md` 与规范路径规格/门禁、报告回填模块、CI 独立校验步骤。
+- 未改：`GLOSSARY.md`、CI 工作流并发长行、官方报告模板、既有演练证据。
 
 ## 3. 实施清单（需求 → 动作 → 验证 → 预期 → 实际）
 
@@ -32,7 +33,7 @@
 | R7 提交规则与 MD5 | 新增 `check_submission`：命名/无密码/≤100MB/仅 PDF/本地 MD5 | 6 例单测（probe 注入） | 违反任一规则 BLOCKED | 已完成 |
 | R8 主线与孤儿规格可发现 | 新增 `validate_skill_mainline.py --strict` | 4 例单测 + 全仓实跑 | 17 技能指针缺口、24 根影子规格可见 | 已完成 |
 | R9 契约同步 | 契约 v5、新增开关/语义/`missing` 标签；消费者登记新行 | 契约清单 + 消费者断言 | PASS | 已完成 |
-| R10 覆盖率门禁覆盖新代码 | `tools_manifest.json` + `measure_coverage.py` 注册新目标 | `--target osai-exam-readiness --min 80` | ≥80% | 已完成；89.2% |
+| R10 覆盖率门禁覆盖新代码 | `tools_manifest.json` + `measure_coverage.py` 注册新目标 | `--target osai-exam-readiness --min 80` | ≥80% | 已完成；86.6% |
 
 ## 4. 需求对齐矩阵
 
@@ -52,8 +53,8 @@
 
 | 门禁 | 命令 | 判定 |
 |---|---|---|
-| 全量测试 | `python -m unittest discover -s tests -t .` | Ran 1469，OK (skipped=3) |
-| 覆盖率 | `python scripts/measure_coverage.py --target osai-exam-readiness --min 80` | 272/305 = 89.2%，PASS |
+| 全量测试 | `python -m unittest discover -s tests -t .` | Ran 1472，OK (skipped=3) |
+| 覆盖率 | `python scripts/measure_coverage.py --target osai-exam-readiness --min 80` | 369/426 = 86.6%，PASS |
 | 术语 | `python scripts/check_glossary.py` | PASS（66 废弃术语） |
 | 预算 | `python scripts/check_token_budget.py --check` | PASS |
 | 技能 | `python scripts/validate_skill.py` | 17/17 PASS |
@@ -64,11 +65,11 @@
 
 | 风险 | 规避动作 | 状态 |
 |---|---|---|
-| 既有 17 技能回归 | 考试模式 opt-in；默认语义与节标题不变 | 已验证：1469 测试通过 |
+| 既有 17 技能回归 | 考试模式 opt-in；默认语义与节标题不变 | 已验证：1472 测试通过 |
 | 契约漂移 | v5 同步签名/语义/consumers；golden 解析回归 | 已验证 |
 | 并发会话共享文件冲突 | 隔离 worktree + 分支；仅新增独立脚本与少量行；推送前锁检查 PASS | 已验证 |
 | 证据伪造 | 管线只读；不生成 PNG/flag/PDF/.7z；状态文档标「演练」 | 已验证 |
-| CI 未回报 | `gh pr checks 451` 无检查；G0 严格判 BLOCKED，停留阶段 11 | 待门户验证 |
+| CI 检查 | S1/S2/AC-12 pass；S3/S4 因 `ci.yml:138,179` 仅 main 触发而 skipping（预期） | 已验证：PR #451 共 10 条检查无失败；S3/S4 待合入 main 后实跑 |
 | 真实考试事实缺口 | 6 项 U 类待核实保持开放 | 待考试窗口 |
 
 ## 7. 按得分优先级的可执行建议
@@ -77,7 +78,7 @@
 2. **P0**：用 `preflight.py` 扫描报告占位文本并在导出 PDF 前清零；提交件命名/MD5 按官方规则复核。
 3. **P1**：为 AI 向量 4 台（60 分）与独立机（15 分）优先跑通 recon→证据→report，确保 75 分最小组合；再补传统/DC 25 分冲击 ≥85。
 4. **P1**：补齐幽灵技能 `attack-jailbreak` / `attack-multimodal` 的 `SKILL.md` 与主线留痕；迁移 24 份影子规格。
-5. **P2**：为 17 技能补主线唯一可信源指针；把新增校验接入 CI 独立步骤（不改并发长行）。
+5. **P2**：为剩余 11 技能补齐规范路径规格与阶段门禁记录（本轮只补了指针，不伪造历史结论）；在真实环境中执行 CI S3/S4。
 
 ## 8. 后续规划（进入/退出条件）
 
@@ -99,4 +100,4 @@
 
 ## 10. 阶段 11 状态
 
-PR #451 已创建，SSH 推送成功；`gh pr checks 451` 返回 `no checks reported`，CI S1–S4 尚未回报。按 G0 严格判定为 **BLOCKED**，停留阶段 11；本地等价门禁全绿。
+PR #451 已创建，SSH 推送成功；`gh pr checks 451` 显示 S1/S2/AC-12 pass，S3/S4 按 `ci.yml` 仅 main 触发的设计 skipping。PR OPEN / MERGEABLE，10 条检查无失败；阶段 11 结论 **PASS**，S3/S4 待合入 main 后实跑。

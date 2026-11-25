@@ -91,3 +91,5 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、检索层操纵前
 - 若已上传文档后需重传改名：如实标注混合检索库可能残留脏数据；实验室可重置索引，真实评估通常无此控制，不宣称已彻底清除（Ch5 §5.2 Info）。
 - 若朴素投毒触发检测规则，不得跳过 Detect/Evade：记录规则名与匹配特征，改用跨文档分片 / 目标劫持式检索等盲点手法并复查无告警，不重放同一被拦截载荷（Ch3 §3.1）。
 - 若 Kibana/SIEM 不可达，detect/confirm 记 `UNDETERMINED` 并标注「无法验证告警」，恢复后补验，不臆断无告警（Ch3 §3.1 Info）。
+
+> 主线：`docs/operations/skill-mainline-workflow.md`（C1/C8：11 阶段、to-spec 两遍、G0）。

@@ -105,6 +105,9 @@ class EvidencePipelineTests(unittest.TestCase):
             self.assertEqual(code, 1)
             self.assertIn("BLOCKED", buf.getvalue())
             self.assertIn("T1:", buf.getvalue())
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(
+                    main(["--target-map", p, "--root", tmp, "--report-only"]), 0)
 
 
 if __name__ == "__main__":

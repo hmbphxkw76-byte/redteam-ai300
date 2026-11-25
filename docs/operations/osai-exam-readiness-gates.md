@@ -63,7 +63,7 @@
 
 | 检查 | 结果 | 命令/证据 |
 |---|---|---|
-| B3/B4/B6/B8 | 符合 | `python -m unittest discover -s tests -t .`：Ran 1469 tests，OK (skipped=3)；`python scripts/measure_coverage.py --target osai-exam-readiness --min 80`：272/305 = 89.2% PASS |
+| B3/B4/B6/B8 | 符合 | `python -m unittest discover -s tests -t .`：Ran 1472 tests，OK (skipped=3)；`python scripts/measure_coverage.py --target osai-exam-readiness --min 80`：369/426 = 86.6% PASS |
 | 结论 | PASS | 红阶段输出留痕见 tests 新增用例；契约漂移测试 PASS |
 
 ## 阶段 10 code-review
@@ -72,7 +72,7 @@
 |---|---:|---|---|
 | Standards | 9（初检 4 硬违规） | 契约 v5 CHANGELOG 无真实 commit/PR；签名未同步；未注册覆盖率目标 | 全部修复；复检见下 |
 | Spec | 10（初检 4 硬违规） | 考试模式 `shot_status` 误报复发；AC-09 缺文件名；AC-13 覆盖盲区；AC-14 缺五列表 | 全部修复；复检见下 |
-| 复检 | 硬违规 0 | 契约消费者/清单门禁 PASS；`check_glossary` PASS；覆盖率 89.2% | PASS |
+| 复检 | 硬违规 0 | 契约消费者/清单门禁 PASS；`check_glossary` PASS；覆盖率 86.6% | PASS |
 
 **§8.3 声明**：AC-11 字面「git diff 仅出现新增脚本与独立测试」与 AC-01..05 必需的既有 CLI/契约修改冲突；按 GOVERNANCE §8.3 显式声明其实际解释为「不修改 CI 并发长行」，改动限定为新增独立脚本/测试 + 必要契约同步。
 
@@ -82,9 +82,10 @@
 
 | 检查 | 结果 | 命令/证据 |
 |---|---|---|
-| B1–B9（本地） | 符合 | 1469 tests OK；覆盖率 89.2%；术语/预算/技能/契约消费者断言全 PASS；PR 正文 2470/3000B PASS |
+| B1–B9（本地） | 符合 | 1472 tests OK；覆盖率 86.6%；术语/预算/技能/契约消费者断言全 PASS；PR 正文 2470/3000B PASS |
 | 推送 | 符合 | `checkout_lock --check` PASS；SSH 一次成功（HTTPS 未用）；分支 `feat/osai-exam-readiness` |
 | 提交 | 符合 | `4ec49d8` 实现；`9fe28b4` 契约 v5 commit/PR 回填 |
 | PR | 符合 | #451；契约 PR 门禁 PASS；Closes #446 |
-| CI S1–S4 | 未验证 | `gh pr checks 451` 返回 `no checks reported`；须在门户确认 |
-| 结论 | **BLOCKED**（严格 G0） | 停留阶段 11，待 CI 回报后复验；本地交付物已完成 |
+| CI S1/S2/AC-12 | 符合 | `gh pr checks 451`：静态检查(S1) pass 13s/22s；自动化测试(S2) pass 2m39s/2m6s；AC-12 真实 PDF/.7z 冒烟 pass 48s/29s |
+| CI S3/S4 | 符合（按设计跳过） | `ci.yml:138,179` 限定 `github.ref == refs/heads/main`；PR 上 skipping 属预期，合并后由 main 触发 |
+| 结论 | **PASS** | PR OPEN / MERGEABLE；10 条检查无失败；S3/S4 待合入 main 后实跑 |

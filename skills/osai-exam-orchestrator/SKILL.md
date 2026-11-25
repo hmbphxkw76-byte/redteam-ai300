@@ -68,3 +68,5 @@ python scripts/check_token_budget.py --check
 - 本模块不含攻击逻辑，不连接真实目标、不读凭据、不投放载荷。
 - 未实现的 A/B 项（如有）如实列入缺口，不伪造能力。
 - 与既有技能冲突时以既有技能语义为准，本模块仅提供可选增强。
+
+> 主线：`docs/operations/skill-mainline-workflow.md`（C1/C8：11 阶段、to-spec 两遍、G0）。

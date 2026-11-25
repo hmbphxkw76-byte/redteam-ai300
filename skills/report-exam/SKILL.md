@@ -260,3 +260,5 @@ Table of Contents                              (official，须含 "Offsec AI Red
 - 原版 `examples/report_data.simulated-10host.json` 等仿真数据不在本仓库复用；本版以 `templates/osai-report-template-*.md` 取代其占位结构。
 
 > 治理登记：本技能为报告生成的**唯一实现**，已并入原 `offsec-report` 目录内容；GOVERNANCE §4.4 仅以 `report-exam` 登记（原 `offsec-report` 名称弃用）。
+
+> 主线：`docs/operations/skill-mainline-workflow.md`（C1/C8：11 阶段、to-spec 两遍、G0）。

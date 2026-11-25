@@ -18,7 +18,14 @@ from typing import Callable, Iterable, Tuple
 PDF_NAME = re.compile(r"^OSAI-OS-[A-Z0-9]{5}-Exam-Report\.pdf$", re.I)
 ARCHIVE_NAME = re.compile(r"^OSAI-OS-[A-Z0-9]{5}-Exam-Report\.7z$", re.I)
 MAX_BYTES = 100 * 1024 * 1024
-PLACEHOLDERS = ("{{", "NOT ATTEMPTED", "待补录", "pending backfill", "TODO")
+PLACEHOLDERS = ("{{", "NOT ATTEMPTED", "待补录", "pending backfill", "TODO",
+                "unbackfilled field")
+# skeleton 经 f-string 渲染后 `{{...}}` 变为单括号，需同时识别单括号形态。
+UNBACKFILLED = re.compile(
+    r"\{[^{}]*(Management-audience|planned path|timestamped sequence|"
+    r"per-finding blocks|key vulnerabilities|recommendations|Appendix [ADE]|"
+    r"third-party script)[^{}]*\}"
+)
 
 
 def scan_report_placeholders(text: str) -> list[Tuple[int, str]]:
@@ -28,6 +35,9 @@ def scan_report_placeholders(text: str) -> list[Tuple[int, str]]:
         for token in PLACEHOLDERS:
             if token in line:
                 found.append((no, token))
+        if UNBACKFILLED.search(line) and not any(t == "unbackfilled field" for t in
+                                                [x[1] for x in found if x[0] == no]):
+            found.append((no, "unbackfilled field"))
     return found
 
 

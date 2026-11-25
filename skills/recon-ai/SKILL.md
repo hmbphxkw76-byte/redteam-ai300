@@ -151,3 +151,5 @@ API/OpenAPI 契约命中时 recon-05「关键输出」须含路径清单与 `.se
 - 若某 AI 组件无法指纹识别，记录「无法识别」及原因，不阻塞其余枚举。
 - A2A Card 不可达或返回非协议 JSON 记 `ABSENT` 并留原始响应；SIEM 不可读记 `UNDETERMINED`，均不阻塞其余枚举。
 - 探测暴露时立即中止该面、记录暴露点与时间窗，转被动观测，不重试同一动作。
+
+> 主线：`docs/operations/skill-mainline-workflow.md`（C1/C8：11 阶段、to-spec 两遍、G0）。

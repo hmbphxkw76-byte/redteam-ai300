@@ -100,3 +100,5 @@ output: 校验报告（通过/阻断 + 缺失项清单）、可机读校验结�
 - 2026-11-15（入口闭环）：`--fragments-dir` 原未读取片段自带双通道明细表，致任何含 flag 的片段必触发 vrf-04 阻断；现面板值归一进 `panel_flags`、报告侧取「截图/正文中的值」，显式注入仍优先。判据语义不变，仅补全输入归一。
 - 2026-11-15（跟进 #225 收口）：`--from-loot` 报告侧 flag 改取片段双通道表（无表时回退取证节 / 面板值），消除「面板值自比」；登记簿状态「失效」不计已取分，按未取分豁免如实记录。判据未放宽。
 - 2026-11-25（审查 P2/P9 收口）：验收口径对齐实现——补 vrf-09 节与 proof-single 键名，计数改「十项 checks」（vrf-01…vrf-09 + proof-single）；覆盖不全判据改引 `LimitConfig`/`run.json` 实际机制（原 `--max-budget`/`--max-turns` 旗标不存在）。判据语义不变，仅消除文档窄于实现的漂移。
+
+> 主线：`docs/operations/skill-mainline-workflow.md`（C1/C8：11 阶段、to-spec 两遍、G0）。

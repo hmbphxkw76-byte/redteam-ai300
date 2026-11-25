@@ -6,6 +6,7 @@
 from ._types import SCORED_HOSTS
 from .index import build_index
 from .bilingual import render_bilingual, extract_facts
+from .backfill import backfill_bilingual
 from .package import package, verify_report
 from .sections import render_all_host_sections, render_host_body
 from .ai_appendix import collect_ai_logs
@@ -14,19 +15,20 @@ from . import EVIDENCE_STEPS
 
 def assemble_report(evidence_source, expected_hosts=None, osid="XXXXX",
                     panel_flags=None, out_dir=None, runner=None,
-                    do_package=True):
+                    do_package=True, backfill=True):
     """组装完整报告并返回结构化结果（供 CI/测试机读判定）。
 
     - evidence_source: Seam-1 注入点（DirEvidenceSource / MemoryEvidenceSource）
     - panel_flags: 控制面板提交值 {host: flag}，§6.2 双通道比对的输入
     - runner: 注入 subprocess 执行器（pandoc/7z 可测）
     - do_package: False 为 dry-run（不产物、不可提交，vrf-07 记未判定）
+    - backfill: True 时以证据片段派生文本回填骨架占位符（不改节标题，不虚构事实）
     """
     model = build_index(evidence_source, expected_hosts=expected_hosts,
                         osid=osid, panel_flags=panel_flags)
     frags = [f for fs in model.hosts.values() for f in fs]
 
-    en, zh = render_bilingual(model)
+    en, zh = (backfill_bilingual(model) if backfill else render_bilingual(model))
     host_sections = render_all_host_sections(model)
     appendix_d = collect_ai_logs(frags)
     facts_equal = bool(extract_facts(en)) and extract_facts(en) == extract_facts(zh)

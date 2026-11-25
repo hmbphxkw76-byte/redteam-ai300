@@ -81,3 +81,5 @@ output: 结构化战利品登记簿（loot/registry.md，markdown 表格）、fl
 - 若技能全程无战利品（目标不可达），在登记簿记录空态与原因，作为 `capstone-rehearse` 缺口清单输入；空态本身即为有效产出。
 - 登记簿不含截图本体（仅路径），截图捕获实现不在本技能范围（豁免依据：Out of scope 约定）。
 - 若登记行引用的证据片段缺失（文件被移动），补齐引用路径后再过质量门；禁止以对话上下文记忆替代证据。
+
+> 主线：`docs/operations/skill-mainline-workflow.md`（C1/C8：11 阶段、to-spec 两遍、G0）。

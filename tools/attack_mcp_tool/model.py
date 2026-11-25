@@ -23,8 +23,14 @@ _TOOL_NAME_RE = re.compile(r"(?:tool\s*name|工具名(?:称)?|tool)\s*[:：]\s*(
                            re.IGNORECASE)
 _SCOPE_RE = re.compile(r"(?:required\s*scope|所需权限范围|所需权限|scope)\s*[:：]\s*([^\s,|]+)",
                        re.IGNORECASE)
-_SERVER_RE = re.compile(r"(?:server\s*id|服务器\s*id|服务器)\s*[:：]\s*([A-Za-z0-9_.\-]+)",
+_SERVER_RE = re.compile(r"(?:server\s*id|服务器\s*id|服务器|server)\s*[:：]\s*([A-Za-z0-9_.\-]+)",
                         re.IGNORECASE)
+# 行内清单形态：`- get_config — Server: main_server (trusted) — Required scope: read`
+# 工具名由项目符号直接引出，字段以破折号/竖线分隔（各家 MCP 客户端的通用渲染）。
+_BULLET_NAME_RE = re.compile(
+    r"^\s*(?:[-*•]|\d+[.)])\s*([A-Za-z0-9_][A-Za-z0-9_.\-]*)\s*(?:[—–:|(]|\s-\s)")
+_DECL_HINT = re.compile(
+    r"(?:server|description|scope|input\s*schema|服务器|描述|权限|参数)", re.IGNORECASE)
 _TABLE_SKIP = {"tool", "name", "tool name", "toolname", "---"}
 _TRUST_RE = re.compile(r"\b(trusted|untrusted|shadow)\b", re.IGNORECASE)
 
@@ -54,6 +60,12 @@ def parse_tool_entries(text):
             first = cells[0] if cells else ""
             if first and _IDENT.fullmatch(first) and first.lower() not in _TABLE_SKIP:
                 name = first
+        elif _DECL_HINT.search(line):
+            # 无显式「工具名：」标签时，退化为「项目符号 + 名 + 声明字段」形态；
+            # 只在同一行出现声明字段时才认，避免把普通列表误判为工具面。
+            mb = _BULLET_NAME_RE.match(line)
+            if mb:
+                name = mb.group(1)
         if name:
             entries.append({"name": name})
         if not entries:

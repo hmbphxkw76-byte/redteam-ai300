@@ -94,6 +94,12 @@ jobs:
       - name: EvidenceWriter 契约符合性 (S1)
         # 4 份适配器最小契约静态校验（tools/_evidence_contract.py）
         run: python scripts/check_evidence_contract.py
+      - name: 考试就绪证据链发现 (S1)
+        # 独立步骤；只读报告缺口，不在 CI 阻断（真实证据须考试窗口落盘）
+        run: python tools/evidence_pipeline.py --target-map docs/operations/osai-target-map.md --root . --report-only
+      - name: 主线留痕与影子规格发现 (S1)
+        # 独立步骤；只报告，不改并发会话共用长行
+        run: python scripts/validate_skill_mainline.py --root .
       - name: 阶段后清理 (post, always)
         if: always()
         uses: ./.github/actions/ci-cleanup

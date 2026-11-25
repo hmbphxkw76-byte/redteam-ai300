@@ -51,6 +51,7 @@ ALL_TARGET_ORDER = (
     "pyrit-compat",
     "osai-orchestrator",
     "target-profile",
+    "osai-exam-readiness",
 )
 
 

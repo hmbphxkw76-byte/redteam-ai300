@@ -116,5 +116,62 @@ class CollectEvidenceTests(unittest.TestCase):
             self.assertIn("蜜罐", r.stderr)
 
 
+    def test_exam_mode_rejects_hook_only_screenshot(self):
+        """AC-02：考试模式下钩子命令不满足截图必需件，strict 必失败。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "out.md")
+            r = run("--step", "s1", "--cmd", "echo hi", "--output", "hi",
+                    "--shot-cmd", "import -window root /tmp/x.png",
+                    "--exam", "--strict", "--out", out)
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("截图（真实文件）", r.stdout + r.stderr)
+            with open(out, encoding="utf-8") as f:
+                text = f.read()
+            self.assertIn("**三件套齐全**：否", text)
+
+    def test_exam_mode_accepts_real_png(self):
+        """AC-03：考试模式下真实 PNG（含 IEND）计入完整。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            shot = os.path.join(tmp, "s.png")
+            with open(shot, "wb") as f:
+                f.write(b"\x89PNG\r\n\x1a\n" + b"0" * 32 + b"IEND")
+            out = os.path.join(tmp, "out.md")
+            r = run("--step", "s1", "--cmd", "echo hi", "--output", "hi",
+                    "--screenshot", shot, "--exam", "--strict", "--out", out)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            with open(out, encoding="utf-8") as f:
+                text = f.read()
+            self.assertIn("**三件套齐全**：是。", text)
+
+    def test_exam_mode_fake_path_is_pending_not_provided(self):
+        """H1 回归：考试模式无效截图路径不得标「已提供」。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "out.md")
+            r = run("--step", "s1", "--cmd", "echo hi", "--output", "hi",
+                    "--screenshot", os.path.join(tmp, "missing.png"),
+                    "--exam", "--strict", "--out", out)
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            with open(out, encoding="utf-8") as f:
+                text = f.read()
+            self.assertIn("| 截图 | 是 | 待补录（钩子命令已记录） |", text)
+            self.assertIn("**三件套齐全**：否", text)
+
+    def test_scored_target_requires_flag_dual(self):
+        """AC-05：计分目标模式缺双通道时不完整；--flag 单值仍兼容。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            shot = os.path.join(tmp, "s.png")
+            with open(shot, "wb") as f:
+                f.write(b"\x89PNG\r\n\x1a\n" + b"0" * 32 + b"IEND")
+            out = os.path.join(tmp, "out.md")
+            r = run("--step", "s1", "--cmd", "whoami", "--output", "root",
+                    "--screenshot", shot, "--scored-target", "--strict", "--out", out)
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("flag 双通道", r.stdout + r.stderr)
+            r2 = run("--step", "s1", "--cmd", "whoami", "--output", "root",
+                     "--screenshot", shot, "--scored-target", "--flag", "FLAG{ok}",
+                     "--strict", "--out", out)
+            self.assertEqual(r2.returncode, 0, r2.stdout + r2.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

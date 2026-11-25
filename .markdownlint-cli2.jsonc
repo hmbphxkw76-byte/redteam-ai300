@@ -2,7 +2,9 @@
   // 官方报告模板按 S1 要求保留逐字标题（含多个 H1、封面邮箱、附录 H4 层级），
   // 改写会偏离 GOVERNANCE §7.1 / §9.2 的官方事实，故整目录豁免 markdownlint。
   "ignores": [
-    "skills/report-exam/templates/**"
+    "skills/report-exam/templates/**",
+    // 归档影子规格按 C1 保留原文，不因格式规则改写历史增量规格（见 legacy-root/INDEX.md）。
+    "docs/specs/legacy-root/**"
   ],
   "config": {
     "MD013": false,

@@ -141,11 +141,32 @@ def _flag_dual(pair_flag, flag_panel, flag_shot):
     return panel, shot, "不一致"
 
 
+def _is_real_screenshot(path):
+    """考试模式截图判据：文件存在、非空，且含完整 PNG(IEND) 或 JPEG(EOI) 结束标记。
+
+    仅记录钩子命令或只有文件头均不算真实截图；不执行钩子，不生成图片。
+    """
+    if not path or not os.path.isfile(path) or os.path.getsize(path) == 0:
+        return False
+    try:
+        with open(path, "rb") as f:
+            head = f.read(16)
+            f.seek(max(0, os.path.getsize(path) - 2048))
+            tail = f.read()
+    except OSError:
+        return False
+    if head.startswith(b"\x89PNG\r\n\x1a\n"):
+        return b"IEND" in tail
+    if head.startswith(b"\xff\xd8"):
+        return b"\xff\xd9" in tail
+    return False
+
+
 def build_fragment(step_id, command, output="", screenshot=None, shot_cmd=None,
                    ai_log="", flag="", flag_panel="", flag_shot="", target="",
                    title="", timestamp=None, out_path=None, avoid_terms=None,
                    script=None, script_src="", script_note="", profile="",
-                   shot_kind="", note=""):
+                   shot_kind="", note="", exam=False, scored_target=False):
     """渲染证据片段，返回 (markdown_text, report)。
 
     report 含：complete（三件套是否齐全）、missing（缺失项）、
@@ -166,14 +187,20 @@ def build_fragment(step_id, command, output="", screenshot=None, shot_cmd=None,
     has_cmd = bool(command.strip())
     has_out = bool(output.strip())
     has_shot = bool(screenshot) or bool(shot_cmd)
+    has_real_shot = _is_real_screenshot(screenshot) if exam else has_shot
     required_status = {
         "确切命令": has_cmd,
         "关键输出": has_out,
-        "截图": has_shot,
+        "截图": has_real_shot if exam else has_shot,
     }
     # F3 修复：截图状态显式化（已提供 / 待补录 / 缺失），供清单与校验表如实标注，
     # 消除「screenshot="" 却标已提供」的字段不一致（状态可追溯）。
-    if bool(screenshot):
+    if exam:
+        # 考试模式：只有真实图片落盘才算已提供；路径无效/仅为钩子一律待补录，
+        # 防止校验表与 complete 判定互相矛盾（S3 失分条款的直接触发面）。
+        shot_status = ("已提供" if has_real_shot else
+                       ("待补录" if has_shot else "缺失"))
+    elif bool(screenshot):
         shot_status = "已提供"
     elif bool(shot_cmd):
         shot_status = "待补录"
@@ -187,6 +214,11 @@ def build_fragment(step_id, command, output="", screenshot=None, shot_cmd=None,
     }
     complete = all(required_status.values())
     missing = [k for k in REQUIRED_PIECES if not required_status[k]]
+    if exam and not required_status["截图"]:
+        missing = ["截图（真实文件）" if k == "截图" else k for k in missing]
+    if scored_target and flag_status != "一致":
+        complete = False
+        missing.append("flag 双通道（面板+截图）")
 
     shot_missing = bool(screenshot) and not os.path.isfile(screenshot)
 
@@ -413,6 +445,10 @@ def main(argv=None):
     ap.add_argument("--append", action="store_true", help="追加到 --out 文件末尾（默认覆盖）")
     ap.add_argument("--strict", action="store_true",
                     help="三件套不全或 flag 双通道不一致时以退出码 1 失败（质量门强制）")
+    ap.add_argument("--exam", action="store_true",
+                    help="考试模式：截图必需件须为真实 PNG/JPEG 文件，钩子命令只记待补录")
+    ap.add_argument("--scored-target", action="store_true",
+                    help="计分目标模式：flag 双通道一致才计入完整，兼容 --flag 单值形式")
     ap.add_argument("--glossary", default=GLOSSARY_PATH, help="GLOSSARY.md 路径（术语预警来源）")
     args = ap.parse_args(argv)
 
@@ -465,6 +501,8 @@ def main(argv=None):
         script_note=args.script_note or "",
         profile=args.profile or "",
         note=args.note or "",
+        exam=args.exam,
+        scored_target=args.scored_target,
     )
 
     for t in report["avoid_terms"]:

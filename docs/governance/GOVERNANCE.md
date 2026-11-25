@@ -131,6 +131,8 @@
 | **P0** | `verify-evidence` 证据校验与 flag 提交 | 报告要求（S1/S3） | 通用（防失分） |
 | P1 | `attack-embeddings` Embedding 反演与信息提取 | D6 | AI向量机 |
 | P1 | `attack-multi-agent` 多智能体/A2A 操纵 | D4 | AI向量机 |
+| P1 | `attack-jailbreak` 护栏绕过与多轮越狱 | D3 | AI向量机 |
+| P1 | `attack-multimodal` 跨模态注入与隐写载体 | D6 | AI向量机 |
 | P1 | `attack-supply-chain` AI 供应链投毒 | D8 | AI向量机 |
 | P1 | `attack-infra` AI 基础设施与部署利用 | D9 | AI向量机 / 独立机 |
 | P1 | `threat-model` AI 目标威胁建模 | D10 | 通用（前置） |

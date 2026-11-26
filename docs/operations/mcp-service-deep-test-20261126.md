@@ -3,7 +3,7 @@
 - 测试对象：`tools/serve_malicious_mcp.py`（本地恶意 MCP server）与实现包 `tools/attack_mcp_tool/`
 - 关联范围：`skills/` 20 个技能、`scripts/` 23 个脚本、`tools/` 20 个工具包 + 23 个顶层脚本
 - 测试日期：2026-11-26　基线：`main` @ `084d763`（工作树干净）
-- **修订（2026-11-26 晚）**：D-1 已修复并补回归用例，D-3 已闭环（覆盖率 94.4%），另在修复中发现并修复 D-14（覆盖率工具不追踪工作线程）。修复后全量回归全绿，详见《MCP 服务深度测试修复记录》（`docs/operations/mcp-service-deep-test-20261126-fix.md`）。
+- **修订（2026-11-26 晚）**：D-1 已修复并补回归用例，D-3 已闭环（覆盖率 94.4%），D-2 已按主线闭环，并修复 D-14（覆盖率工具线程口径）。修复后全量回归全绿，详见《MCP 服务深度测试修复记录》（`docs/operations/mcp-service-deep-test-20261126-fix.md`）。
 
 ## 1. 结论摘要
 
@@ -109,7 +109,7 @@ python -m tools.attack_mcp_tool.cli --step mcp-04 --mode jsonrpc --target http:/
 - **影响**：与 `run_attack` docstring 承诺的「单步失败不中断整轮」相悖；`cli.py` 头注的对照组用法在无 `--step` 时不可用；演练/考试取证在 B、flag 路径上无法完成。
 - **建议**：`_render()` 增加「有 text 无 raw」分支（如 `if obs.text and not obs.raw: parts.append(obs.text)`），或在这两处降级分支显式设 `response_for_shot=obs.text`；补用例「jsonrpc + emit=True 全路径必须成功」。
 
-### D-2【中】`start()` 非幂等，Windows 上静默双绑定并泄漏监听套接字
+### D-2【中】`start()` 非幂等，Windows 静默双绑定并泄漏套接字（已闭环）
 
 - **现象**：向 `Runtime.server` 注入已启动实例时，`_Session.ensure_server()` 会二次调用 `start()`。同端口二次绑定在 Windows 上成功（`allow_reuse_address=1`），旧 `ThreadingHTTPServer` 被覆盖且不关闭，`stop()` 后端口仍被占用（复现 `WinError 10048`）。
 - **影响**：①本机任意进程可在同端口另起监听，存在端口劫持风险；②`mcp-02` 依赖 `OSError` 的「本地端口不可用」降级分支在 Windows 永不触发（Linux 上会触发），跨平台行为不一致。

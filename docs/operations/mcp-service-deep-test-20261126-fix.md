@@ -63,6 +63,26 @@
 
 ## 5. 未随本次修复处理
 
-- D-2（`start()` 非幂等 / Windows 同端口双绑定）：需改 server 生命周期语义，涉及 `mcp-02` 的 OSError 降级契约，建议单独工单。
+- D-2（`start()` 非幂等 / Windows 同端口双绑定）：**已按主线 11 阶段闭环**，见 §6。
 - D-4（SKILL.md 未覆盖 mcp-09/10/11）：文档变更需与质量门条款同步评审。
 - D-5 至 D-13：低危/流程项，建议随下次触碰该模块处理。
+
+## 6. D-2 收口（主线 11 阶段）
+
+- 规格：issue #464（v1 + v2 同 issue 追加）；归档 `docs/specs/attack-mcp-tool-d2-spec-v{1,2}.md`
+- 工单：#465（A）/ #466（B）/ #467（C），`blocked-by` 链 465→466→467
+- 调研：`docs/research/mcp-server-lifecycle-winsock-posix.md`
+- 设计：`docs/operations/attack-mcp-tool-d2-server-lifecycle.md` §12
+- 门禁记录：`docs/operations/attack-mcp-tool-d2-gate-stage{1..11}.md`
+- PR 正文草稿：`docs/operations/attack-mcp-tool-d2-pr-body.md`（1,749B）；**未推送、未开 PR**
+
+| 提交 | 内容 | 验证 |
+|---|---|---|
+| `0df38d4` | A：`start()` 幂等 + `is_running` | 1686 例全绿 |
+| `d458f19` | B：所有权「谁启动谁关闭」 | 1689 例全绿 |
+| `29736fe` | C：Windows `SO_EXCLUSIVEADDRUSE` | 1691 例全绿；覆盖率 94.3% |
+| `08d6b85` | 审查修复：启动失败不留就绪态 | 1693 例全绿；覆盖率 94.4% |
+
+阶段 10 双轴审查发现并修复的关键缺陷：`ensure_server` 原先先登记 `started_server` 再 `start()`，端口冲突抛错后会留下端口为占位 0 的死实例供后续步骤复用；现改为「先启动后登记」，并新增断言禁止复用 `:0/mcp`。
+
+未关闭项：U-1（Linux `EADDRINUSE` 由 CI 验证）、U-2（长连接后重绑窗口仅以 50 次短连接近似）。

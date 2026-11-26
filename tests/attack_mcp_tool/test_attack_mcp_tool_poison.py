@@ -177,6 +177,42 @@ class PoisonSelfProofTests(unittest.TestCase):
         self.assertEqual(diff, {"added": [], "removed": [], "changed": []})
 
 
+class ServerLifecycleTests(unittest.TestCase):
+    """AC-01 / AC-02 / AC-08：启动幂等与运行状态可观测。"""
+
+    def test_start_is_idempotent_and_state_is_observable(self):
+        server = poison.PoisonedMcpServer()
+        self.addCleanup(server.stop)
+        self.assertFalse(server.is_running, "未启动时不得报告在监听")
+
+        server.start()
+        first_port, first_thread = server.port, server._thread
+        self.assertTrue(server.is_running)
+
+        same = server.start()
+        self.assertIs(same, server, "重复启动应返回自身")
+        self.assertEqual(server.port, first_port, "重复启动不得改变端口")
+        self.assertIs(server._thread, first_thread, "重复启动不得新建监听线程")
+        with urllib.request.urlopen(server.url.rsplit("/mcp", 1)[0] + "/tools/list",
+                                    timeout=5) as resp:
+            self.assertEqual(resp.status, 200, "幂等后仍应可连接")
+
+        server.stop()
+        self.assertFalse(server.is_running, "关闭后不得报告在监听")
+
+    def test_stop_is_idempotent_and_safe_when_never_started(self):
+        idle = poison.PoisonedMcpServer()
+        idle.stop()
+        idle.stop()
+        self.assertFalse(idle.is_running)
+
+        server = poison.PoisonedMcpServer().start()
+        self.addCleanup(server.stop)
+        server.stop()
+        server.stop()
+        self.assertFalse(server.is_running)
+
+
 class ServerHandlerEdgeTests(unittest.TestCase):
     """server 端点边界：404 / 解析错误 / 未知 method / 未知工具 / 生命周期。
 

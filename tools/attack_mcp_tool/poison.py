@@ -209,7 +209,24 @@ class PoisonedMcpServer:
     def url(self):
         return "http://%s:%d/mcp" % (self.host, self.port)
 
+    @property
+    def is_running(self) -> bool:
+        """是否正在监听：未启动、已停止或监听线程已退出时均为 False。"""
+        return (self._server is not None and self._thread is not None
+                and self._thread.is_alive())
+
     def start(self):
+        """启动监听；已监听时为空操作（幂等）。
+
+        幂等是所有权契约的前提：重复启动若新建监听，会覆盖前一个对象并使
+        其无法被 `stop()` 关闭（端口泄漏）。线程已退出的残留监听直接释放后重建。
+        """
+        if self.is_running:
+            return self
+        if self._server is not None:
+            self._server.server_close()
+            self._server = None
+            self._thread = None
         self._server = ThreadingHTTPServer((self.host, self.port), _Handler)
         self.port = self._server.server_address[1]
         self._thread = threading.Thread(target=self._server.serve_forever,

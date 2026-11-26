@@ -7,11 +7,9 @@
 import json
 import os
 import re
-import socket
 import sys
 import tempfile
 import threading
-import time
 import unittest
 import urllib.request
 from unittest import mock
@@ -24,6 +22,7 @@ from tools.pyrit_compat import TARGET_VERSION  # noqa: E402
 from tools.attack_mcp_tool import (LEVELS, STEP_IDS, AttackRequest, Runtime,  # noqa: E402
                                    run_attack)
 from tools.attack_mcp_tool import grade as grading  # noqa: E402
+from tests.attack_mcp_tool._ports import rebind_within  # noqa: E402
 from tools.attack_mcp_tool import cli, poison  # noqa: E402
 from tools.attack_mcp_tool import runner as runner_mod  # noqa: E402
 from tools.attack_mcp_tool.evidence import RecordingWriter  # noqa: E402
@@ -362,19 +361,9 @@ class ServerOwnershipTests(unittest.TestCase):
 
 
 def _assert_port_released(case, port, window=2.0):
-    """AC-05：关闭后在退避窗口内可重绑（不承诺立即）。"""
-    deadline = time.time() + window
-    while True:
-        probe = socket.socket()
-        try:
-            probe.bind(("127.0.0.1", port))
-            return
-        except OSError:
-            if time.time() > deadline:
-                case.fail("端口 %d 未在 %.1fs 内释放" % (port, window))
-            time.sleep(0.05)
-        finally:
-            probe.close()
+    """AC-05：关闭后在退避窗口内可重绑（以组件自身绑定语义判定）。"""
+    elapsed = rebind_within(port, window=window)
+    case.assertLessEqual(elapsed, window, "重绑耗时 %.3fs 超窗口" % elapsed)
 
 
 class RunnerBranchTests(unittest.TestCase):

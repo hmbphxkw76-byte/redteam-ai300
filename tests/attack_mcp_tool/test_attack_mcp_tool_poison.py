@@ -7,9 +7,7 @@
 """
 import json
 import os
-import socket
 import sys
-import time
 import unittest
 import urllib.error
 import urllib.request
@@ -19,6 +17,7 @@ from tests._paths import ROOT  # noqa: E402
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
+from tests.attack_mcp_tool._ports import rebind_within  # noqa: E402
 from tools.attack_mcp_tool import poison  # noqa: E402
 from tools.attack_mcp_tool.mcp import (AgentSseClient, JsonRpcMcpClient,  # noqa: E402
                                       parse_sse)
@@ -238,26 +237,8 @@ class AddressExclusivityTests(unittest.TestCase):
             with urllib.request.urlopen(base + "/tools/list", timeout=5) as resp:
                 resp.read()
         server.stop()
-        started = time.perf_counter()
-        _rebind_or_fail(self, port, window=2.0)
-        elapsed = time.perf_counter() - started
+        elapsed = rebind_within(port, window=2.0)
         self.assertLessEqual(elapsed, 2.0, "重绑耗时 %.3fs 超窗口" % elapsed)
-
-
-def _rebind_or_fail(case, port, window=2.0):
-    """AC-05/U-2：在退避窗口内成功重绑（不承诺立即）。"""
-    deadline = time.time() + window
-    while True:
-        probe = socket.socket()
-        try:
-            probe.bind(("127.0.0.1", port))
-            return
-        except OSError:
-            if time.time() > deadline:
-                case.fail("端口 %d 未在 %.1fs 内释放" % (port, window))
-            time.sleep(0.05)
-        finally:
-            probe.close()
 
 
 class ServerHandlerEdgeTests(unittest.TestCase):

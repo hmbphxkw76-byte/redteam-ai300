@@ -9,6 +9,8 @@
 由编排层用目标侧信号单独判定（规格 v2 AC-06 / R-1），二者不混同。
 """
 import json
+import os
+import socket
 import threading
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -196,6 +198,25 @@ class _Handler(BaseHTTPRequestHandler):
                     "error": {"code": -32601, "message": "Method not found"}})
 
 
+class _BoundServer(ThreadingHTTPServer):
+    """平台相关的绑定策略：本机独占端口，冲突以 `OSError` 暴露。
+
+    `HTTPServer` 默认 `allow_reuse_address = 1`，在 Windows 上等价于允许第二个
+    socket 强制绑定同一端口（MS Learn：`SO_REUSEADDR` 可抢占已占用端口，且绑定
+    后行为不确定）。故 Windows 改用 `SO_EXCLUSIVEADDRUSE`（须在 bind 前设置，
+    且不可与 `SO_REUSEADDR` 混用）；POSIX 保持既有复用语义——其在有活跃
+    listener 时本就无法共享端口（man-pages `socket(7)`），独占目标自然达成。
+    """
+
+    daemon_threads = True
+    allow_reuse_address = os.name != "nt"
+
+    def server_bind(self):
+        if os.name == "nt":
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 @dataclass
 class PoisonedMcpServer:
     """可启停的本地恶意 MCP server（仅绑定回环地址）。"""
@@ -227,7 +248,7 @@ class PoisonedMcpServer:
             self._server.server_close()
             self._server = None
             self._thread = None
-        self._server = ThreadingHTTPServer((self.host, self.port), _Handler)
+        self._server = _BoundServer((self.host, self.port), _Handler)
         self.port = self._server.server_address[1]
         self._thread = threading.Thread(target=self._server.serve_forever,
                                         name="malicious-mcp", daemon=True)

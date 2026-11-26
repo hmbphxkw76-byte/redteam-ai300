@@ -7,7 +7,9 @@
 """
 import json
 import os
+import socket
 import sys
+import time
 import unittest
 import urllib.error
 import urllib.request
@@ -211,6 +213,51 @@ class ServerLifecycleTests(unittest.TestCase):
         server.stop()
         server.stop()
         self.assertFalse(server.is_running)
+
+
+class AddressExclusivityTests(unittest.TestCase):
+    """AC-03 / U-2：同端口二次监听必须失败；关闭后重绑在窗口内成功。"""
+
+    def test_second_listener_on_same_port_is_rejected(self):
+        first = poison.PoisonedMcpServer().start()
+        self.addCleanup(first.stop)
+        second = poison.PoisonedMcpServer(port=first.port)
+        self.addCleanup(second.stop)
+        with self.assertRaises(OSError):
+            second.start()
+        self.assertFalse(second.is_running, "失败后不得留下半启动状态")
+        with urllib.request.urlopen(first.url.rsplit("/mcp", 1)[0] + "/tools/list",
+                                    timeout=5) as resp:
+            self.assertEqual(resp.status, 200, "冲突后首个实例必须仍可服务")
+
+    def test_rebind_within_window_after_traffic(self):
+        server = poison.PoisonedMcpServer().start()
+        port = server.port
+        base = server.url.rsplit("/mcp", 1)[0]
+        for _ in range(50):
+            with urllib.request.urlopen(base + "/tools/list", timeout=5) as resp:
+                resp.read()
+        server.stop()
+        started = time.perf_counter()
+        _rebind_or_fail(self, port, window=2.0)
+        elapsed = time.perf_counter() - started
+        self.assertLessEqual(elapsed, 2.0, "重绑耗时 %.3fs 超窗口" % elapsed)
+
+
+def _rebind_or_fail(case, port, window=2.0):
+    """AC-05/U-2：在退避窗口内成功重绑（不承诺立即）。"""
+    deadline = time.time() + window
+    while True:
+        probe = socket.socket()
+        try:
+            probe.bind(("127.0.0.1", port))
+            return
+        except OSError:
+            if time.time() > deadline:
+                case.fail("端口 %d 未在 %.1fs 内释放" % (port, window))
+            time.sleep(0.05)
+        finally:
+            probe.close()
 
 
 class ServerHandlerEdgeTests(unittest.TestCase):

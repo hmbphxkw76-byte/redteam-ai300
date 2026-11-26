@@ -191,10 +191,11 @@ npx markdownlint-cli2 "docs/operations/ai-red-team-hybrid-architecture.md"
 | 产物预算 | `python scripts/check_token_budget.py --check` | 结论 PASS（预算 + 规范契约齐全） | PASS |
 | 编译检查 | `python scripts/check_tools_compile.py --check-missing` | 309 文件失败 0 | PASS |
 | Markdown | `npx markdownlint-cli2 <本文档>` | 0 issues in 0 files | PASS |
-| CI | PR 检查全绿 + main CI | 待提交后确认 | 待确认 |
+| CI | PR #460 检查全绿 + main CI `45746755412` | S1 / S2 / AC-12 SUCCESS；main CI success | PASS |
 
 **执行确认（2026-11-26 本机实测）**：新增 21 例场景测试全绿；全量 `Ran 1657 tests ... OK (skipped=2)`；
-S1 映射门禁 PASS；术语、预算、编译、Markdown 四门禁 PASS。CI 结果在提交后按 §5.2 更新。
+S1 映射门禁 PASS；术语、预算、编译、Markdown 四门禁 PASS；
+PR #460 检查全绿，main CI `45746755412` success，本地 main 与 `origin/main` 同步 0/0。
 
 ### 5.3 执行结果确认
 

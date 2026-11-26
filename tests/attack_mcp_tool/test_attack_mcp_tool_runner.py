@@ -7,9 +7,13 @@
 import json
 import os
 import re
+import socket
 import sys
 import tempfile
+import threading
+import time
 import unittest
+import urllib.request
 
 from tests._paths import ROOT  # noqa: E402
 if ROOT not in sys.path:
@@ -281,6 +285,57 @@ class JsonRpcFullEmitTests(unittest.TestCase):
                 self.assertEqual(levels["mcp-08"], "已跳过")
         finally:
             server.stop()
+
+
+class ServerOwnershipTests(unittest.TestCase):
+    """AC-04 / AC-05 / AC-06：谁启动谁关闭。"""
+
+    def _run_mcp02(self, runtime):
+        return run_attack(AttackRequest(target="http://127.0.0.1:1/mcp", mode="jsonrpc",
+                                        step="mcp-02"), runtime)
+
+    def test_injected_running_server_is_neither_started_nor_stopped(self):
+        server = poison.PoisonedMcpServer().start()
+        self.addCleanup(server.stop)
+        port = server.port
+        runtime = Runtime(client=FakeHttpClient({}), writer=RecordingWriter(),
+                          capture=NullCapture(), server=server)
+        self._run_mcp02(runtime)
+        self.assertTrue(server.is_running, "编排层不得关闭注入方持有的实例")
+        with urllib.request.urlopen("http://127.0.0.1:%d/tools/list" % port,
+                                    timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+
+    def test_injected_idle_server_is_started_and_stopped_by_runner(self):
+        server = poison.PoisonedMcpServer()
+        runtime = Runtime(client=FakeHttpClient({}), writer=RecordingWriter(),
+                          capture=NullCapture(), server=server)
+        self._run_mcp02(runtime)
+        self.assertFalse(server.is_running, "编排层启动的实例应由其关闭")
+        _assert_port_released(self, server.port)
+
+    def test_self_created_server_leaves_no_listener_thread(self):
+        runtime = Runtime(client=FakeHttpClient({}), writer=RecordingWriter(),
+                          capture=NullCapture())
+        self._run_mcp02(runtime)
+        alive = [t for t in threading.enumerate() if t.name == "malicious-mcp"]
+        self.assertEqual(alive, [], "未注入时编排层自建的监听线程必须被关闭")
+
+
+def _assert_port_released(case, port, window=2.0):
+    """AC-05：关闭后在退避窗口内可重绑（不承诺立即）。"""
+    deadline = time.time() + window
+    while True:
+        probe = socket.socket()
+        try:
+            probe.bind(("127.0.0.1", port))
+            return
+        except OSError:
+            if time.time() > deadline:
+                case.fail("端口 %d 未在 %.1fs 内释放" % (port, window))
+            time.sleep(0.05)
+        finally:
+            probe.close()
 
 
 class RunnerBranchTests(unittest.TestCase):

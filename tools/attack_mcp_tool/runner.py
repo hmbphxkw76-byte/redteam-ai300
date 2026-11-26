@@ -148,6 +148,7 @@ class _Session:
         self.secrets_seen = []   # 同一运行内已实测到的凭据（含来源 step/lab，供 flag 步溯源）
         self.server_started = False
         self.started_server: Optional[poison.PoisonedMcpServer] = None
+        self._owns_server = False   # 谁启动谁关闭：仅自有实例在 close() 时停止
         self._writer = runtime.writer
         self._tool_names = None   # tools/list 缓存（None=未探测）
 
@@ -191,18 +192,29 @@ class _Session:
         return spec.prompt
 
     def ensure_server(self):
+        """就绪的本地 server；所有权按「谁启动谁关闭」判定。
+
+        未注入 → 自建并持有；注入未启动实例 → 启动并持有；注入已启动实例 →
+        既不启动也不关闭（由注入方持有）。`_owns_server` 决定 `close()` 是否停止。
+        """
         if self.started_server is not None:
             return self.started_server
-        server = self.runtime.server or poison.PoisonedMcpServer()
-        server.start()
+        server = self.runtime.server
+        if server is None:
+            server = poison.PoisonedMcpServer()
+            self._owns_server = True
+        elif not server.is_running:
+            self._owns_server = True
         self.started_server = server
+        if self._owns_server:
+            server.start()
         self.server_started = True
         return server
 
     def close(self):
-        if self.started_server is not None:
+        if self.started_server is not None and self._owns_server:
             self.started_server.stop()
-            self.started_server = None
+        self.started_server = None
 
     # —— 两种形态的原子动作 ——
     def probe(self, spec):

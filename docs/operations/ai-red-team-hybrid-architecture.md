@@ -1,8 +1,7 @@
 # OSAI AI300 统一优化架构与解决方案：Python 编排为主 + PyRIT 有边界升级
 
-> **性质**：统一权威方案与执行结果确认，非考试提交件。合并同主题材料为单一事实源；
-> 未跟踪输入文档 `osai-ai300-hybrid-optimization-solution.md`、`osai-ai300-curated-payloads.md`
-> 只读、保持原样，本文件覆盖结论。
+> **性质**：本主题唯一权威方案与执行结果确认，非考试提交件；同主题结论已全部收口于此，
+> 不再并列维护其它文档。载荷原文与专属回退由 `data/strategies.json` 承载，本文件只给调度口径。
 > **事实源**：考试规则快照、`GOVERNANCE.md`、`pyrit-integration-verification-2026-11-26.md`、
 > `data/strategies.json`、`tools/attack_ai_agent/hybrid.py`、`tests/attack_ai_agent/test_hybrid.py`。
 > **边界**：实测来自 DVAA / AIVP 演练目标，非 OSAI 正式考试；`proven` 仅指可复现出现；

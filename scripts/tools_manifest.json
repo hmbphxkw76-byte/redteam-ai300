@@ -38,6 +38,7 @@
       "tools/memory_poison.py",
       "tools/model_poison.py",
       "tools/msg_inject.py",
+      "tools/negation.py",
       "tools/pipeline_poison.py",
       "tools/scored_targets.py",
       "tools/serve_malicious_mcp.py",
@@ -82,13 +83,17 @@
         "tools.attack_ai_agent.backends",
         "tools.attack_ai_agent.paths",
         "tools.attack_ai_agent.steps",
-        "tools.attack_ai_agent.validation_gap"
+        "tools.attack_ai_agent.validation_gap",
+        "tools.attack_ai_agent.dialogue",
+        "tools.attack_ai_agent.strategies"
       ],
       "tests": [
         "tests.attack_ai_agent.test_attack_ai_agent_runner",
         "tests.attack_ai_agent.test_attack_ai_agent_evidence_contract",
         "tests.attack_ai_agent.test_attack_ai_agent_adapters",
-        "tests.attack_ai_agent.test_validation_gap"
+        "tests.attack_ai_agent.test_validation_gap",
+        "tests.attack_ai_agent.test_dialogue",
+        "tests.attack_ai_agent.test_strategies"
       ]
     },
     {

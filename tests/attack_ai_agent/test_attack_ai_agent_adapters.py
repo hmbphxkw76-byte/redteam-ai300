@@ -131,8 +131,11 @@ class AdapterTests(unittest.TestCase):
             self.assertEqual(backend.make_memory(True), "SQLite")
 
     def test_real_execute_requires_live_endpoint(self):
-        with self.assertRaises(RuntimeError):
-            RealPyRITBackend().execute("aia-02", "objective")
+        # 显式模拟未安装 pyrit（不依赖宿主机是否装包）：延迟导入守卫须给出 RuntimeError。
+        from unittest import mock
+        with mock.patch.dict(sys.modules, {"pyrit": None}):
+            with self.assertRaises(RuntimeError):
+                RealPyRITBackend().execute("aia-02", "objective")
 
 
 class PathSpecTests(unittest.TestCase):

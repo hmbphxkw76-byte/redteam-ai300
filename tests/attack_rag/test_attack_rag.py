@@ -10,6 +10,7 @@
 import io
 import json
 import os
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -254,10 +255,13 @@ class BackendTests(unittest.TestCase):
         self.assertEqual(len(backend.make_embedder().embed("ab")), 256)
 
     def test_real_backend_requires_pyrit_or_env(self):
+        from unittest import mock
         backend = RealPyRITBackend()
         self.assertIn("pyrit", backend.describe())
-        with self.assertRaises(RuntimeError):
-            backend.make_target()  # 本环境无 pyrit：必须给出可执行诊断
+        with mock.patch.dict(sys.modules, {"pyrit": None,
+                                           "pyrit.prompt_target": None}):
+            with self.assertRaises(RuntimeError):
+                backend.make_target()  # 显式模拟无 pyrit：必须给出可执行诊断
 
     def test_real_backend_xpia_is_honest_about_signature(self):
         outcome = RealPyRITBackend().xpia(DEFAULT_QUERY, build_payload())

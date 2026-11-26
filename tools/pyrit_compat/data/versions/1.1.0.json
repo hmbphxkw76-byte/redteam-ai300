@@ -248,6 +248,56 @@
         "converted_value_data_type"
       ],
       "defaults": {}
+    },
+    "pyrit.executor.attack.AttackAdversarialConfig.__init__": {
+      "kind": "function",
+      "params": [
+        "target",
+        "first_message",
+        "adversarial_prompt_template",
+        "system_prompt"
+      ],
+      "defaults": {
+        "first_message": "'Generate your first message to achieve: {{ objective }}'",
+        "adversarial_prompt_template": "'{{ feedback_text }}'",
+        "system_prompt": "None"
+      }
+    },
+    "pyrit.executor.attack.AttackScoringConfig.__init__": {
+      "kind": "function",
+      "params": [
+        "objective_scorer",
+        "refusal_scorer",
+        "auxiliary_scorers",
+        "use_score_as_feedback"
+      ],
+      "defaults": {
+        "objective_scorer": "None",
+        "refusal_scorer": "None",
+        "auxiliary_scorers": "<factory>",
+        "use_score_as_feedback": "True"
+      }
+    },
+    "pyrit.score.SelfAskRefusalScorer.__init__": {
+      "kind": "function",
+      "params": [
+        "chat_target",
+        "system_prompt",
+        "response_handler",
+        "score_category",
+        "prompt_format_string",
+        "validator",
+        "score_aggregator"
+      ],
+      "defaults": {
+        "chat_target": "None",
+        "system_prompt": "None",
+        "response_handler": "None",
+        "score_category": "None",
+        "prompt_format_string": "None",
+        "validator": "None",
+        "score_aggregator": "TrueFalseScoreAggregator.OR"
+      }
     }
   },
   "adapters": [

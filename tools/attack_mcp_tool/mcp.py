@@ -76,6 +76,22 @@ def parse_sse(text):
     return events
 
 
+def _decode_json(text):
+    """响应体可能是裸 JSON 或 SSE（MCP Streamable HTTP），统一取首个 JSON 对象。"""
+    raw = (text or "").strip()
+    if not raw:
+        return None
+    if raw.startswith("{"):
+        try:
+            return json.loads(raw)
+        except ValueError:
+            pass
+    for ev in parse_sse(text):
+        if ev.obj is not None:
+            return ev.obj
+    return None
+
+
 @dataclass(frozen=True)
 class Turn:
     """一次 agent 会话回合的解析结果。"""
@@ -161,18 +177,53 @@ class JsonRpcMcpClient:
         self.endpoint = jsonrpc_endpoint(target)
         self.timeout = timeout
         self._seq = 0
+        self._session_id = None
+        self._initialized = False
 
     def describe(self):
         return "jsonrpc (%s)" % self.endpoint
 
-    def _call(self, method, params=None):
+    def _headers(self):
+        return {"Mcp-Session-Id": self._session_id} if self._session_id else None
+
+    def _raw_call(self, method, params=None, notify=False):
         self._seq += 1
         body = {"jsonrpc": "2.0", "id": self._seq, "method": method}
+        if notify:
+            body.pop("id")
         if params is not None:
             body["params"] = params
         resp = self.client.request("POST", self.endpoint, json_body=body,
-                                   timeout=self.timeout)
+                                   timeout=self.timeout, headers=self._headers())
         return body, resp
+
+    def _ensure_session(self):
+        """有状态 MCP 需 initialize 取会话 ID；无状态端点握手失败即跳过，保持兼容。"""
+        if self._initialized:
+            return
+        self._initialized = True  # 失败也只尝试一次，避免每步重复握手
+        _, resp = self._raw_call("initialize", {
+            "protocolVersion": "2025-03-26",
+            "capabilities": {},
+            "clientInfo": {"name": "attack-mcp-tool", "version": "1.0"},
+        })
+        for key, value in (resp.headers or {}).items():
+            if str(key).lower() == "mcp-session-id" and value:
+                self._session_id = value
+                break
+        data = _decode_json(resp.body)
+        if resp.error or not isinstance(data, dict) or "error" in data:
+            return
+        # 初始化通知无 id；有会话 ID 时必须沿用（协议要求）。
+        self.client.request(
+            "POST", self.endpoint,
+            json_body={"jsonrpc": "2.0", "method": "notifications/initialized"},
+            timeout=self.timeout, headers=self._headers())
+
+    def _call(self, method, params=None):
+        if method not in ("initialize", "notifications/initialized"):
+            self._ensure_session()
+        return self._raw_call(method, params)
 
     def list_tools(self):
         """`tools/list` → (工具面, 观测)。协议错误时工具面为空且观测带 error。"""
@@ -180,9 +231,8 @@ class JsonRpcMcpClient:
         obs = Observation(raw=resp.body, request=body, error=resp.error)
         if resp.error:
             return ToolSurface(source="jsonrpc"), obs
-        try:
-            data = json.loads(resp.body)
-        except ValueError:
+        data = _decode_json(resp.body)
+        if not isinstance(data, dict):
             return ToolSurface(source="jsonrpc"), Observation(
                 raw=resp.body, request=body, error="响应非 JSON")
         if "error" in data:
@@ -207,9 +257,8 @@ class JsonRpcMcpClient:
                                                "arguments": arguments or {}})
         if resp.error:
             return Observation(raw=resp.body, request=body, error=resp.error)
-        try:
-            data = json.loads(resp.body)
-        except ValueError:
+        data = _decode_json(resp.body)
+        if not isinstance(data, dict):
             return Observation(raw=resp.body, request=body, error="响应非 JSON")
         if "error" in data:
             return Observation(raw=resp.body, request=body,

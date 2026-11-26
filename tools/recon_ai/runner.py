@@ -194,11 +194,12 @@ def _request(transport, spec, req, url, step_id, timeout, body=None):
 def run_recon(target, profile="passive", lab="", out_dir=None,
               transport=None, shot=None, writer=None, capture_shots=True,
               manifest=None, timeout=120, timebox_minutes=None,
-              target_profile=None):
+              target_profile=None, extra_headers=None):
     """执行一次完整侦察，返回 RunReport（AC-24 的端到端入口）。
 
     ``target_profile`` 可注入任意目标画像（显式参数优先于环境变量，二者皆无
     则用 generic 全占位画像）；``lab`` 仅覆盖 chat 角色，其余角色按画像映射。
+    ``extra_headers`` 注入通用请求头（如 Host 绑定目标），不携带任何特定目标值。
     """
     requested = (target or "").strip().rstrip("/")
     target = _base_target(target)
@@ -207,7 +208,7 @@ def run_recon(target, profile="passive", lab="", out_dir=None,
     labs = target_profile_mod.role_labs(target_obj, lab)
     chat_lab = labs["chat"]
     out_dir = out_dir or os.path.join("evidence", "recon-ai")
-    transport = transport or transport_mod.make_transport()
+    transport = transport or transport_mod.make_transport(extra_headers=extra_headers)
     shot = shot or shot_mod.make_shot(enabled=capture_shots)
     warnings, quality_failures = [], []
 

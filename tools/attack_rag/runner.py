@@ -167,7 +167,11 @@ def _step_poison(request: AttackRequest, rt: Runtime) -> _StepRun:
                 "不阻塞其余路径")
         return _StepRun("已跳过", "目标 RAG 只读/无写入通道：记录判定依据并降级为间接注入",
                         tail)
-    channel = channel_for(request.ingest_url, writable=request.rag_writable)
+    channel = channel_for(
+        request.ingest_url, writable=request.rag_writable,
+        content_type=request.ingest_content_type,
+        title_field=request.ingest_title_field,
+        content_field=request.ingest_content_field)
     if channel is None:  # 合成 harness 写入面（离线可复现主面）
         harness = _harness(request, rt)
         ids = injector.inject(harness, docs)

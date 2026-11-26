@@ -56,8 +56,10 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 class UrllibTransport(Transport):
     """生产传输：标准库 urllib，禁用重定向跟随（探测不外溢到未授权主机）。"""
 
-    def __init__(self, user_agent=DEFAULT_UA):
+    def __init__(self, user_agent=DEFAULT_UA, extra_headers=None):
         self.user_agent = user_agent
+        # 通用请求头注入：适配 Host 绑定 / 虚拟站点等同类目标；缺省为空。
+        self.extra_headers = dict(extra_headers or {})
         self._opener = urllib.request.build_opener(_NoRedirect)
 
     def describe(self):
@@ -66,6 +68,7 @@ class UrllibTransport(Transport):
     def request(self, method, url, json_body=None, timeout=30, stream=False):
         data = None
         headers = {"User-Agent": self.user_agent, "Accept": "*/*"}
+        headers.update(self.extra_headers)
         if json_body is not None:
             data = json.dumps(json_body).encode("utf-8")
             headers["Content-Type"] = "application/json"
@@ -134,6 +137,8 @@ class FakeTransport(Transport):
                             content_type="application/json")
 
 
-def make_transport(fake_routes=None, timeout=30):
+def make_transport(fake_routes=None, timeout=30, extra_headers=None):
     """工厂：传 `fake_routes` 得替身，否则得生产传输（供测试注入）。"""
-    return FakeTransport(fake_routes) if fake_routes is not None else UrllibTransport()
+    if fake_routes is not None:
+        return FakeTransport(fake_routes)
+    return UrllibTransport(extra_headers=extra_headers)

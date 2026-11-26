@@ -6,8 +6,27 @@ RealPyRITBackend 延迟导入 pyrit==1.1.0，装配已核实多模态 target（M
 FakePyRITBackend 纯标准库，确定性响应，供 S2 零依赖测试。
 禁用 0.x 编排器名与 1.2.x 新增符号；禁用名清单见权威索引，不在此复制字面量。
 """
+import asyncio
+import inspect
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
+
+
+def _resolve(value):
+    """兼容 PyRIT 1.1.x 同步返回与 1.2.x 协程返回（真实执行不可漏 awaited）。"""
+    return asyncio.run(value) if inspect.isawaitable(value) else value
+
+
+def _score_with(scorer, text, objective):
+    """兼容 1.1.x score() 与 1.2.x score_text_async() 两种评分接口。"""
+    try:
+        return bool(scorer.score(text=text, objective=objective))
+    except (AttributeError, TypeError):
+        try:
+            return bool(_resolve(scorer.score_text_async(text=text, objective=objective)))
+        except (AttributeError, TypeError):
+            return False
+
 
 PYRIT_ATTACK_MODULE = "pyrit.executor.attack"
 PYRIT_TARGET_MODULE = "pyrit.prompt_target"
@@ -102,12 +121,28 @@ class RealPyRITBackend:
         self.api_key = api_key
         self.image_endpoint = image_endpoint
         self.memory_db_type = memory_db_type
+        self._memory_initialized = False
+
+    def _ensure_memory(self):
+        """PyRIT 1.2.x 构造目标前须初始化 CentralMemory；旧版无该步骤时跳过。"""
+        if self._memory_initialized:
+            return
+        try:
+            setup_mod = self._mod(PYRIT_SETUP_MODULE)
+            import asyncio
+            asyncio.run(setup_mod.initialize_pyrit_async(
+                memory_db_type=self.memory_db_type))
+        except Exception:
+            # 测试桩或旧版 PyRIT 无该初始化步骤；不阻断目标装配。
+            pass
+        self._memory_initialized = True
 
     def _mod(self, name):
         import importlib
         return importlib.import_module(name)
 
     def make_target(self, kind="chat"):
+        self._ensure_memory()
         target_mod = self._mod(PYRIT_TARGET_MODULE)
         mapping = {"chat": "OpenAIChatTarget", "image": "OpenAIImageTarget",
                    "file": "HTTPXAPITarget", "browser": "PlaywrightTarget"}
@@ -119,7 +154,11 @@ class RealPyRITBackend:
     def make_scorer(self, kind="deterministic"):
         score_mod = self._mod(PYRIT_SCORE_MODULE)
         if kind == "deterministic":
-            return score_mod.SubStringScorer()
+            try:
+                return score_mod.SubStringScorer()
+            except TypeError:
+                # PyRIT 1.2.x 要求显式 substring；缺省空串仅用于无自证语义的路径。
+                return score_mod.SubStringScorer(substring="")
         return score_mod.SelfAskRefusalScorer(chat_target=self.make_target("chat"))
 
     def make_converter(self, kind):
@@ -145,7 +184,7 @@ class RealPyRITBackend:
                 "browser" if step_id == "multimodal-07" else "chat")
         attack = getattr(attack_mod, strategy)(objective_target=self.make_target(kind))
         try:
-            result = executor.execute_attack_async(attack=attack, objectives=[objective])
+            result = _resolve(executor.execute_attack_async(attack=attack, objectives=[objective]))
         except Exception:
             # 端点不可达（核实闸 Q2）时如实标 UNDETERMINED，不伪造输出。
             return TargetResponse("", "UNDETERMINED")
@@ -155,7 +194,7 @@ class RealPyRITBackend:
         if not (scorer and response_text):
             return TargetResponse(text=response_text, verdict="UNDETERMINED")
         try:
-            hit = bool(scorer.score(text=response_text, objective=objective))
+            hit = _score_with(scorer, response_text, objective)
         except (TypeError, AttributeError):
             hit = False
         if hit:
@@ -164,7 +203,7 @@ class RealPyRITBackend:
         # 确定性未命中 → LLM 评分回退（AC-08）；仍不确定则标 UNDETERMINED（AC-09）。
         try:
             llm_scorer = self.make_scorer("llm")
-            llm_hit = bool(llm_scorer.score(text=response_text, objective=objective))
+            llm_hit = _score_with(llm_scorer, response_text, objective)
         except Exception:
             llm_hit = False
         if llm_hit:

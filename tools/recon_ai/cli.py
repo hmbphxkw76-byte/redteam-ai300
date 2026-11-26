@@ -45,6 +45,8 @@ def _build_parser():
     run.add_argument("--manifest", default="", help="证据清单 JSONL 路径")
     run.add_argument("--no-shots", action="store_true", help="不截图（证据标注待补录）")
     run.add_argument("--timeout", type=int, default=120, help="单请求超时（秒）")
+    run.add_argument("--header", action="append", default=[], metavar="NAME: VALUE",
+                     help="附加 HTTP 请求头（可重复），如 'Host: localhost:8100'；目标价值由调用方提供")
     run.add_argument("--json", action="store_true", help="以 JSON 打印运行摘要")
 
     inv = sub.add_parser("inventory", help="读取并打印已有资产清单摘要")
@@ -60,6 +62,18 @@ def _build_parser():
                          help="观测 JSON 文件（含 observations 数组）")
     analyze.add_argument("--out", default="", help="分析 JSON 落盘路径；缺省仅打印摘要")
     return ap
+
+
+def _parse_headers(values):
+    """把 'Name: value' 列表解析为字典；格式错误即报用法错误。"""
+    headers = {}
+    for raw in values or ():
+        name, sep, value = str(raw).partition(":")
+        name, value = name.strip(), value.strip()
+        if not sep or not name or not value:
+            raise ValueError("请求头格式须为 'Name: value'：%r" % raw)
+        headers[name] = value
+    return headers
 
 
 def _print_summary(report, as_json=False):
@@ -193,6 +207,7 @@ def main(argv=None):
         target_obj = (target_profile_mod.resolve(args.target_profile)
                       if getattr(args, "target_profile", None)
                       else target_profile_mod.current())
+        headers = _parse_headers(getattr(args, "header", []))
         report = runner.run_recon(
             target=args.target, profile=profile, lab=args.lab,
             out_dir=args.out_dir or None,
@@ -200,6 +215,7 @@ def main(argv=None):
             manifest=args.manifest or None,
             timeout=args.timeout,
             target_profile=target_obj,
+            extra_headers=headers,
         )
     except ValueError as exc:
         print("ERROR: %s" % exc, file=sys.stderr)

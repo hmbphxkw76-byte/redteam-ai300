@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional
 
 DEFAULT_UA = "attack-mcp-tool/1.0 (authorized red team assessment)"
+# MCP Streamable HTTP 要求客户端同时接受 JSON 与 SSE；缺省即符合协议，避免硬编码端点适配。
+DEFAULT_ACCEPT = "application/json, text/event-stream"
 
 
 @dataclass
@@ -35,7 +37,7 @@ class HttpResponse:
 class HttpClient:
     """传输协议（duck typing）：实现 `request` 即可替换。"""
 
-    def request(self, method, url, json_body=None, timeout=60):
+    def request(self, method, url, json_body=None, timeout=60, headers=None):
         raise NotImplementedError
 
     def describe(self):
@@ -52,16 +54,22 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 class UrllibHttpClient(HttpClient):
     """生产传输：标准库 urllib。"""
 
-    def __init__(self, user_agent=DEFAULT_UA):
+    def __init__(self, user_agent=DEFAULT_UA, extra_headers=None):
         self.user_agent = user_agent
+        # 通用请求头注入：适配 Host 绑定 / 虚拟站点 / 鉴权头等同类目标，
+        # 不含任何特定目标值，缺省为空。
+        self.extra_headers = dict(extra_headers or {})
         self._opener = urllib.request.build_opener(_NoRedirect)
 
     def describe(self):
         return "urllib"
 
-    def request(self, method, url, json_body=None, timeout=60):
+    def request(self, method, url, json_body=None, timeout=60, headers=None):
         data = None
-        headers = {"User-Agent": self.user_agent, "Accept": "*/*"}
+        merged = {"User-Agent": self.user_agent, "Accept": DEFAULT_ACCEPT}
+        merged.update(self.extra_headers)
+        merged.update(headers or {})
+        headers = merged
         if json_body is not None:
             data = json.dumps(json_body, ensure_ascii=False).encode("utf-8")
             headers["Content-Type"] = "application/json"
@@ -105,8 +113,9 @@ class FakeHttpClient(HttpClient):
     def describe(self):
         return "fake (%d routes)" % len(self.routes)
 
-    def request(self, method, url, json_body=None, timeout=60):
-        self.calls.append({"method": method, "url": url, "json_body": json_body})
+    def request(self, method, url, json_body=None, timeout=60, headers=None):
+        self.calls.append({"method": method, "url": url, "json_body": json_body,
+                           "headers": headers or {}})
         for key in ((method, url), (url,)):
             if key in self.routes:
                 value = self.routes[key]
@@ -117,5 +126,6 @@ class FakeHttpClient(HttpClient):
                 if not key[0] or key[0] == method:
                     return value(json_body) if callable(value) else value
         if self.default is not None:
-            return self.default
+            # 与 FakeTransport 对齐：default 亦可为可调用路由处理器。
+            return self.default(json_body) if callable(self.default) else self.default
         return HttpResponse(error="连接失败（假传输无匹配路由）")

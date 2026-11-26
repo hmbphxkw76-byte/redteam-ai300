@@ -40,6 +40,9 @@ class _Handler(BaseHTTPRequestHandler):
             self._send(200, '{"ok":true}')
         elif self.path == "/missing":
             self._send(404, '{"detail":"Not Found"}')
+        elif self.path == "/headers":
+            self._send(200, json.dumps({"host": self.headers.get("Host"),
+                                        "x-test": self.headers.get("X-Test")}))
         else:
             self._send(200, "<!doctype html><html></html>", "text/html")
 
@@ -83,6 +86,20 @@ class UrllibTransportTests(unittest.TestCase):
         self.assertEqual(resp.status, 404)
         self.assertFalse(resp.ok)
         self.assertIn("Not Found", resp.body)
+
+    def test_extra_headers_are_sent(self):
+        client = transport.UrllibTransport(
+            extra_headers={"Host": "localhost:8100", "X-Test": "v"})
+        resp = client.request("GET", self.base + "/headers", timeout=5)
+        data = json.loads(resp.body)
+        self.assertEqual(data["host"], "localhost:8100")
+        self.assertEqual(data["x-test"], "v")
+
+    def test_parse_headers_rejects_malformed_input(self):
+        self.assertEqual(cli._parse_headers(["Host: localhost:8100"]),
+                         {"Host": "localhost:8100"})
+        with self.assertRaises(ValueError):
+            cli._parse_headers(["malformed-header"])
 
     def test_post_echoes_json_body(self):
         resp = self.client.request("POST", self.base + "/echo", {"prompt": "hi"}, timeout=5)

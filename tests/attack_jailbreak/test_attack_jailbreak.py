@@ -100,6 +100,11 @@ class TestFakeBackend(unittest.TestCase):
     def test_factory_default_fake(self):
         self.assertIsInstance(get_backend(), FakePyRITBackend)
 
+    def test_factory_real_drops_fake_only_scenario(self):
+        backend = get_backend(real=True, scenario="effective")
+        self.assertIsInstance(backend, RealPyRITBackend)
+        self.assertFalse(hasattr(backend, "scenario"))
+
 
 class TestRealBackendStubbed(unittest.TestCase):
     """注入最小 pyrit 桩，验证延迟导入与 1.1.0 命名空间（B7）。"""

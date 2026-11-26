@@ -9,10 +9,28 @@
 版本锁定 pyrit==1.1.0。对象图全部取自一手源核实 M7（docs/research/
 attack-jailbreak-multimodal-canonical.md），禁用 0.x 编排器名与 1.2.x 新增符号。
 """
+import asyncio
+import inspect
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
 from .steps import STEP_IDS
+
+
+def _resolve(value):
+    """兼容 PyRIT 1.1.x 同步返回与 1.2.x 协程返回（真实执行不可漏 awaited）。"""
+    return asyncio.run(value) if inspect.isawaitable(value) else value
+
+
+def _score_with(scorer, text, objective):
+    """兼容 1.1.x score() 与 1.2.x score_text_async() 两种评分接口。"""
+    try:
+        return bool(scorer.score(text=text, objective=objective))
+    except (AttributeError, TypeError):
+        try:
+            return bool(_resolve(scorer.score_text_async(text=text, objective=objective)))
+        except (AttributeError, TypeError):
+            return False
 
 # 官方 v1.1.0 已核实模块路径（见 pyrit-v110-api-verification.md V2-V10）
 PYRIT_ATTACK_MODULE = "pyrit.executor.attack"
@@ -109,12 +127,28 @@ class RealPyRITBackend:
         self.chat_endpoint = chat_endpoint
         self.api_key = api_key
         self.memory_db_type = memory_db_type
+        self._memory_initialized = False
+
+    def _ensure_memory(self):
+        """PyRIT 1.2.x 构造目标前须初始化 CentralMemory；旧版无该步骤时跳过。"""
+        if self._memory_initialized:
+            return
+        try:
+            from pyrit.setup.initialization import initialize_pyrit_async
+        except Exception:
+            # 测试桩或旧版 PyRIT 无该初始化步骤；不阻断目标装配。
+            self._memory_initialized = True
+            return
+        import asyncio
+        asyncio.run(initialize_pyrit_async(memory_db_type=self.memory_db_type))
+        self._memory_initialized = True
 
     def _attack_mod(self):
         import importlib
         return importlib.import_module(PYRIT_ATTACK_MODULE)
 
     def make_target(self, role="objective"):
+        self._ensure_memory()
         import importlib
         target_mod = importlib.import_module(PYRIT_TARGET_MODULE)
         return target_mod.OpenAIChatTarget(
@@ -124,7 +158,11 @@ class RealPyRITBackend:
         import importlib
         score_mod = importlib.import_module(PYRIT_SCORE_MODULE)
         if kind == "deterministic":
-            return score_mod.SubStringScorer()
+            try:
+                return score_mod.SubStringScorer()
+            except TypeError:
+                # PyRIT 1.2.x 要求显式 substring；缺省空串仅用于无自证语义的路径。
+                return score_mod.SubStringScorer(substring="")
         return score_mod.SelfAskRefusalScorer(chat_target=self.make_target("scorer"))
 
     def make_converter(self, kind):
@@ -157,7 +195,7 @@ class RealPyRITBackend:
         strategy = strategies.get(step_id, "PromptSendingAttack")
         executor = attack_mod.AttackExecutor(max_concurrency=1)
         attack = getattr(attack_mod, strategy)(objective_target=self.make_target())
-        result = executor.execute_attack_async(attack=attack, objectives=[objective])
+        result = _resolve(executor.execute_attack_async(attack=attack, objectives=[objective]))
         response_text = (str(result.last_response)
                          if hasattr(result, "last_response") else str(result))
         # 真正调用评分器，不以其对象真值伪造命中（C8 证据真实性）。
@@ -165,7 +203,7 @@ class RealPyRITBackend:
         if not (scorer and response_text):
             return TargetResponse(text=response_text, verdict="UNDETERMINED")
         try:
-            hit = bool(scorer.score(text=response_text, objective=objective))
+            hit = _score_with(scorer, response_text, objective)
         except (TypeError, AttributeError):
             # 评分器签名在核实闸 Q1 未定；无法评分时如实标 UNDETERMINED，不臆断成功。
             return TargetResponse(text=response_text, verdict="UNDETERMINED")
@@ -180,7 +218,11 @@ class RealPyRITBackend:
 
 
 def get_backend(real=False, **kwargs):
-    """工厂入口：默认假后端（零依赖）；real=True 装配真实 seam。"""
+    """工厂入口：默认假后端（零依赖）；real=True 装配真实 seam。
+
+    `scenario` 仅属假后端剧本；真实后端不接受该参数，须在工厂层剥离。
+    """
     if real:
-        return RealPyRITBackend(**kwargs)
+        real_kwargs = {k: v for k, v in kwargs.items() if k != "scenario"}
+        return RealPyRITBackend(**real_kwargs)
     return FakePyRITBackend(**kwargs)

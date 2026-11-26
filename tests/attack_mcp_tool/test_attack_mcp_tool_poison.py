@@ -60,6 +60,40 @@ class SurfaceParsingTests(unittest.TestCase):
         self.assertEqual(surface.tools[1].scope, "write")
         self.assertFalse(obs.error)
 
+    def test_stateful_mcp_session_handshake_and_sse_tools(self):
+        """有状态 MCP：initialize 取会话 ID，后续请求沿用；SSE 响应可解析。"""
+        def handler(req):
+            method = (req or {}).get("method")
+            if method == "initialize":
+                body = ("event: message\ndata: " + json.dumps({
+                    "jsonrpc": "2.0", "id": 1,
+                    "result": {"protocolVersion": "2025-03-26"}}) + "\n\n")
+                return HttpResponse(status=200, body=body,
+                                    headers={"mcp-session-id": "sid-123"},
+                                    content_type="text/event-stream")
+            if method == "notifications/initialized":
+                return HttpResponse(status=202, body="")
+            if method == "tools/list":
+                body = ("event: message\ndata: " + json.dumps({
+                    "jsonrpc": "2.0", "id": 2,
+                    "result": {"tools": [{"name": "alpha", "description": "d"}]}}
+                ) + "\n\n")
+                return HttpResponse(status=200, body=body,
+                                    content_type="text/event-stream")
+            return HttpResponse(status=404, body="")
+
+        client = FakeHttpClient(default=handler)
+        rpc = JsonRpcMcpClient(client, "http://t.example/mcp")
+        surface, obs = rpc.list_tools()
+        self.assertFalse(obs.error)
+        self.assertEqual([t.name for t in surface.tools], ["alpha"])
+        tools_call = [c for c in client.calls
+                      if (c["json_body"] or {}).get("method") == "tools/list"][0]
+        self.assertEqual(tools_call["headers"], {"Mcp-Session-Id": "sid-123"})
+        methods = [(c["json_body"] or {}).get("method") for c in client.calls]
+        self.assertIn("initialize", methods)
+        self.assertIn("notifications/initialized", methods)
+
     def test_ac03_protocol_error_does_not_invent_tools(self):
         body = {"jsonrpc": "2.0", "id": 1, "error": {"code": -32601, "message": "nope"}}
         client = FakeHttpClient({("POST", "http://t.example/mcp"):

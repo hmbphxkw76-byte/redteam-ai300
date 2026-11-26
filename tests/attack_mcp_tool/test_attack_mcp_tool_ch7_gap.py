@@ -15,6 +15,7 @@ if ROOT not in sys.path:
 
 from tools.attack_mcp_tool import (STEP_IDS, AttackRequest, Runtime, run_attack)  # noqa: E402
 from tools.attack_mcp_tool import chain as chain_build  # noqa: E402
+from tools.attack_mcp_tool import grade as grading  # noqa: E402
 from tools.attack_mcp_tool import escape as escape_judge  # noqa: E402
 from tools.attack_mcp_tool import poison as poison_mod  # noqa: E402
 from tools.attack_mcp_tool.evidence import RecordingWriter  # noqa: E402
@@ -36,6 +37,23 @@ class _FakeFS:
 def _offline(uihost=None):
     return Runtime(client=FakeHttpClient({}), writer=RecordingWriter(),
                    capture=NullCapture(), uihost=uihost)
+
+
+class TestLocalSelfProofCap(unittest.TestCase):
+    """本地自证不得冒称完全生效（实测发现 grade.py 未置 capped_partial）。"""
+
+    def test_local_only_steps_capped_at_partial(self):
+        ctx = {
+            "served": True, "poisoned": True, "descriptor_changed": True,
+            "injection_present": True,
+            "diff": {"added": ["x"], "changed": [{"fields": ["description"]}]},
+        }
+        for step in ("mcp-02", "mcp-03", "mcp-04"):
+            with self.subTest(step=step):
+                level, reason = grading.grade(grading.derive(step, None, ctx))
+                self.assertEqual(level, "部分生效")
+                self.assertNotIn("不得判完全生效", reason)
+                self.assertIn("目标侧未生效", reason)
 
 
 class TestAc01TargetDiff(unittest.TestCase):

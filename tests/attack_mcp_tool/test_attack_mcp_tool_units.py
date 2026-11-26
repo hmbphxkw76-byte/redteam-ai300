@@ -91,6 +91,39 @@ class TransportTests(unittest.TestCase):
         self.assertTrue(resp.error)
         self.assertEqual(resp.status, 0)
 
+    def test_urllib_client_applies_extra_headers(self):
+        """Host 绑定 / 虚拟站点等同类目标由调用方注入请求头，执行层零硬编码。"""
+        from types import SimpleNamespace
+        client = UrllibHttpClient(extra_headers={"Host": "localhost:8100", "X-Test": "v"})
+        captured = {}
+
+        class _Resp:
+            status = 200
+            headers = {}
+
+            def read(self):
+                return b"{}"
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        client._opener = SimpleNamespace(
+            open=lambda req, timeout=None: (captured.update(dict(req.header_items())) or _Resp()))
+        client.request("GET", "http://example.invalid/mcp", timeout=1)
+        lowered = {k.lower(): v for k, v in captured.items()}
+        self.assertEqual(lowered["host"], "localhost:8100")
+        self.assertEqual(lowered["x-test"], "v")
+
+    def test_parse_headers_rejects_malformed_input(self):
+        from tools.attack_mcp_tool import cli
+        self.assertEqual(cli._parse_headers(["Host: localhost:8100", "X-A: b"]),
+                         {"Host": "localhost:8100", "X-A": "b"})
+        with self.assertRaises(ValueError):
+            cli._parse_headers(["malformed-header"])
+
     def test_urllib_client_handles_http_error_status(self):
         """4xx 仍返回响应体而非异常（本地 server 现场返回 404，零外网依赖）。"""
         with poison.PoisonedMcpServer() as server:

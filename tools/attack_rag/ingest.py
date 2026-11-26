@@ -13,6 +13,7 @@ SKILL.md 给了两条写入口：内容摄取 API（`curl -X POST <RAG_INGEST> -
 import json
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
@@ -73,7 +74,8 @@ class HttpIngestChannel:
     def __init__(self, url: str, timeout: float = 5.0,
                  payload_key: str = DEFAULT_PAYLOAD_KEY,
                  opener: Optional[Callable[[Any, float], Any]] = None,
-                 include_id: bool = False):
+                 include_id: bool = False, content_type: str = "application/json",
+                 title_field: str = "", content_field: str = ""):
         if not (url or "").strip():
             raise ValueError("HttpIngestChannel 需要摄取端点 URL")
         self.url = url.strip()
@@ -81,18 +83,27 @@ class HttpIngestChannel:
         self.payload_key = payload_key
         self.opener = opener or _default_opener
         self.include_id = include_id
+        self.content_type = content_type
+        self.title_field = title_field
+        self.content_field = content_field
         self.requests = []
 
     def put(self, doc_id: str, text: str) -> IngestResult:
         # 默认只发 {"doc": …}，与 SKILL.md 的 `curl -d '{"doc":"…"}'` 逐字一致；
         # 需要文档标识时才追加 id，避免严格校验端点因多余字段 422。
-        payload = {self.payload_key: text}
+        payload = {self.content_field or self.payload_key: text}
         if self.include_id:
             payload["id"] = doc_id
-        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        if self.content_type == "application/x-www-form-urlencoded":
+            # 通用表单摄取：标题/正文字段名由调用方声明，不含任何目标专属值。
+            if self.title_field:
+                payload[self.title_field] = doc_id
+            data = urllib.parse.urlencode(payload).encode("utf-8")
+        else:
+            data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         request = urllib.request.Request(
             self.url, data=data, method="POST",
-            headers={"Content-Type": "application/json"})
+            headers={"Content-Type": self.content_type})
         self.requests.append(payload)
         try:
             code, body = self.opener(request, self.timeout)
@@ -177,11 +188,14 @@ def read_doc(path: str) -> str:
     return text
 
 
-def channel_for(url: str = "", store: str = "",
-                writable: str = "unknown") -> Optional[Any]:
+def channel_for(url: str = "", store: str = "", writable: str = "unknown",
+                content_type: str = "application/json", title_field: str = "",
+                content_field: str = "") -> Optional[Any]:
     """按可用写入面选择通道；无任何写入口返回 None（由上层决定豁免）。"""
     if (url or "").strip():
-        return HttpIngestChannel(url)
+        return HttpIngestChannel(url, content_type=content_type,
+                                 title_field=title_field,
+                                 content_field=content_field)
     if (store or "").strip():
         return FileIngestChannel(store)
     if writable == "no":

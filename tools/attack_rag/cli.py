@@ -48,6 +48,10 @@ def build_parser():
                     help="recon-ai 资产清单 JSON（前置定位用；缺省退化为合成面）")
     ap.add_argument("--ingest-url", default="", help="<RAG_INGEST> 摄取端点（真实写入通道）")
     ap.add_argument("--ingest-doc", default="", help="待注入文档路径（缺省用构造载荷）")
+    ap.add_argument("--ingest-content-type", choices=("json", "form"), default="json",
+                    help="摄取载荷形态：json（默认）或表单编码")
+    ap.add_argument("--ingest-title-field", default="", help="表单摄取的标题字段名")
+    ap.add_argument("--ingest-content-field", default="", help="表单摄取的正文字段名")
     ap.add_argument("--rag-writable", choices=("yes", "no", "unknown"), default="unknown",
                     help="目标 RAG 可写判定；no 时按「失败与豁免」降级为间接注入")
     ap.add_argument("--downstream-coupled", choices=("yes", "no", "unknown"),
@@ -79,7 +83,13 @@ def main(argv=None, runtime=None):
         backend=args.backend, flag_panel=args.flag_panel,
         flag_shot=args.flag_shot, flag_oracle=args.flag_oracle,
         recon_inventory=args.recon_inventory, ingest_url=args.ingest_url,
-        ingest_doc=ingest_doc, rag_writable=args.rag_writable,
+        ingest_doc=ingest_doc,
+        ingest_content_type=("application/x-www-form-urlencoded"
+                             if args.ingest_content_type == "form"
+                             else "application/json"),
+        ingest_title_field=args.ingest_title_field,
+        ingest_content_field=args.ingest_content_field,
+        rag_writable=args.rag_writable,
         downstream_coupled=args.downstream_coupled,
         index_access=args.index_access, whoami=args.whoami)
     if args.query:

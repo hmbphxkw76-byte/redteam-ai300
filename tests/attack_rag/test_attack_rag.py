@@ -536,6 +536,25 @@ class IngestTests(unittest.TestCase):
         with_id.put("mal-0000", "载荷")
         self.assertEqual(with_id.requests[0]["id"], "mal-0000")
 
+    def test_http_channel_form_encoding_is_generic(self):
+        captured = {}
+
+        def opener(request, timeout):
+            captured["content_type"] = request.headers.get("Content-type")
+            captured["body"] = request.data.decode("utf-8")
+            return (200, "ok")
+
+        channel = HttpIngestChannel(
+            "http://t/ingest", opener=opener,
+            content_type="application/x-www-form-urlencoded",
+            title_field="title", content_field="content")
+        result = channel.put("mal-0000", "载荷")
+        self.assertTrue(result.delivered)
+        self.assertEqual(captured["content_type"],
+                         "application/x-www-form-urlencoded")
+        self.assertIn("title=mal-0000", captured["body"])
+        self.assertIn("content=", captured["body"])
+
     def test_http_forbidden_is_read_only_evidence(self):
         import urllib.error
 

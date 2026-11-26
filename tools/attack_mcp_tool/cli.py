@@ -27,6 +27,7 @@ from tools.attack_mcp_tool import Runtime, run_attack  # noqa: E402
 from tools.attack_mcp_tool.model import AttackRequest  # noqa: E402
 from tools.attack_mcp_tool.runner import DEFAULT_EVIDENCE_DIR  # noqa: E402
 from tools.attack_mcp_tool.steps import STEP_IDS  # noqa: E402
+from tools.attack_mcp_tool.transport import UrllibHttpClient  # noqa: E402
 
 
 def build_parser():
@@ -46,12 +47,31 @@ def build_parser():
     ap.add_argument("--no-shot", action="store_true", help="不截图（证据标待补录）")
     ap.add_argument("--browser", default=None, help="无头浏览器可执行文件路径")
     ap.add_argument("--json", action="store_true", help="输出机读 JSON 报告")
+    ap.add_argument("--header", action="append", default=[], metavar="NAME: VALUE",
+                    help="附加 HTTP 请求头（可重复），如 'Host: localhost:8100'；目标价值由调用方提供")
     return ap
+
+
+def _parse_headers(values):
+    """把 'Name: value' 列表解析为字典；格式错误即报用法错误。"""
+    headers = {}
+    for raw in values or ():
+        name, sep, value = str(raw).partition(":")
+        name, value = name.strip(), value.strip()
+        if not sep or not name or not value:
+            raise ValueError("请求头格式须为 'Name: value'：%r" % raw)
+        headers[name] = value
+    return headers
 
 
 def main(argv=None, runtime=None):
     """命令行主函数；`runtime` 可注入（测试用替身即离线，AC-18）。"""
     args = build_parser().parse_args(argv)
+    try:
+        headers = _parse_headers(args.header)
+    except ValueError as exc:
+        print("ERROR: %s" % exc, file=sys.stderr)
+        return 2
     profile = (target_profile_mod.resolve(args.target_profile)
                if args.target_profile else target_profile_mod.current())
     request = AttackRequest(
@@ -61,7 +81,8 @@ def main(argv=None, runtime=None):
         step=args.step, evidence_dir=args.evidence_dir, emit=not args.no_emit,
         target_profile=profile)
     if runtime is None:
-        runtime = Runtime(browser_path=args.browser, shot_enabled=not args.no_shot)
+        runtime = Runtime(client=UrllibHttpClient(extra_headers=headers),
+                          browser_path=args.browser, shot_enabled=not args.no_shot)
     try:
         report = run_attack(request, runtime)
     except ValueError as exc:

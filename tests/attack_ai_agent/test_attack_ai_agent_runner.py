@@ -103,8 +103,23 @@ class RunnerBehaviourTests(unittest.TestCase):
         self.assertEqual(report.graphs[1]["memory_db_type"], "SQLite")
 
     def test_pyrit_not_required_at_import_time(self):
-        self.assertIsNone(importlib.util.find_spec("pyrit"),
-                          "本用例验证零依赖环境；若已安装 pyrit 则应改为子进程隔离验证")
+        # 零依赖契约与宿主是否安装 pyrit 无关：用 import hook 显式阻断 import，
+        # 验证「顶层不导入 pyrit」而非「环境里没有 pyrit」。
+        import subprocess
+        script = (
+            "import importlib.abc, sys\n"
+            "class Block(importlib.abc.MetaPathFinder):\n"
+            "    def find_spec(self, name, path=None, target=None):\n"
+            "        if name == 'pyrit' or name.startswith('pyrit.'):\n"
+            "            raise ImportError('pyrit blocked by test')\n"
+            "sys.meta_path.insert(0, Block())\n"
+            "import tools.attack_ai_agent\n"
+            "print('OK')\n"
+        )
+        done = subprocess.run([sys.executable, "-c", script], cwd=str(ROOT),
+                              capture_output=True, text=True, timeout=30)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("OK", done.stdout)
         spec = importlib.util.find_spec("tools.attack_ai_agent")
         self.assertIsNotNone(spec)
 

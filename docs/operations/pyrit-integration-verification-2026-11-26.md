@@ -144,23 +144,29 @@ python -m tools.attack_ai_agent.dialogue_cli --target http://<HOST>:7002 \
 | 项 | 结果 |
 |---|---|
 | 新增测试 | 39 例全绿（守卫 11 / 形态与评分链 17 / 策略库 11） |
-| 全量 | `Ran 1634 tests`，2 skipped；**7 例失败**，见下 |
-| 门禁 | `check_tools_compile`、`check_glossary`、`check_token_budget` 待复跑 |
+| 全量 | `Ran 1636 tests`，2 skipped，**0 失败**（本机已装 pyrit 1.2.1，仍需全绿） |
+| 门禁 | `check_tools_compile`、`check_glossary`、`check_token_budget`、S1 PyRIT 映射门禁全 PASS |
 
-7 例失败全部由**本机安装 pyrit 1.2.1 + 注入双模型凭据**触发，与本次改动无关：
+初稿记录 7 例环境性失败，已分两类闭环，**未降低任何断言强度**：
 
-- `test_pyrit_not_required_at_import_time` 断言 `find_spec("pyrit") is None`——直接读取环境；
-- `test_real_execute_requires_live_endpoint` 期望「缺 pyrit 抛 RuntimeError」，装包后守卫不再触发；
-- 其余 5 例在 `tests/pyrit_compat/`，按已安装包集合比对版本事实。
+1. **5 例 PyRIT 版本事实缺口**（真实遗漏，非环境问题）。P3/P4 新增的 `AttackAdversarialConfig`、
+   `AttackScoringConfig`、`SelfAskRefusalScorer` 只登记了 1.2.1 签名，缺 1.1.0 基线，
+   S1 判 `SIGNATURE_SNAPSHOT_MISSING`。一手核实两版 wheel（1.1.0 下载自 PyPI，1.2.1 为已装包）：
+   三个 API 在 1.1.0 已存在，真实差异仅 `system_prompt_prefix`（1.2.0 起新增）与
+   `score_aggregator` 默认值表示。补齐双版本签名后覆盖率 33/33，告警为 4 条 warn、0 error。
+   曾尝试以「1.2.1 新增」变更记录绕过，被一手证据否决——避免虚构版本归属。
+2. **2 例零依赖断言读宿主环境**。改为显式模拟：`mock.patch.dict(sys.modules, {"pyrit": None})`
+   与子进程 import hook 阻断；断言仍是「无 pyrit 时包可导入 / 真实后端给出可执行诊断」，
+   与宿主机是否装包无关。
 
-CI 依 ADR-0003 不安装 pyrit，故不受影响；但这意味着**「全量绿」的结论本机无法自证**。该项标注为未闭环：严格做法是把这些断言改为子进程隔离验证，属独立议题，不在本次范围内改动共享测试。
+CI 依 ADR-0003 不安装 pyrit；本地已装包亦全绿，两侧结论一致。
 
 ## 9. 残留缺口
 
 1. 语义层的拒绝识别与直觉不一致（认婉拒、不认「拒绝陈述」），未做多模型对比。
 2. `CrescendoAttack` / `TAPAttack` 仅确认可构造，未实跑（成本高、对加固目标预期同样失败）。
 3. `LocalRefusalClassifierScorer` 需下载模型，离线不可用，未纳入否决链。
-4. 7 例环境性失败未做卸载-复装的证伪实验。
+4. 未做 pyrit 卸载-复装的往返实验；改以显式模拟缺失替代（断言语义不变，且两侧均全绿）。
 
 ## 10. 复现
 

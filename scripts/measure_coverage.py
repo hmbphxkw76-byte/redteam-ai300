@@ -6,6 +6,11 @@
 记录 `line` 事件，二者求交得到行覆盖率。避免 `trace.Trace` 的 ignoredirs
 过滤与 AST 语句起始行错位造成的假阴性。
 
+线程化服务（如 `ThreadingHTTPServer`）的请求处理器运行在**子线程**，而
+`sys.settrace` 只作用于当前线程；因此同时注册 `threading.settrace`，否则
+整段 handler 会被系统性误判为未覆盖（本仓 attack-mcp-tool 的 poison.py
+曾因此由 95.3% 被误报为 68.6%）。
+
 用法：
   python scripts/measure_coverage.py                       # attack-ai-agent（默认，兼容既有 CI）
   python scripts/measure_coverage.py --min 80              # 低于门槛时以退出码 1 失败
@@ -17,6 +22,7 @@ import contextlib
 import io
 import os
 import sys
+import threading
 import types
 import unittest
 
@@ -131,10 +137,12 @@ def measure(modules=None, test_names=None):
             return unittest.TextTestRunner(verbosity=0).run(suite)
 
     sys.settrace(tracer)
+    threading.settrace(tracer)  # 子线程（HTTP handler 等）同样计入，避免系统性假阴性
     try:
         result = run()
     finally:
         sys.settrace(None)
+        threading.settrace(None)
 
     total = covered = 0
     rows = []

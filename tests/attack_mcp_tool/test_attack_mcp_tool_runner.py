@@ -8,6 +8,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 import unittest
 
 from tests._paths import ROOT  # noqa: E402
@@ -18,11 +19,13 @@ from tools.pyrit_compat import TARGET_VERSION  # noqa: E402
 from tools.attack_mcp_tool import (LEVELS, STEP_IDS, AttackRequest, Runtime,  # noqa: E402
                                    run_attack)
 from tools.attack_mcp_tool import grade as grading  # noqa: E402
-from tools.attack_mcp_tool import cli  # noqa: E402
+from tools.attack_mcp_tool import cli, poison  # noqa: E402
+from tools.attack_mcp_tool import runner as runner_mod  # noqa: E402
 from tools.attack_mcp_tool.evidence import RecordingWriter  # noqa: E402
 from tools.attack_mcp_tool.model import Signals  # noqa: E402
 from tools.attack_mcp_tool.shot import NullCapture  # noqa: E402
-from tools.attack_mcp_tool.transport import FakeHttpClient, HttpResponse  # noqa: E402
+from tools.attack_mcp_tool.transport import (FakeHttpClient, HttpResponse,  # noqa: E402
+                                             UrllibHttpClient)
 
 IMPL = os.path.join(ROOT, "tools", "attack_mcp_tool")
 
@@ -231,6 +234,158 @@ class DependencyAndCliTests(unittest.TestCase):
         code = cli.main(["--step", "mcp-99", "--target", "http://t.example",
                          "--no-emit"], runtime=offline({}))
         self.assertEqual(code, 2)
+
+
+class JsonRpcFullEmitTests(unittest.TestCase):
+    """D-1 回归：jsonrpc 形态全路径必须完整落盘 11 份证据。
+
+    修复前 `_render()` 仅在 `text` 与 `raw` 同时非空时输出文本，mcp-06/mcp-08
+    的纯文本降级说明不被计为「关键输出」，严格证据门抛 RuntimeError 中断整轮，
+    导致 mcp-07..11 与 flag 步不执行、片段仅落盘 6 份。
+    """
+
+    @staticmethod
+    def _section_body(text, heading):
+        marker = "#### " + heading
+        start = text.find(marker)
+        if start < 0:
+            return ""
+        body = text[start + len(marker):]
+        nxt = body.find("\n#### ")
+        return body if nxt < 0 else body[:nxt]
+
+    def test_jsonrpc_full_path_emits_all_eleven_steps(self):
+        server = poison.PoisonedMcpServer().start()
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                report = run_attack(
+                    AttackRequest(target=server.url, mode="jsonrpc", labs=(),
+                                  paths=("A", "B", "C", "D", "E", "F"),
+                                  evidence_dir=tmp, emit=True),
+                    Runtime(client=UrllibHttpClient(), capture=NullCapture()))
+                self.assertEqual(len(report.verdicts), 11)
+                self.assertEqual({v.step_id for v in report.verdicts}, set(STEP_IDS))
+                for verdict in report.verdicts:
+                    with self.subTest(step=verdict.step_id):
+                        self.assertTrue(verdict.evidence_path,
+                                        "%s 未落盘证据" % verdict.step_id)
+                        self.assertTrue(os.path.exists(verdict.evidence_path))
+                        with open(verdict.evidence_path, encoding="utf-8") as f:
+                            text = f.read()
+                        self.assertIn("#### 关键输出", text)
+                        self.assertTrue(
+                            self._section_body(text, "关键输出").strip(),
+                            "证据片段「关键输出」为空：%s" % verdict.step_id)
+                levels = {v.step_id: v.level for v in report.verdicts}
+                self.assertEqual(levels["mcp-06"], "已跳过")
+                self.assertEqual(levels["mcp-08"], "已跳过")
+        finally:
+            server.stop()
+
+
+class RunnerBranchTests(unittest.TestCase):
+    """注入点覆盖、降级路径与异常收敛（补齐 D-3 覆盖洼地）。"""
+
+    def test_runtime_builds_default_capture_when_not_injected(self):
+        self.assertIsNotNone(Runtime(client=FakeHttpClient({})).capture)
+
+    def test_curl_without_body_renders_get_form(self):
+        self.assertEqual(runner_mod._curl("GET", "http://t.example/x"),
+                         "curl -sN -X GET 'http://t.example/x'")
+
+    def test_paths_argument_overrides_request_paths(self):
+        report = run_attack(AttackRequest(target="http://t.example", mode="jsonrpc"),
+                            offline({}), paths=("A",))
+        self.assertEqual([v.step_id for v in report.verdicts],
+                         ["mcp-01", "mcp-02", "mcp-03", "mcp-04", "mcp-08"])
+
+    def test_prompt_for_override_replaces_step_prompt(self):
+        client = FakeHttpClient({("POST", "http://t.example/api/labs/MCP_01/chat"):
+                                 HttpResponse(status=200,
+                                              body=sse(["- **Tool name:** `get_config`"]))})
+        seen = []
+        runtime = Runtime(client=client, writer=RecordingWriter(), capture=NullCapture(),
+                          prompt_for=lambda spec: seen.append(spec.step_id) or "CUSTOM-PROMPT")
+        run_attack(AttackRequest(target="http://t.example", step="mcp-01"), runtime)
+        self.assertEqual(seen, ["mcp-01"])
+        self.assertEqual(client.calls[0]["json_body"]["prompt"], "CUSTOM-PROMPT")
+
+    def test_step_exception_is_contained_and_not_marked_skipped(self):
+        class ExplodingClient:
+            def describe(self):
+                return "exploding"
+
+            def request(self, *args, **kwargs):
+                raise KeyError("boom")
+
+        runtime = Runtime(client=ExplodingClient(), writer=RecordingWriter(),
+                          capture=NullCapture())
+        report = run_attack(AttackRequest(target="http://t.example", step="mcp-01"), runtime)
+        verdict = report.verdicts[0]
+        # 执行异常 != 目标能力缺失：不得记为「已跳过」，须如实标为未生效
+        self.assertEqual(verdict.level, "未生效")
+        self.assertIn("执行异常", verdict.reason)
+
+    def test_evidence_gate_failure_propagates_as_runtime_error(self):
+        class FailingWriter:
+            def describe(self):
+                return "failing"
+
+            def fragment_path(self, step_id):
+                return "<memory>/%s.md" % step_id
+
+            def emit(self, **kwargs):
+                return self.fragment_path(kwargs.get("step_id", "")), 1, "模拟门禁失败"
+
+        runtime = Runtime(client=FakeHttpClient({}), writer=FailingWriter(),
+                          capture=NullCapture())
+        with self.assertRaises(RuntimeError):
+            run_attack(AttackRequest(target="http://t.example", step="mcp-04", emit=True),
+                       runtime)
+
+    def test_jsonrpc_tools_list_error_marks_capability_missing(self):
+        runtime = offline({("POST", "http://t.example/mcp"):
+                           HttpResponse(status=500, body="boom")})
+        report = run_attack(AttackRequest(target="http://t.example/mcp", mode="jsonrpc",
+                                          step="mcp-01"), runtime)
+        verdict = report.verdicts[0]
+        self.assertEqual(verdict.level, "已跳过")
+        self.assertIn("tools/list", verdict.reason)
+
+    def test_local_port_unavailable_degrades_to_skipped(self):
+        class BusyServer(poison.PoisonedMcpServer):
+            def start(self):
+                raise OSError("port in use")
+
+        runtime = Runtime(client=FakeHttpClient({}), writer=RecordingWriter(),
+                          capture=NullCapture(), server=BusyServer())
+        report = run_attack(AttackRequest(target="http://t.example", mode="jsonrpc",
+                                          step="mcp-02"), runtime)
+        verdict = report.verdicts[0]
+        self.assertEqual(verdict.level, "已跳过")
+        self.assertIn("端口", verdict.reason)
+
+    def test_jsonrpc_admin_tool_is_resolved_from_surface(self):
+        tools_body = {"jsonrpc": "2.0", "id": 1, "result": {"tools": [
+            {"name": "admin_action", "description": "Administrative action",
+             "_scope": "admin", "_server_id": "attacker_mcp", "_trust": "untrusted"}]}}
+
+        def router(body):
+            if isinstance(body, dict) and body.get("method") == "tools/call":
+                return HttpResponse(status=200, body=json.dumps({
+                    "jsonrpc": "2.0", "id": body.get("id"),
+                    "result": {"content": [{"type": "text", "text": '{"admin": true}'}],
+                               "isError": False}}))
+            return HttpResponse(status=200, body=json.dumps(tools_body))
+
+        runtime = Runtime(client=FakeHttpClient({("POST", "http://t.example/mcp"): router}),
+                          writer=RecordingWriter(), capture=NullCapture())
+        report = run_attack(AttackRequest(target="http://t.example/mcp", mode="jsonrpc",
+                                          step="mcp-07"), runtime)
+        verdict = report.verdicts[0]
+        self.assertIn("admin_action", verdict.command,
+                      "应按目标实际工具面解析 admin 角色，而非契约默认名")
+        self.assertEqual(verdict.level, "完全生效")
 
 
 if __name__ == "__main__":

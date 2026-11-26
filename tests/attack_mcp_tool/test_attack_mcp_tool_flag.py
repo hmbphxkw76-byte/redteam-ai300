@@ -69,6 +69,20 @@ class FlagChannelTests(unittest.TestCase):
         report = run_attack(AttackRequest(target="http://t.example", step="mcp-08"), runtime)
         self.assertEqual(report.verdicts[0].level, "部分生效")
 
+    def test_ac14_flag_file_present_switches_to_official_channel(self):
+        """目标存在 flag 文件时，判据须走「官方双通道」而非面板降级。"""
+        routes = routes_for()
+        routes[("GET", "http://t.example/")] = HttpResponse(
+            status=200, body="<html>spa</html>", content_type="text/html")
+        routes[("GET", "http://t.example/proof.txt")] = HttpResponse(
+            status=200, body="FLAG{demo}", content_type="text/plain")
+        runtime = Runtime(client=FakeHttpClient(routes), writer=RecordingWriter(),
+                          capture=NullCapture())
+        report = run_attack(AttackRequest(target="http://t.example", step="mcp-08"), runtime)
+        verdict = report.verdicts[0]
+        self.assertIn("目标存在 flag 文件", verdict.reason)
+        self.assertEqual(runtime.writer.calls[0]["flag_panel"], SECRET)
+
     def test_ac15_no_value_means_skip_and_no_flag_injected(self):
         body = sse(tool_result='{"error": "no token"}')
         runtime = Runtime(client=FakeHttpClient({

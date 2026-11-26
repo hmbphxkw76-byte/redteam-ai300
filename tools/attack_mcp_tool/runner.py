@@ -243,6 +243,10 @@ def _render(obs):
     parts = []
     if obs.error:
         parts.append("[错误] %s" % obs.error)
+    if obs.text and not obs.raw:
+        # 纯文本降级观测（如 jsonrpc 形态的「本步不适用」说明）没有原始响应，
+        # 仍须作为「关键输出」落盘；否则证据三件套判定为空，严格门禁会中断整轮。
+        parts.append(obs.text)
     if obs.text and obs.raw:
         parts.append("[拼接后的回答（由下列原始事件拼接）]\n%s" % obs.text)
     if obs.raw:

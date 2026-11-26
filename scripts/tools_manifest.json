@@ -159,7 +159,8 @@
         "tests.attack_mcp_tool.test_attack_mcp_tool_poison",
         "tests.attack_mcp_tool.test_attack_mcp_tool_flag",
         "tests.attack_mcp_tool.test_attack_mcp_tool_units",
-        "tests.attack_mcp_tool.test_attack_mcp_tool_evidence_contract"
+        "tests.attack_mcp_tool.test_attack_mcp_tool_evidence_contract",
+        "tests.attack_mcp_tool.test_attack_mcp_tool_ch7_gap"
       ]
     },
     {

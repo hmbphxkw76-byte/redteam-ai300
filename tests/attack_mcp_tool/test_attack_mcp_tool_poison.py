@@ -9,6 +9,9 @@ import json
 import os
 import sys
 import unittest
+import urllib.error
+import urllib.request
+from dataclasses import replace
 
 from tests._paths import ROOT  # noqa: E402
 if ROOT not in sys.path:
@@ -17,6 +20,7 @@ if ROOT not in sys.path:
 from tools.attack_mcp_tool import poison  # noqa: E402
 from tools.attack_mcp_tool.mcp import (AgentSseClient, JsonRpcMcpClient,  # noqa: E402
                                       parse_sse)
+from tools.attack_mcp_tool.model import ToolSurface  # noqa: E402
 from tools.attack_mcp_tool.transport import FakeHttpClient, HttpResponse, UrllibHttpClient  # noqa: E402
 
 TOOLS_LIST_RESPONSE = {
@@ -171,6 +175,90 @@ class PoisonSelfProofTests(unittest.TestCase):
         surface = poison.baseline_surface()
         diff = poison.diff_as_dict(poison.diff_surfaces(surface, surface))
         self.assertEqual(diff, {"added": [], "removed": [], "changed": []})
+
+
+class ServerHandlerEdgeTests(unittest.TestCase):
+    """server 端点边界：404 / 解析错误 / 未知 method / 未知工具 / 生命周期。
+
+    处理器运行在 ThreadingHTTPServer 的工作线程，故一律走真实 HTTP，
+    不用进程内直调（避免把线程路径从覆盖与行为验证中排除）。
+    """
+
+    def setUp(self):
+        self.server = poison.PoisonedMcpServer().start()
+        self.addCleanup(self.server.stop)
+        self.base = self.server.url.rsplit("/mcp", 1)[0]
+
+    def _get(self, path):
+        with urllib.request.urlopen(self.base + path, timeout=5) as resp:
+            return resp.status, json.loads(resp.read().decode("utf-8"))
+
+    def _post(self, payload):
+        request = urllib.request.Request(
+            self.base + "/mcp",
+            data=payload if isinstance(payload, bytes) else json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"}, method="POST")
+        try:
+            with urllib.request.urlopen(request, timeout=5) as resp:
+                return resp.status, json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            return exc.code, json.loads(exc.read().decode("utf-8"))
+
+    def test_unknown_path_returns_404_detail(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            self._get("/nope")
+        self.assertEqual(ctx.exception.code, 404)
+        self.assertEqual(json.loads(ctx.exception.read().decode("utf-8")),
+                         {"detail": "Not Found"})
+
+    def test_root_and_trailing_slash_serve_same_surface(self):
+        for path in ("/", "/tools/list", "/tools/list/"):
+            with self.subTest(path=path):
+                status, body = self._get(path)
+                self.assertEqual(status, 200)
+                self.assertEqual([t["name"] for t in body["tools"]],
+                                 ["read_file", "exfil_send"])
+
+    def test_malformed_json_returns_parse_error(self):
+        status, body = self._post(b"{not json")
+        self.assertEqual(status, 400)
+        self.assertEqual(body["error"]["code"], -32700)
+
+    def test_unknown_method_returns_method_not_found(self):
+        status, body = self._post({"jsonrpc": "2.0", "id": 1, "method": "resources/list"})
+        self.assertEqual(status, 200)
+        self.assertEqual(body["error"]["code"], -32601)
+
+    def test_unknown_tool_returns_invalid_params_with_name(self):
+        status, body = self._post({"jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                                   "params": {"name": "ghost", "arguments": {}}})
+        self.assertEqual(status, 200)
+        self.assertEqual(body["error"]["code"], -32602)
+        self.assertIn("ghost", body["error"]["message"])
+
+    def test_stop_is_idempotent_even_without_start(self):
+        idle = poison.PoisonedMcpServer()
+        idle.stop()
+        idle.stop()
+        self.server.stop()
+        self.server.stop()  # 重复 stop 不得抛异常（finally 里会再调一次）
+
+    def test_shadow_schema_equal_detects_name_set_and_field_drift(self):
+        baseline, shadow = poison.baseline_surface(), poison.shadow_surface()
+        self.assertTrue(poison.shadow_schema_equal(baseline, shadow))
+        subset = ToolSurface(tools=(), source="attacker_mcp:shadow")
+        self.assertFalse(poison.shadow_schema_equal(baseline, subset),
+                         "工具名集合不同必须判为不一致")
+        drifted = ToolSurface(tools=(replace(shadow.tools[0], scope="admin"),),
+                              source="attacker_mcp:shadow")
+        self.assertFalse(poison.shadow_schema_equal(baseline, drifted),
+                         "同名但权限字段不同必须判为不一致")
+
+    def test_diff_reports_removed_tools_in_reverse_direction(self):
+        diff = poison.diff_as_dict(poison.diff_surfaces(
+            poison.poisoned_surface(), poison.baseline_surface()))
+        self.assertIn("exfil_send", diff["removed"])
+        self.assertEqual(diff["added"], [])
 
 
 if __name__ == "__main__":

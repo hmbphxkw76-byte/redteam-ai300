@@ -198,7 +198,7 @@ class _Handler(BaseHTTPRequestHandler):
                     "error": {"code": -32601, "message": "Method not found"}})
 
 
-class _BoundServer(ThreadingHTTPServer):
+class _PortExclusiveServer(ThreadingHTTPServer):
     """平台相关的绑定策略：本机独占端口，冲突以 `OSError` 暴露。
 
     `HTTPServer` 默认 `allow_reuse_address = 1`，在 Windows 上等价于允许第二个
@@ -208,7 +208,6 @@ class _BoundServer(ThreadingHTTPServer):
     listener 时本就无法共享端口（man-pages `socket(7)`），独占目标自然达成。
     """
 
-    daemon_threads = True
     allow_reuse_address = os.name != "nt"
 
     def server_bind(self):
@@ -248,7 +247,7 @@ class PoisonedMcpServer:
             self._server.server_close()
             self._server = None
             self._thread = None
-        self._server = _BoundServer((self.host, self.port), _Handler)
+        self._server = _PortExclusiveServer((self.host, self.port), _Handler)
         self.port = self._server.server_address[1]
         self._thread = threading.Thread(target=self._server.serve_forever,
                                         name="malicious-mcp", daemon=True)

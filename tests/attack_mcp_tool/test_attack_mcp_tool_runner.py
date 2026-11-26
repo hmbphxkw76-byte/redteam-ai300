@@ -14,6 +14,7 @@ import threading
 import time
 import unittest
 import urllib.request
+from unittest import mock
 
 from tests._paths import ROOT  # noqa: E402
 if ROOT not in sys.path:
@@ -300,7 +301,8 @@ class ServerOwnershipTests(unittest.TestCase):
         port = server.port
         runtime = Runtime(client=FakeHttpClient({}), writer=RecordingWriter(),
                           capture=NullCapture(), server=server)
-        self._run_mcp02(runtime)
+        run_attack(AttackRequest(target="http://127.0.0.1:1/mcp", mode="jsonrpc",
+                                 paths=("A", "B", "C", "D", "E", "F"), emit=False), runtime)
         self.assertTrue(server.is_running, "编排层不得关闭注入方持有的实例")
         with urllib.request.urlopen("http://127.0.0.1:%d/tools/list" % port,
                                     timeout=5) as resp:
@@ -313,6 +315,43 @@ class ServerOwnershipTests(unittest.TestCase):
         self._run_mcp02(runtime)
         self.assertFalse(server.is_running, "编排层启动的实例应由其关闭")
         _assert_port_released(self, server.port)
+
+    def test_self_created_server_is_started_and_stopped(self):
+        """AC-06：未注入时编排层自建、自启动、自关闭。"""
+        made = []
+        real_server = poison.PoisonedMcpServer   # 先取真实类，避免 patch 后自递归
+
+        def factory():
+            server = real_server()
+            made.append(server)
+            return server
+
+        runtime = Runtime(client=FakeHttpClient({}), writer=RecordingWriter(),
+                          capture=NullCapture())
+        with mock.patch.object(runner_mod.poison, "PoisonedMcpServer",
+                               mock.MagicMock(side_effect=factory)):
+            self._run_mcp02(runtime)
+        self.assertEqual(len(made), 1, "未注入时应恰好自建一个 server")
+        self.assertFalse(made[0].is_running, "自建实例须由编排层关闭")
+        _assert_port_released(self, made[0].port)
+
+    def test_real_port_conflict_degrades_mcp02_to_skipped(self):
+        """AC-07：真实占用端口（非 stub）时 mcp-02 判已跳过且理由含端口。"""
+        holder = poison.PoisonedMcpServer().start()
+        self.addCleanup(holder.stop)
+        contender = poison.PoisonedMcpServer(port=holder.port)
+        runtime = Runtime(client=FakeHttpClient({}), writer=RecordingWriter(),
+                          capture=NullCapture(), server=contender)
+        report = run_attack(AttackRequest(target="http://127.0.0.1:1/mcp", mode="jsonrpc",
+                                          paths=("A",), emit=False), runtime)
+        by_id = {v.step_id: v for v in report.verdicts}
+        self.assertEqual(by_id["mcp-02"].level, "已跳过")
+        self.assertIn("端口", by_id["mcp-02"].reason)
+        self.assertTrue(holder.is_running, "冲突不得影响端口既有持有者")
+        # 启动失败后不得被后续步骤当作就绪实例复用（端口仍为占位 0）
+        for sid in ("mcp-03", "mcp-04"):
+            self.assertNotIn(":0/mcp", by_id[sid].command,
+                             "%s 复用了启动失败的实例" % sid)
 
     def test_self_created_server_leaves_no_listener_thread(self):
         runtime = Runtime(client=FakeHttpClient({}), writer=RecordingWriter(),

@@ -195,19 +195,22 @@ class _Session:
         """就绪的本地 server；所有权按「谁启动谁关闭」判定。
 
         未注入 → 自建并持有；注入未启动实例 → 启动并持有；注入已启动实例 →
-        既不启动也不关闭（由注入方持有）。`_owns_server` 决定 `close()` 是否停止。
+        既不启动也不关闭（由注入方持有）。启动失败直接抛出且不记录为就绪，
+        避免后续步骤复用未监听的实例（端口仍为占位值 0）。
         """
         if self.started_server is not None:
             return self.started_server
         server = self.runtime.server
+        owns = False
         if server is None:
             server = poison.PoisonedMcpServer()
-            self._owns_server = True
+            owns = True
         elif not server.is_running:
-            self._owns_server = True
+            owns = True
+        if owns:
+            server.start()          # 失败在此抛出，不留半就绪状态
+        self._owns_server = owns
         self.started_server = server
-        if self._owns_server:
-            server.start()
         self.server_started = True
         return server
 

@@ -64,6 +64,16 @@ _AGENT_LIST_KEYS = ("trustedAgents", "trusted_agents", "agents", "peers", "worke
                     "members", "nodes", "targets")
 _BUS_KEYS = ("bus", "busUrl", "bus_url", "broker", "transport", "messageBus")
 
+# 受理回执词与否定形式（否定优先判定，见 message_accepted）
+_ACCEPTED_RE = re.compile(
+    r"(accepted|received|processed|completed|published|broadcast|enqueued|acked"
+    r"|taskId|已接收|已发布|已处理|转发)", re.IGNORECASE)
+_NEGATED_RECEIPT_RE = re.compile(
+    r"(?:\bnot\b|\bn't\b|\bnever\b|\bcannot\b|\bunable\b|未|不|无法)\s*"
+    r"(?:be\s+|been\s+|was\s+|is\s+|被)?"
+    r"(accepted|received|processed|completed|published|acked|接收|受理|处理|发布)",
+    re.IGNORECASE)
+
 
 def _structured_topology(text):
     """从 JSON 拓扑文档中抽取 agent 清单与总线标识；非 JSON 或无字段时返回 None。"""
@@ -123,11 +133,14 @@ def message_accepted(text):
 
     不同实现的回执用词不同（accepted/completed/processed/received），
     统一在此归一，避免把「已受理」误判为「未被受理」。
+
+    否定语境守卫：`not accepted` / `wasn't processed` 一类表述含受理词却语义相反，
+    先判否定再判命中——DVAA 的 5 条挑战假阳性正是缺此守卫的同型错误。
     """
-    return bool(re.search(
-        r"(accepted|received|processed|completed|published|broadcast|enqueued|acked"
-        r"|taskId|已接收|已发布|已处理|转发)",
-        text or "", re.IGNORECASE))
+    body = text or ""
+    if _NEGATED_RECEIPT_RE.search(body):
+        return False
+    return bool(_ACCEPTED_RE.search(body))
 
 
 def before_after_diff(before, after):

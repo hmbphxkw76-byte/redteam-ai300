@@ -1,0 +1,11 @@
+# decoy-detect — 阶段 9 `tdd` 门禁记录（历史留痕回填）
+
+> 回溯核验：不表示原流程按序执行；判定依据见右列，均由现有产物或本次复跑支撑。
+
+| 检查项 | 依据 | 实测摘要 | 判定 |
+|---|---|---|---|
+| 本阶段产物 | 主线 §3.9 | `tests/decoy_detect/` 2 模块 59 例（units + evidence_contract） | 符合（回溯） |
+| 上游复核 | 主线 §2.3 | `python -m unittest discover -s tests/decoy_detect -t . -q` → Ran 59 tests, OK | 符合（回溯） |
+| B1–B9 相关项 | 主线 §2.1 | B3 单测全绿；B6 覆盖率 `measure_coverage --target decoy-detect` → 95.3%（482/506） | 替代（回溯） |
+
+**结论：PASS（回溯）**。证据指针：`tests/decoy_detect/test_decoy_detect_units.py`、`test_decoy_detect_evidence_contract.py`；提交 `749dafa`。

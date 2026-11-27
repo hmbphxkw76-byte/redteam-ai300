@@ -85,4 +85,27 @@
 
 阶段 10 双轴审查发现并修复的关键缺陷：`ensure_server` 原先先登记 `started_server` 再 `start()`，端口冲突抛错后会留下端口为占位 0 的死实例供后续步骤复用；现改为「先启动后登记」，并新增断言禁止复用 `:0/mcp`。
 
-未关闭项：U-1（Linux `EADDRINUSE` 由 CI 验证）、U-2（长连接后重绑窗口仅以 50 次短连接近似）。
+U-1 已由 CI 验证关闭；U-2 见 §7。
+
+## 7. 三项遗留收口（2026-11-27）
+
+### U-2 长连接后的重绑窗口
+
+新增用例 `test_rebind_while_slow_clients_hold_connections`：8 个客户端只发一半请求体，使 handler 阻塞在读取，再 `stop()` 并计时重绑。实测 **0.504 s**（窗口 2 s），**产品无需改动**；`stop()` 不主动断连在途连接属可接受设计，已由用例锁定。
+
+### D-4 SKILL.md 补齐 mcp-09..11
+
+按 `STEP_SPECS` 增补路径 D（mcp-10 MCP Apps UI 投毒）、E（mcp-09 沙箱逃逸）、F（mcp-11 工具链注入），含命令与 `collect_evidence` 取证行。SKILL.md 8,592B → **10,995B**（上限 14,000B），`validate_skill.py` PASS。
+
+### D-12 主线留痕回填
+
+13 个技能新增 **152 份文件**（11 技能补规格 v1/v2 共 22 份；13 技能各补 10 份门禁记录共 130 份）。口径为「**历史留痕回填**」：每份标注「不代表原流程按序执行」，数字均为本次复跑或既有产物，阶段 4/5/10 无独立产物者记 `替代（回溯）` 并写明「未发生」。
+
+- `validate_skill_mainline.py --strict` → **退出码 0，20/20 PASS，根层影子规格 0**
+- 覆盖率（本次复测）：attack-ai-agent 86.1%、attack-embeddings 89.4%、attack-infra 90.8%、attack-mcp-tool 94.4%、attack-multi-agent 89.4%、attack-rag 92.0%、decoy-detect 95.3%、loot-manage 91.6%、osai-orchestrator 93.1%、recon-ai 85.3%、report-exam 97.0%、threat-model 87.3%
+- 口径差异已如实标注：manifest 登记的测试模块少于实际目录（如 attack-ai-agent 66 vs 93、recon-ai 123 vs 180）；`foothold-traditional` **未登记覆盖率目标**，其记录写明「无覆盖率数值」，未编造百分比
+
+### 残余项
+
+- `foothold-traditional` 的覆盖率目标未登记，建议补入 `scripts/tools_manifest.json`
+- `capstone-rehearse-gate-stage11.md`（2,021B）、`tooling-automate-gate-stage9.md`（2,039B）超 2KB 上限，属既有记录，未在本次改动

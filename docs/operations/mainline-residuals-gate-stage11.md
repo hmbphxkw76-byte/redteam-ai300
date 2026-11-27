@@ -4,7 +4,7 @@
 
 | 检查项 | 依据 | 实测 | 判定 |
 |---|---|---|---|
-| B3 编译/测试 | 主线 §2.1 | `check_tools_compile` 309 文件 0 失败；全量 1698 例 OK（skip 2） | 符合 |
+| B3 编译/测试 | 主线 §2.1 | `check_tools_compile` 309 文件 0 失败；全量 1699 例 OK（skip 2） | 符合 |
 | B4 证据契约 | 同上 | `check_evidence_contract` PASS（4 适配器） | 符合 |
 | B6 覆盖率 | 同上 | `--target all --min 80` → 23 目标 90.1%，退出 0 | 符合 |
 | B2 术语/预算 | §1.3 | `check_glossary` PASS；`check_token_budget --check` PASS；lint 6 文件 0 issue | 符合 |
@@ -18,4 +18,4 @@
 ## 附：本轮修正的两个自身缺陷
 
 1. 评审前 `--target all` 出现 3 失败 16 错误（同进程清缓存导致跨目标污染），改为逐目标子进程聚合。
-2. 首版压缩删掉了 tooling 记录的「覆盖纳入新用例」与「AC→测试对位（20/20）」，已恢复并仍 ≤2KB。
+2. 「两份记录超 2KB」属 CRLF 原始字节误判（LF 口径为 1,997B / 1,999B）。已还原改写，并新增 `tests/shared_tools/test_gate_record_budget.py` 按 LF 口径守卫全部 214 份。

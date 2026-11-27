@@ -1,6 +1,6 @@
-# 阶段 11 门禁 — `pr-push-review`
+# 阶段 11 门禁记录 — `pr-push-review`
 
-- 交付：`pre-push-review.md`、`pr-body.md` 2971/3000、PR #251、推送
+- 交付：`pre-push-review.md`、`pr-body.md` 2971/3000、PR #251、推送记录
 - 固定点 `20ce2eb...HEAD`（30 文件全 A）；双轴 Standards 0 / Spec 7（硬违规 1→0）；批次 2；1 轮收敛
 
 | 编号 | 检查项 | 依据 | 实测 | 判定 | 不符合项 | 修正要求 | 复验 | 结论 |

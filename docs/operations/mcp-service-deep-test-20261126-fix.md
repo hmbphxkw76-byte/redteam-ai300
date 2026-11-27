@@ -108,5 +108,5 @@ U-1 已由 CI 验证关闭；U-2 见 §7。
 ### 残余项（2026-11-27 已全部收口）
 
 - 覆盖率目标：`foothold-traditional` 与 `capstone-rehearse` 已登记，`osai-orchestrator` 补 `skill` 字段；实测 97.6% / 90.2%。同时修掉 `measure_coverage` 的两处缺陷（硬编码目标白名单、`reload` 致 `isinstance` 失效），并新增守卫用例 `tests/shared_tools/test_coverage_targets.py`。
-- 超 2KB 记录：`capstone-rehearse-gate-stage11.md` → 1,985B、`tooling-automate-gate-stage9.md` → 1,974B，判定与证据列完整保留。
+- 超 2KB 记录：**复核为误判**。C4 按 LF 归一化计字节，两条原始 1,997B / 1,999B 本就在 2,000B 内；此前用 `wc -c` 测工作树（`core.autocrlf` 每行多 1 字节）才显示 2,021B / 2,039B。已撤销无谓改写，新增 `tests/shared_tools/test_gate_record_budget.py` 按正确口径守卫全部 214 份记录。
 - 阶段 9 / 11 真实留痕：`docs/operations/mainline-residuals-gate-stage{9,11}.md`，以本轮变更域为对象，非技能级回填。

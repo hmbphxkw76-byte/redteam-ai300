@@ -465,7 +465,8 @@
         "tests.osai_orchestrator.test_orchestrator_evidence_contract",
         "tests.osai_orchestrator.test_handoff",
         "tests.osai_orchestrator.test_d11_gateway"
-      ]
+      ],
+      "skill": "osai-exam-orchestrator"
     },
     {
       "name": "target-profile",
@@ -516,6 +517,37 @@
         "tests.foothold_ad.test_hardening",
         "tests.foothold_ad.test_provenance",
         "tests.foothold_ad.test_preflight"
+      ]
+    },
+    {
+      "name": "foothold-traditional",
+      "modules": [
+        "tools.foothold_traditional.ch9_entry",
+        "tools.foothold_traditional.ch9_evidence",
+        "tools.foothold_traditional.ch9_model",
+        "tools.foothold_traditional.ch9_runner"
+      ],
+      "tests": [
+        "tests.foothold_traditional.test_foothold_traditional_ch9",
+        "tests.foothold_traditional.test_foothold_traditional_ch9_hardening",
+        "tests.foothold_traditional.test_foothold_traditional_evidence_contract"
+      ]
+    },
+    {
+      "name": "capstone-rehearse",
+      "modules": [
+        "tools.capstone_rehearse.cli",
+        "tools.capstone_rehearse.clock",
+        "tools.capstone_rehearse.evidence",
+        "tools.capstone_rehearse.inventory",
+        "tools.capstone_rehearse.model",
+        "tools.capstone_rehearse.report",
+        "tools.capstone_rehearse.walk"
+      ],
+      "tests": [
+        "tests.capstone_rehearse.test_capstone_rehearse",
+        "tests.capstone_rehearse.test_capstone_rehearse_coverage",
+        "tests.capstone_rehearse.test_capstone_rehearse_evidence_contract"
       ]
     }
   ]

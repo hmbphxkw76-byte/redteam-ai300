@@ -165,7 +165,7 @@ python -m tools.attack_mcp_tool.cli --step mcp-04 --mode jsonrpc --target http:/
 
 ### D-12【流程】13/20 技能缺主线留痕
 
-- **现象**：`validate_skill_mainline.py` 总计 BLOCKED（`--strict` 退出 1）。缺失项：`attack-ai-agent`、`attack-mcp-tool`、`attack-multi-agent`、`attack-rag`、`decoy-detect`、`foothold-traditional`、`loot-manage`、`osai-exam-orchestrator`、`recon-ai`、`report-exam`、`threat-model`（缺 spec v1/v2 + 阶段门禁 0/10）；`attack-embeddings`、`attack-infra` 仅缺阶段门禁记录。PASS 者 7 个。
+- **现象**：`validate_skill_mainline.py` 总计 BLOCKED（`--strict` 退出 1）。缺失项：`attack-ai-agent`、`attack-mcp-tool`、`attack-multi-agent`、`attack-rag`、`decoy-detect`、`foothold-traditional`、`loot-manage`、`osai-orchestrator`、`recon-ai`、`report-exam`、`threat-model`（缺 spec v1/v2 + 阶段门禁 0/10）；`attack-embeddings`、`attack-infra` 仅缺阶段门禁记录。PASS 者 7 个。
 - **说明**：属流程合规缺口而非运行缺陷；`attack-mcp-tool` 的设计与验证文档位于 `docs/operations/attack-mcp-tool-*.md`，与校验器期望的 `docs/specs/<skill>-spec-v{1,2}.md` 及 `docs/operations/<skill>-gate-stage*.md` 命名不一致。
 - **建议**：按主线规范补齐或迁移留痕；若沿用旧命名，需在 `validate_skill_mainline.py` 中登记例外清单，避免门禁长期红灯。
 

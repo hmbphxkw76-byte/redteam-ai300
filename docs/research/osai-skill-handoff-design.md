@@ -14,7 +14,7 @@
 理由三条：
 
 1. **通过率杠杆最大**：S3 快照 §4 的两条失分条款都落在 D11——proof 未在控制面板与截图双通道呈现、缺文档。六段交接中，⑤证据→报告与⑥报告→提交恰好是这两条风险的直接源头，且现状存在**已核实的真实缺陷**（`build_index(real_only=True)` 丢弃侦察证据；`check_report_assets` 从未被调用）。
-2. **零破坏**：候选 A 不修改任何既有 skill 语义与门禁判据，只在既有 `collect_evidence.py` / `loot/registry.md` / `report_exam` 的字段上建立**派生索引**与旁路判定，复用已合入的 `osai-exam-orchestrator` 的 `GateResult` 同语义接口。
+2. **零破坏**：候选 A 不修改任何既有 skill 语义与门禁判据，只在既有 `collect_evidence.py` / `loot/registry.md` / `report_exam` 的字段上建立**派生索引**与旁路判定，复用已合入的 `osai-orchestrator` 的 `GateResult` 同语义接口。
 3. **成本最低、可验证**：不引入新存储、不新增服务；所有衔接规则可用既有 CLI 逐一复验，符合 C1 单一事实源与 C8 不可豁免。
 
 被否决方案：候选 B（统一交接账本）要求 16 个既有技能改数据格式，违反零破坏；候选 C（全量自动调度器）会绕过 11 阶段门禁与 flag 人工确认，违反 C8 且风险不可控。
@@ -89,7 +89,7 @@
 
 ### 4.3 旁路一致性校验（复用已合入 seam）
 
-在已合入的 `osai-exam-orchestrator` 上增加一个能力域，输出 `GateResult(PASS/BLOCKED)`，与 11 阶段 G0 同语义。六段校验规则：
+在已合入的 `osai-orchestrator` 上增加一个能力域，输出 `GateResult(PASS/BLOCKED)`，与 11 阶段 G0 同语义。六段校验规则：
 
 1. **H1 侦察→攻击**：资产清单可解析、三态齐全、每个资产 `evidence_step` 指向真实片段
 2. **H2 攻击→证据**：计分步骤有实际截图文件；`shot_cmd` 不冒充截图

@@ -25,7 +25,7 @@
 | D-10 | foothold-ad | `tests/foothold_ad` 工件夹具 | `cli analyze --artifacts` 与 `cli verify` | 八步分析实际产出结论，工件完整性校验通过 | 分析 JSON 与校验结果 |
 | D-11 | foothold-traditional | `tests/foothold_traditional` 上下文夹具 | `run_ch9` 与 `collect_evidence --step trad-09` | Ch9 入口判定与证据片段生成 | 观测文件与证据片段 |
 | D-12 | loot-manage | 临时登记簿 | `register` → `query` → `set-status` → `validate` | 全链路状态一致，双通道登记可核对 | 临时登记簿与校验输出 |
-| D-13 | osai-exam-orchestrator | `--config` 与 `--anonymize` | 编排执行与匿名化 | 不只输出计划，实际能力域执行并返回结果 | 执行输出与匿名化结果 |
+| D-13 | osai-orchestrator | `--config` 与 `--anonymize` | 编排执行与匿名化 | 不只输出计划，实际能力域执行并返回结果 | 执行输出与匿名化结果 |
 | D-14 | report-exam | `evidence/attack-ai-agent-real` | `index` → `build --no-package` | 主机索引与报告组装成功，证据契约不破 | 索引 JSON 与报告草稿 |
 | D-15 | threat-model | `skills/threat-model/examples` 样例 | `cli --inventory --classification` | 四项质量门齐全，优先级图产出 | 模型 Markdown 与简报 |
 | D-16 | tooling-automate | 七字段 tasks 清单 | 编排执行（非 dry-run） | 任务序列实际执行，退出码可核查 | 汇总 Markdown 与执行记录 |

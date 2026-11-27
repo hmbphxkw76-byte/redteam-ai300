@@ -70,7 +70,7 @@
 | loot-manage | `tools.loot_manage` | `init` + `validate`（列/行/类型/状态/ID/主机六项 OK） | PASS |
 | report-exam | `python -m tools.report_exam` | `index` 对非考试证据片段集合优雅降级（8 主机、空片段、退出 0） | PASS |
 | verify-evidence | `python -m tools.verify_evidence` | 对 recon 证据片段实跑，输出 blocking/missing 分类 | PASS |
-| osai-exam-orchestrator | `python -m tools.osai_orchestrator --plan` | 12 项能力域 dry-run | PASS |
+| osai-orchestrator | `python -m tools.osai_orchestrator --plan` | 12 项能力域 dry-run | PASS |
 | foothold-ad / foothold-traditional | `tools.foothold_ad.cli plan` / 人工 SOP + `collect_evidence` | 8 步计划输出；`trad-*` 为人工步骤（文档给出确切命令与取证） | PASS（设计如此，无 SMB/域环境） |
 
 工具可执行性：13 个 `cli.py` 包全部 `--help` 退出 0；7 个包按设计以 `demo.py` / 单步骤模块为入口（SKILL.md 已载明），`--help` 同样退出 0。顶层 22 个脚本 `--help` 全部退出 0。

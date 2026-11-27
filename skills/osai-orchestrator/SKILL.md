@@ -1,5 +1,5 @@
 ---
-name: osai-exam-orchestrator
+name: osai-orchestrator
 priority: P2
 domain: D1, D2, D3, D4, D5, D7, D10, D11
 scoring_unit: 通用
@@ -8,7 +8,7 @@ input: PentAGI 迁移清单 A/B 类判据、4 份提示词分册、既有 S-1 �
 output: 可调用的运行时能力模块 tools/osai_orchestrator/（19 项能力域），纯增量、零外部依赖
 ---
 
-# osai-exam-orchestrator — 考试编排与韧性增强
+# osai-orchestrator — 考试编排与韧性增强
 
 把迁移清单中的 A/B 类判据实现为纯逻辑能力层，**只增强既有技能，不修改、不替代任何既有 `skills/*/`**。工具执行经 `tooling-automate` 的 S-1 入口，版本兼容经 `tools/pyrit_compat/` 注册表，证据收口经 `tools/collect_evidence.py`。
 

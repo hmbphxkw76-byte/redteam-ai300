@@ -86,7 +86,7 @@
 ## 6. 风险与待验证
 
 - 历史 187 例 / 91.1% 与当前 180 例 / 85.3% 不可直接对齐：测试已由扁平 `tests/` 迁至 `tests/recon_ai/`（#268），用例数与统计口径变化。
-- `check_glossary.py` 仓库级当前 FAIL 1 项（`docs/specs/osai-exam-orchestrator-spec-v1.md` 命中废弃术语），非本技能文本；recon-ai 范围 0 命中。
+- `check_glossary.py` 仓库级 PASS；此前 `docs/specs/osai-orchestrator-spec-v1.md` 的废弃术语已修正，recon-ai 范围 0 命中。
 - Ch2/Ch6/Ch9/A2A 的部分事实来自特定演练目标，未在本次复跑中重验；规格只保留可泛化判据。
 - 阶段 4/5 无独立「分派完成」记录：工单 #122–#127 仍为 OPEN，标签与 brief 可核，实施由 PR #128 承载。
 - 截图依赖本机浏览器；CI 无 GUI 时以替身验证失败路径，不验证真实渲染质量。

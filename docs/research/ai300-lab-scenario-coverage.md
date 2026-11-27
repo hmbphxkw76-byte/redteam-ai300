@@ -138,7 +138,7 @@
 
 - `attack-jailbreak`：文档未设独立护栏绕过章；Ch1/Ch7 仅在提示注入中以一句话提及。
 - `attack-multimodal`：文档无跨模态章节。
-- `osai-exam-orchestrator`、`tooling-automate`、`loot-manage`、`report-exam`、`verify-evidence`：流程与证据类，不对应具体攻击场景。
+- `osai-orchestrator`、`tooling-automate`、`loot-manage`、`report-exam`、`verify-evidence`：流程与证据类，不对应具体攻击场景。
 
 ## 7. 附：来源与口径
 

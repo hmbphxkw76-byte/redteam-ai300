@@ -20,7 +20,7 @@
 ## 3. seam 与注入
 
 - 复用 `GateResult` / `Verdict`，不新建判定类型。
-- 复用 `osai-exam-orchestrator` 的 `Orchestrator` 作为组合入口。
+- 复用 `osai-orchestrator` 的 `Orchestrator` 作为组合入口。
 - 命令执行经既有 `CommandRunner` 协议，测试用替身。
 
 ## 4. 领域术语（阶段 7）

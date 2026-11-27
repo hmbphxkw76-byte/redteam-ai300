@@ -1,6 +1,6 @@
-# osai-exam-orchestrator 行为规格 v1（What）
+# osai-orchestrator 行为规格 v1（What）
 
-> 回溯整理：依据 `skills/osai-exam-orchestrator/SKILL.md` 与既有实现、测试归纳；**不代表原流程按序执行**。
+> 回溯整理：依据 `skills/osai-orchestrator/SKILL.md` 与既有实现、测试归纳；**不代表原流程按序执行**。
 > 整理日期：2026-11-27　状态：定稿（v1）
 
 ## 1 背景与目标
@@ -9,7 +9,7 @@ OSAI（AI-300）考试窗口长、攻击链长，失分主因常不是攻击失�
 
 目标：把 PentAGI 迁移清单 A/B 类判据实现为**纯增量**运行时能力层，只增强既有技能，不改写任何既有 `SKILL.md`、`tools/*` 文件与 `GLOSSARY.md` 条目语义；零第三方依赖、零 PyRIT 运行时强依赖。
 
-命名事实（既有不一致，照实记录）：技能目录为 `skills/osai-exam-orchestrator/`，实现包为 `tools/osai_orchestrator/`，覆盖率目标名为 `osai-orchestrator`。三者指向同一能力域，本规格以技能名为标题，不据此推断重命名已发生。
+命名事实（2026-11-27 已统一）：技能目录 `skills/osai-orchestrator/`、覆盖率目标 `osai-orchestrator` 与 Python 包名 `tools/osai_orchestrator/`（下划线为 Python 命名规范）指向同一能力域。历史文档中的旧称保留在版本历史中，不作为当前标识使用。
 
 ## 2 使用者与触发场景
 

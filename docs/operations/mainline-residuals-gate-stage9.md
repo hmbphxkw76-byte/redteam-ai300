@@ -4,7 +4,7 @@
 
 | 检查项 | 依据 | 实测摘要 | 判定 |
 |---|---|---|---|
-| 红灯 | 主线 §3.9 | 新增 `tests/shared_tools/test_coverage_targets.py` 首跑 1 失败：缺目标 `capstone-rehearse`、`foothold-traditional`、`osai-exam-orchestrator` | 符合 |
+| 红灯 | 主线 §3.9 | 新增 `tests/shared_tools/test_coverage_targets.py` 首跑 1 失败：缺目标 `capstone-rehearse`、`foothold-traditional`、`osai-orchestrator` | 符合 |
 | 绿灯 | 同上 | 补登 2 个目标 + 为 `osai-orchestrator` 声明 `skill` 字段 → 4 例 OK | 符合 |
 | 覆盖率 | `measure_coverage` | `foothold-traditional` 165/169 = 97.6%（32 例全过）；`capstone-rehearse` 432/479 = 90.2%；既有目标未漂移（mcp-tool 94.4%、ai-agent 86.1%、report-exam 97.0%） | 符合 |
 | 全量回归 | 主线 §2.3 | `python -m unittest discover -s tests -t . -q` → 1699 例 OK（skip 2） | 符合 |

@@ -59,7 +59,7 @@
 | foothold-ad | `cli preflight --json` | PASS | rc=0，缺失工件清单如实输出 | PASS |
 | foothold-traditional | `ch9_runner` 导入 | PASS | rc=0，run_ch9 可调用 | PASS |
 | loot-manage | `cli init` | PASS | rc=0，登记簿初始化成功 | PASS |
-| osai-exam-orchestrator | `__main__ --plan` | PASS | rc=0，能力域清单输出完整 | PASS |
+| osai-orchestrator | `__main__ --plan` | PASS | rc=0，能力域清单输出完整 | PASS |
 | recon-ai | `cli run`（含截图） | PASS | rc=0，C1–C9 门禁 PASS | PASS |
 | report-exam | `__main__ index` | PASS | rc=0，生成 8 主机证据索引 | PASS |
 | threat-model | `cli --inventory/--classification` | PASS | rc=0，合法夹具下质量门通过 | PASS |
@@ -189,7 +189,7 @@ python -m tools.recon_ai.cli run --target http://192.168.40.187:3000 \
 | D-10 | foothold-ad | PASS | 八步分析产出结论；补齐工件来源清单后校验 ok=true |
 | D-11 | foothold-traditional | PASS | trad-09/trad-10 均判 EXPOSED_NO_AUTH；证据片段生成并如实标注三件套缺项 |
 | D-12 | loot-manage | PASS | 登记→查询→状态更新→校验全链路通过，双通道与攻击路径均满足 |
-| D-13 | osai-exam-orchestrator | PASS | 19 项能力域计划输出，匿名化将 IP 与邮箱替换为占位符 |
+| D-13 | osai-orchestrator | PASS | 19 项能力域计划输出，匿名化将 IP 与邮箱替换为占位符 |
 | D-14 | report-exam | PASS | 真实证据片段驱动 build，退出 0；AC-12 缺失与 dry-run 不可提交如实标注 |
 | D-15 | threat-model | PASS | 合法夹具下质量门通过；真实 recon 产物为 0 资产，无法驱动建模，已记录 |
 | D-16 | tooling-automate | PASS | 真实执行任务清单，自动任务退出 0，覆盖率 1.00，手工任务保留 |

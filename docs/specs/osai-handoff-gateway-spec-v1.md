@@ -1,7 +1,7 @@
 # osai-handoff-gateway 行为规格 v1（What）
 
 > 行为唯一来源：`docs/research/osai-skill-handoff-design.md`（阶段 1 G0 PASS）。
-> 上游模块：`skills/osai-exam-orchestrator/SKILL.md`（已合入 `ae3cbe4`）。
+> 上游模块：`skills/osai-orchestrator/SKILL.md`（已合入 `ae3cbe4`）。
 > 本版本只回答「做什么」，不含文件路径与代码。
 
 ## 1. Problem Statement

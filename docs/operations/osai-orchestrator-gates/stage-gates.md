@@ -1,4 +1,4 @@
-# osai-exam-orchestrator 阶段门禁记录（11 阶段）
+# osai-orchestrator 阶段门禁记录（11 阶段）
 
 > **口径**：T2 增量门禁，只列本阶段变更项；每项摘要 ≤3 行。B1–B9 全量判定在阶段 11 汇总一次。
 > **偏离声明（GOVERNANCE §8.3）**：按用户明确指令「不建分支/PR、不提交、不推送、所有改动留当前工作树」，未走 §1.3.7 的独立 worktree + feat 分支；本模块为纯增量、不改任何既有技能，风险可控。阶段 11 的 push/PR 子步骤因此不执行，记为 N/A 而非 BLOCKED。
@@ -6,7 +6,7 @@
 | 阶段 | 交付物 | 变更项 + 判定 | 复验命令（输出摘要） | 结论 |
 |---|---|---|---|---|
 | 1 research | `docs/research/osai-orchestrator-canonical.md` | 19 项判据锚点已核实；8 项既有能力核对完成 | 文件存在，含一手源表 | PASS |
-| 2 to-spec v1 | `skills/osai-exam-orchestrator/SKILL.md`（行为源） | 五域行为描述 + 质量门；七节语义齐全 | `validate_skill.py` PASS | PASS |
+| 2 to-spec v1 | `skills/osai-orchestrator/SKILL.md`（行为源） | 五域行为描述 + 质量门；七节语义齐全 | `validate_skill.py` PASS | PASS |
 | 3 to-spec v2 | 设计文档 §2 公开接口 | 每条能力有布尔判据与命令 | `measure_coverage --target osai-orchestrator` 94.5% | PASS |
 | 4 to-tickets | 5 能力域对应 5 测试文件 | 19 能力域全覆盖 | 90 例、0 失败 | PASS |
 | 5 triage | 全部 `ready-for-agent`（无外部依赖） | 无 `ready-for-human` 项 | 无需凭据或目标 | PASS |

@@ -465,8 +465,7 @@
         "tests.osai_orchestrator.test_orchestrator_evidence_contract",
         "tests.osai_orchestrator.test_handoff",
         "tests.osai_orchestrator.test_d11_gateway"
-      ],
-      "skill": "osai-exam-orchestrator"
+      ]
     },
     {
       "name": "target-profile",

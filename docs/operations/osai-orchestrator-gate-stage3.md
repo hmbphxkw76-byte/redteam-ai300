@@ -1,4 +1,4 @@
-# osai-exam-orchestrator — 阶段 3 `to-spec ②` 门禁记录（历史留痕回填）
+# osai-orchestrator — 阶段 3 `to-spec ②` 门禁记录（历史留痕回填）
 
 > 回溯核验：不表示原流程按序执行；判定依据见右列，均由现有产物或本次复跑支撑。
 
@@ -10,4 +10,4 @@
 
 层次：v2 只收敛本技能全量规格；就绪度/交接网关规格仅作 AC-16/AC-17 的补充证据。
 
-**结论：PASS（回溯）**。证据指针：`docs/specs/osai-exam-orchestrator-spec-v2.md`、`scripts/tools_manifest.json`（`osai-orchestrator`）；提交 `4ec49d8`。
+**结论：PASS（回溯）**。证据指针：`docs/specs/osai-orchestrator-spec-v2.md`、`scripts/tools_manifest.json`（`osai-orchestrator`）；提交 `4ec49d8`。

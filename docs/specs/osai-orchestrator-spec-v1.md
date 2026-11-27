@@ -9,7 +9,7 @@ OSAI（AI-300）考试窗口长、攻击链长，失分主因常不是攻击失�
 
 目标：把 PentAGI 迁移清单 A/B 类判据实现为**纯增量**运行时能力层，只增强既有技能，不改写任何既有 `SKILL.md`、`tools/*` 文件与 `GLOSSARY.md` 条目语义；零第三方依赖、零 PyRIT 运行时强依赖。
 
-命名事实（2026-11-27 已统一）：技能目录 `skills/osai-orchestrator/`、覆盖率目标 `osai-orchestrator` 与 Python 包名 `tools/osai_orchestrator/`（下划线为 Python 命名规范）指向同一能力域。历史文档中的旧称保留在版本历史中，不作为当前标识使用。
+命名事实（2026-11-27 已统一）：技能目录 `skills/osai-orchestrator/`、覆盖率目标 `osai-orchestrator` 与 Python 包名 `tools/osai_orchestrator/`（下划线为 Python 命名规范）指向同一能力域。命名依据：OSAI 本身就是考试，标识不再带 exam 后缀；历史旧称仅存在于版本历史与原始证据日志，不作为当前标识使用。
 
 ## 2 使用者与触发场景
 

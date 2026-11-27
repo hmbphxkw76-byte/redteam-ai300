@@ -7,6 +7,7 @@
 """
 import json
 import os
+import socket
 import sys
 import unittest
 import urllib.error
@@ -228,6 +229,28 @@ class AddressExclusivityTests(unittest.TestCase):
         with urllib.request.urlopen(first.url.rsplit("/mcp", 1)[0] + "/tools/list",
                                     timeout=5) as resp:
             self.assertEqual(resp.status, 200, "冲突后首个实例必须仍可服务")
+
+    def test_rebind_while_slow_clients_hold_connections(self):
+        """U-2：在途慢客户端未关闭时，stop() 后仍须在窗口内可重绑。
+
+        与短连接用例互补：这里让 8 个客户端只发一半请求体，使 handler 阻塞在读取，
+        模拟「连接仍在、服务已停」的最坏情形。实测（Windows 11 / Py 3.13）重绑
+        0.504 s，远低于 2 s 窗口，故不需在 stop() 中主动断连。
+        """
+        server = poison.PoisonedMcpServer().start()
+        self.addCleanup(server.stop)
+        port = server.port
+        held = []
+        self.addCleanup(lambda: [sock.close() for sock in held])
+
+        for _ in range(8):
+            sock = socket.create_connection(("127.0.0.1", port), timeout=5)
+            sock.sendall(b"POST /mcp HTTP/1.0\r\nHost: x\r\nContent-Length: 50\r\n\r\npartial")
+            held.append(sock)
+
+        server.stop()
+        elapsed = rebind_within(port, window=2.0)
+        self.assertLessEqual(elapsed, 2.0, "在途连接场景重绑耗时 %.3fs 超窗口" % elapsed)
 
     def test_rebind_within_window_after_traffic(self):
         server = poison.PoisonedMcpServer().start()

@@ -1,4 +1,4 @@
-# 阶段 9 门禁记录 — `tdd`
+# 阶段 9 门禁 — `tdd`
 
 - 交付：`test_tooling_tdd_contract.py`（6 例，AC-08/10/11/13/14/16）；`cli.main` 增可注入 `runner`；覆盖纳入新用例
 - 全量：`unittest discover -s tests` → Ran 650，OK（skip 2）；覆盖 212/231 = 91.8%（门限 80）
@@ -37,4 +37,4 @@
 | B6 | CI | S1：validate/glossary/budget 全 PASS；S2：91.8% | PASS |
 | B8 | 可追溯 | AC→测试 20/20；红绿重构留痕 | PASS |
 
-**结论：PASS**（不符合项 0），进入阶段 10（`code-review`）。
+**结论：PASS**（不符合项 0），进入阶段 10。

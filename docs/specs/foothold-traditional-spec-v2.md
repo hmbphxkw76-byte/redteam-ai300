@@ -13,7 +13,7 @@
 | 证据发射 | 「经 strict 落盘」 | AC-10..AC-13 断言参数与失败语义 | 出口唯一且可复制 |
 | 编排 | 「两步编排」 | AC-14 断言步序、未知步、可选附着 | 未知步骤必须显式失败 |
 | 人工项 | 双通道与前后权限证明 | AC-15 明确为人工判据 | 无运行时截图/面板接口 |
-| 覆盖率 | 未声明 | AC-16 记为口径缺失而非达标 | `coverage_targets` 未登记该技能 |
+| 覆盖率 | 未声明 | AC-16 按实测判定 | 2026-11-27 补登记后首测 97.6% |
 
 ## 2. 布尔验收条件
 
@@ -34,7 +34,7 @@
 | AC-13 | 证据模块源码不含 `shell=True` | hardening `test_ac09_no_shell_true` |
 | AC-14 | 两步执行均附着证据；未知 step 抛 `ValueError`；`attach=None` 不写证据路径 | hardening 三个 runner 用例 |
 | AC-15 | 主链 flag 双通道一致、提权前后 `id` 同屏、横向路径图与移交清单齐备 | 人工判据：`SKILL.md` 质量门逐项核对，无自动断言 |
-| AC-16 | 覆盖率按 `--target` 口径可复现 | 不可判定：`scripts/tools_manifest.json` 的 `coverage_targets` 未登记该技能 |
+| AC-16 | 覆盖率按 `--target` 口径可复现 | 可判定：2026-11-27 已登记目标，`--target foothold-traditional` → 165/169 = 97.6%（32 例全过） |
 
 ## 3. 测试决策
 
@@ -44,14 +44,14 @@
 - 成对反例：SSRF 命中/无键名/被拒；GPU 有包装脚本/无 NOPASSWD/无 sudo；证据成功/失败。
 - 主链 `trad-01`..`trad-08` 是文档契约而非运行时代码，以 `SKILL.md` 文本断言覆盖；不得据此宣称运行时已验证。
 - 确定性：同输入同结论，指纹为不可变元组；类型校验在构造期失败。
-- 覆盖率：项目口径缺失，本轮不产出百分比（见 AC-16）。
+- 覆盖率：2026-11-27 补登记目标后首测 97.6%（165/169，见 AC-16）。
 
 ## 4. 门禁映射
 
 | 门禁 | 命令 | 与 AC 的关系 |
 |---|---|---|
 | 单元测试 | `python -m unittest discover -s tests/foothold_traditional -t . -q` | AC-01..AC-14 |
-| 覆盖率 | `measure_coverage.py --target foothold-traditional` | AC-16；该目标不存在，命令不可执行 |
+| 覆盖率 | `measure_coverage.py --target foothold-traditional` | AC-16；165/169 = 97.6%，命令可执行 |
 | 引用完整性 | `python scripts/verify_skill_refs.py` | Ch9 段 `SKILL.md` 引用字面完整 |
 | 编译 | `python -m py_compile tools/foothold_traditional/*.py` | 包可导入 |
 | 技能合规 | `python scripts/validate_skill.py` | 四要素与 front-matter |

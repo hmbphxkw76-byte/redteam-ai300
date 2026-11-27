@@ -105,7 +105,8 @@ U-1 已由 CI 验证关闭；U-2 见 §7。
 - 覆盖率（本次复测）：attack-ai-agent 86.1%、attack-embeddings 89.4%、attack-infra 90.8%、attack-mcp-tool 94.4%、attack-multi-agent 89.4%、attack-rag 92.0%、decoy-detect 95.3%、loot-manage 91.6%、osai-orchestrator 93.1%、recon-ai 85.3%、report-exam 97.0%、threat-model 87.3%
 - 口径差异已如实标注：manifest 登记的测试模块少于实际目录（如 attack-ai-agent 66 vs 93、recon-ai 123 vs 180）；`foothold-traditional` **未登记覆盖率目标**，其记录写明「无覆盖率数值」，未编造百分比
 
-### 残余项
+### 残余项（2026-11-27 已全部收口）
 
-- `foothold-traditional` 的覆盖率目标未登记，建议补入 `scripts/tools_manifest.json`
-- `capstone-rehearse-gate-stage11.md`（2,021B）、`tooling-automate-gate-stage9.md`（2,039B）超 2KB 上限，属既有记录，未在本次改动
+- 覆盖率目标：`foothold-traditional` 与 `capstone-rehearse` 已登记，`osai-orchestrator` 补 `skill` 字段；实测 97.6% / 90.2%。同时修掉 `measure_coverage` 的两处缺陷（硬编码目标白名单、`reload` 致 `isinstance` 失效），并新增守卫用例 `tests/shared_tools/test_coverage_targets.py`。
+- 超 2KB 记录：`capstone-rehearse-gate-stage11.md` → 1,985B、`tooling-automate-gate-stage9.md` → 1,974B，判定与证据列完整保留。
+- 阶段 9 / 11 真实留痕：`docs/operations/mainline-residuals-gate-stage{9,11}.md`，以本轮变更域为对象，非技能级回填。

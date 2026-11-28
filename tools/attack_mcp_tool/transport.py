@@ -7,11 +7,13 @@
 """
 import json
 import socket
+import threading
 import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from typing import Dict, Optional
+from urllib.parse import urljoin
 
 DEFAULT_UA = "attack-mcp-tool/1.0 (authorized red team assessment)"
 # MCP Streamable HTTP 要求客户端同时接受 JSON 与 SSE；缺省即符合协议，避免硬编码端点适配。
@@ -95,6 +97,123 @@ class UrllibHttpClient(HttpClient):
         except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError, OSError) as exc:
             return HttpResponse(error=str(getattr(exc, "reason", exc)),
                                 elapsed_ms=int((time.time() - t0) * 1000))
+
+
+def urllib_sse_lines(url, headers=None, timeout=30):
+    """生产流读取器：GET SSE 流并按行产出（复用禁跟随 3xx 的 opener）。"""
+    merged = {"User-Agent": DEFAULT_UA, "Accept": "text/event-stream"}
+    merged.update(headers or {})
+    req = urllib.request.Request(url, headers=merged)
+    resp = urllib.request.build_opener(_NoRedirect).open(req, timeout=timeout)
+    try:
+        for raw in resp:
+            yield raw.decode("utf-8", "replace")
+    finally:
+        resp.close()
+
+
+class McpSseHttpClient(HttpClient):
+    """旧式 HTTP+SSE MCP 传输包装（Streamable HTTP 之前的官方传输）。
+
+    同一 `request` 契约下完成：GET 流取 `event: endpoint` 会话地址 →
+    JSON-RPC POST 到该地址（服务端回 202）→ 响应从流上按 `id` 回收。
+    对上层协议客户端完全透明；非 JSON-RPC 请求原样委托内层客户端。
+    `stream_reader` 可注入（测试离线确定性）。
+    """
+
+    def __init__(self, inner, stream_reader=None, wait_timeout=15.0,
+                 endpoint_timeout=8.0):
+        self.inner = inner
+        self._stream_reader = stream_reader or urllib_sse_lines
+        self.wait_timeout = wait_timeout
+        self.endpoint_timeout = endpoint_timeout
+        self._sessions = {}
+        self._lock = threading.Lock()
+        self._urls = set()
+
+    def describe(self):
+        return "mcp-sse (%d session(s))" % len(self._urls)
+
+    def _extra_headers(self):
+        return dict(getattr(self.inner, "extra_headers", {}) or {})
+
+    def request(self, method, url, json_body=None, timeout=60, headers=None):
+        rpc = (method == "POST" and isinstance(json_body, dict)
+               and "jsonrpc" in json_body)
+        if not rpc:
+            return self.inner.request(method, url, json_body=json_body,
+                                      timeout=timeout, headers=headers)
+        sess = self._session(url)
+        if not sess["ready"].wait(self.endpoint_timeout):
+            return HttpResponse(error="SSE 会话未取得 endpoint 事件")
+        if sess["error"]:
+            return HttpResponse(error="SSE 会话失败：%s" % sess["error"])
+        if not sess["message_url"]:
+            return HttpResponse(error="SSE 流未下发 endpoint 会话地址")
+        message_url = urljoin(url, sess["message_url"])
+        resp = self.inner.request("POST", message_url, json_body=json_body,
+                                  timeout=timeout, headers=headers)
+        req_id = json_body.get("id")
+        if req_id is None or resp.error or not resp.ok:
+            return resp
+        deadline = time.time() + self.wait_timeout
+        with sess["cond"]:
+            while time.time() < deadline:
+                for idx, evt in enumerate(sess["responses"]):
+                    if evt.get("id") == req_id:
+                        sess["responses"].pop(idx)
+                        return HttpResponse(
+                            status=200, body=json.dumps(evt, ensure_ascii=False),
+                            content_type="application/json",
+                            headers={"X-Transport": "mcp-sse"})
+                sess["cond"].wait(max(0.05, deadline - time.time()))
+        return HttpResponse(error="SSE 流等待 id=%s 响应超时" % req_id)
+
+    def _session(self, url):
+        with self._lock:
+            sess = self._sessions.get(url)
+            if sess is None:
+                sess = {"ready": threading.Event(), "cond": threading.Condition(),
+                        "message_url": "", "error": "", "responses": []}
+                self._sessions[url] = sess
+                self._urls.add(url)
+                threading.Thread(target=self._pump, args=(url, sess),
+                                 daemon=True).start()
+            return sess
+
+    def _pump(self, url, sess):
+        try:
+            pending = None
+            for line in self._stream_reader(url, self._extra_headers(), 60):
+                line = line.rstrip("\r\n")
+                if line.startswith(":"):
+                    continue
+                if line.startswith("event:"):
+                    pending = line[6:].strip()
+                    continue
+                if not line.startswith("data:"):
+                    if not line.strip():
+                        pending = None
+                    continue
+                payload = line[5:].strip()
+                if pending == "endpoint" or (
+                        payload.startswith("/") and not sess["message_url"]):
+                    sess["message_url"] = payload
+                    sess["ready"].set()
+                else:
+                    try:
+                        obj = json.loads(payload)
+                    except ValueError:
+                        obj = None
+                    if isinstance(obj, dict) and obj.get("id") is not None:
+                        with sess["cond"]:
+                            sess["responses"].append(obj)
+                            sess["cond"].notify_all()
+                pending = None
+        except Exception as exc:  # noqa: BLE001 - 流断开须转为可见错误
+            sess["error"] = str(getattr(exc, "reason", exc))
+        finally:
+            sess["ready"].set()
 
 
 class FakeHttpClient(HttpClient):

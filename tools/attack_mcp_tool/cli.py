@@ -27,7 +27,8 @@ from tools.attack_mcp_tool import Runtime, run_attack  # noqa: E402
 from tools.attack_mcp_tool.model import AttackRequest  # noqa: E402
 from tools.attack_mcp_tool.runner import DEFAULT_EVIDENCE_DIR  # noqa: E402
 from tools.attack_mcp_tool.steps import STEP_IDS  # noqa: E402
-from tools.attack_mcp_tool.transport import UrllibHttpClient  # noqa: E402
+from tools.attack_mcp_tool.transport import (McpSseHttpClient,  # noqa: E402
+                                             UrllibHttpClient)
 
 
 def build_parser():
@@ -47,6 +48,10 @@ def build_parser():
     ap.add_argument("--no-shot", action="store_true", help="不截图（证据标待补录）")
     ap.add_argument("--browser", default=None, help="无头浏览器可执行文件路径")
     ap.add_argument("--json", action="store_true", help="输出机读 JSON 报告")
+    ap.add_argument("--mcp-transport", choices=("streamable", "sse"), default=None,
+                    help="jsonrpc 形态的 MCP 传输：streamable=POST 即响应（缺省）；"
+                         "sse=旧式 HTTP+SSE（GET 流取 endpoint，POST /messages，响应从流回收）。"
+                         "亦可由画像 extra.mcp_transport 声明；显式参数优先")
     ap.add_argument("--header", action="append", default=[], metavar="NAME: VALUE",
                     help="附加 HTTP 请求头（可重复），如 'Host: localhost:8100'；目标价值由调用方提供")
     return ap
@@ -81,7 +86,12 @@ def main(argv=None, runtime=None):
         step=args.step, evidence_dir=args.evidence_dir, emit=not args.no_emit,
         target_profile=profile)
     if runtime is None:
-        runtime = Runtime(client=UrllibHttpClient(extra_headers=headers),
+        inner = UrllibHttpClient(extra_headers=headers)
+        kind = (args.mcp_transport
+                or str(profile.extra.get("mcp_transport") or "")
+                or "streamable")
+        client = McpSseHttpClient(inner) if kind == "sse" else inner
+        runtime = Runtime(client=client,
                           browser_path=args.browser, shot_enabled=not args.no_shot)
     try:
         report = run_attack(request, runtime)

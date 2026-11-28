@@ -26,7 +26,7 @@
 
 | 编号 | 结论 | 一手来源 | 证据摘要 |
 |---|---|---|---|
-| V1 | 版本为 `pyrit==1.1.0`，删除 `pyrit.orchestrator`，编排器更名为 `pyrit.executor.attack` 下的攻击策略 | S1、S10 | 文档站路径含 `/1.1.0/`；`Azure/PyRIT` 已归档 |
+| V1 | 版本为 `pyrit==1.1.0`；`pyrit.orchestrator` 已删除、编排器更名为 `pyrit.executor.attack` 攻击策略（**架构变更属 v0.10.0，非 v1.1.0**；v1.1.0 延续其缺失，#252 订正） | S1、S10；版本归属见 `pyrit-version-attribution-252.md` | 文档站路径含 `/1.1.0/`；`Azure/PyRIT` 已归档 |
 | V2 | `PromptSendingAttack(objective_target=..., attack_converter_config=..., attack_scoring_config=..., prompt_normalizer=..., max_attempts_on_failure=0, ...)` | S3 | 构造参数表；关键字构造形状 |
 | V3 | `RedTeamingAttack(objective_target=..., attack_adversarial_config=..., attack_scoring_config=..., max_turns=10, score_last_turn_only=False, ...)` | S3 | 构造参数表，`max_turns` 默认 10 |
 | V4 | `AttackExecutor(max_concurrency=1)`；`execute_attack_async(attack=..., objectives=Sequence[str], field_overrides=..., return_partial_on_failure=False, attribution=..., broadcast_fields=...) -> AttackExecutorResult` | S3 | 构造与方法签名原文 |

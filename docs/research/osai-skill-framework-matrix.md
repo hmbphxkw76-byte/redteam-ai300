@@ -45,7 +45,7 @@
 | 18 | attack-multimodal | P1 | PyRIT（多模态 target）+ 转换器 + 自定义 + 复用 attack-rag 原语 | AI 主分面（跨模态注入） |
 
 > 序号 17/18 为 P3 缺口补齐新增（jailbreak/multimodal），经一手源核实 PyRIT 1.1.0 在两场景占优，按 GOVERNANCE §8.3 显式声明纳入矩阵。详见 `docs/research/attack-jailbreak-multimodal-canonical.md` §4。
-
+>
 > **2026-11-28 补遗（R06/R12）**：技能注册以 GOVERNANCE §4.4 的 **20 技能**为准——本表 18 项之外另有 `foothold-ad`（P0 域控收敛，Kali/impacket 离线工件解析，无 AI 框架参与）与 `osai-orchestrator`（P2 纯逻辑编排，无攻击框架）。当前 PyRIT 锁定目标为 **1.2.1**（`requirements.txt` 与 CI `--target 1.2.1`）；本表 v1.1.0 API 事实为历史基线，1.2.x 适配以 `docs/research/pyrit-version-tracking-1.2.x.md` 与 `docs/operations/pyrit-compat-alignment-matrix.md` 为准（1.2.0 适配集覆盖 1.2.1）；框架归属追踪 issue #252。
 
 ---

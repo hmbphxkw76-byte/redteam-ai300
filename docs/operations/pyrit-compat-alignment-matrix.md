@@ -23,6 +23,6 @@
 
 **运行时实测（2026-11-24）**：本机 Python 3.13 装 `pyrit==1.2.1`，`runtime_probe` 版本匹配、14/14 签名 PASS、确定性 `SubStringScorer` 命中 `true`；证据 `pyrit-compat-runtime-verification.json`。
 
-**汇总**：15/15 PASS；调用点 20/20 分类（映射 5、已核实未变 15、未分类 0）；检查器 `error=0`、`warn=3`、`verdict=PASS`；新版本可扩展性测试 PASS（仅新增事实文件 + 规则）。
+**汇总**：15/15 PASS；检查器 `error=0`、`verdict=PASS`；新版本可扩展性测试 PASS（仅新增事实文件 + 规则）。调用点分类与 warn 计数以实跑为准（2026-11-28 复跑 `python -m tools.pyrit_compat.checker check --root . --target 1.2.1`：sites=34、warn=4），本表不转抄动态计数（C1）。
 
 **未达标项（如实登记）**：1.1.0 与 1.2.0 未在本机安装，其结论仅来自官方 tag 源码，不冒充运行时实测；`XPIATestWorkflow` 端到端对象图仍保留 `signature_unverified` 闸门。见研究文档 §6。

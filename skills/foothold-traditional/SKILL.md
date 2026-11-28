@@ -64,9 +64,9 @@ output: 每台主机「命令 + 输出 + 截图」证据、横向路径图、提
 
 ### 收尾 — 路径沉淀与立足点移交
 
-1. **trad-08 横向路径图沉淀 + 立足点移交**：输出横向路径图（入口 → 各主机 → 汇聚方向，供 Executive Summary 的 High-Level Attack Path 复用），并产出「立足点移交清单」：会话/凭据、可达 AI向量机与独立机的路由、已登记战利品索引，显式满足 `attack-ai-agent` / `attack-rag` / `attack-mcp-tool` 的内网立足点前置（§4.5）。
+1. **trad-08 横向路径图沉淀 + 立足点移交**：输出横向路径图（入口 → 各主机 → 汇聚方向，供 Executive Summary 的 High-Level Attack Path 复用），并产出「立足点移交清单」：会话/凭据、可达 AI向量机与独立机的路由、已登记战利品索引，显式满足 `attack-ai-agent` / `attack-rag` / `attack-mcp-tool` 的内网立足点前置，并向 `foothold-ad` 移交域内立足点（会话/凭据指纹/可达域控路由，§4.5）。
    - 命令：`python tools/collect_evidence.py --step trad-08 --cmd "echo '横向路径图 + 立足点移交清单（见 loot/attack-path.md 与 loot/handoff.md）'" --out loot/trad-08-handoff.md --shot-cmd "screenshot --region path_graph" --target <ATTACK_CHAIN> --strict`
-2. 两台传统向量机均取证后，链内剩余主机为 AI向量机时移交 AI 向量技能；域控收敛由编排层按需触发（非本技能范围）。
+2. 两台传统向量机均取证后，链内剩余主机为 AI向量机时移交 AI 向量技能；域控收敛移交 `foothold-ad`（ad-01 接收 trad-08 移交清单），由编排层按需触发（非本技能范围）。
 
 ## Ch9 入口扩展（加固版，不改 trad-01..08 判据）
 

@@ -149,7 +149,7 @@
 威胁建模(threat-model) → 侦察枚举(recon-ai) → 立足点(foothold-traditional)
   → 链式横向 + AI 向量利用(attack-ai-agent / attack-rag / attack-mcp-tool / attack-embeddings)
   → 独立机(attack-mcp-tool 等) → 战利品沉淀(loot-manage)
-  → 域控收敛(如取分) → 证据校验(verify-evidence) → 报告生成(report-exam)
+  → 域控收敛(foothold-ad，如取分) → 证据校验(verify-evidence) → 报告生成(report-exam)
 ```
 
 **必须边打边写**：证据随攻击同步落盘（`collect_evidence.py --strict`），不得留到提交窗口补写。`threat-model` / `decoy-detect` 为**执行前置**，`capstone-rehearse` 为**考前硬门禁**（未 PASS 不得进入正式考试）；属编排要求，不改 §4.4 与 ADR-0002。
@@ -189,7 +189,7 @@
 
 ### 6.2 证据完整性基线（S3）
 1. flag 值**必须**同时出现在控制面板提交与报告截图/正文中，二者一致；任一缺失即触发失分条款。
-2. flag 取证**必须**附「访问证明」截图（如 `whoami`/`id` + flag 内容），覆盖目标主机路径（`trad_vector.txt`/`ai_vector.txt`/`proof.txt`）。
+2. flag 取证**必须**附「访问证明」截图（如 `whoami`/`id` + flag 内容），覆盖目标主机路径（`trad_vector.txt`/`ai_vector.txt`/`proof.txt`；文件名来源 S1 `OSAI-Exam-Report.pdf` 第 5 页，双通道规则来源 S3，见快照 §10）。
 
 ### 6.3 AI 工具记录基线（S1）
 1. AI 辅助的 payload 生成、提示构造、模型交互**必须**记录到附录，标准不低于其它工具。

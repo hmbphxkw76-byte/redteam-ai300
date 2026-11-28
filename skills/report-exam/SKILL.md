@@ -123,7 +123,7 @@ Table of Contents                              (official，须含 "Offsec AI Red
 - 每个 flag **双通道一致**：控制面板提交值 == 报告正文/截图值（§6.2 / §2.4）；截图须含 `whoami`/`id` + flag 同屏（访问证明）。
 - 每个阶段**有截图**；每个命令/输出/脚本/AI 交互均记录（§6.1 / §6.3）。
 - 域控 `proof.txt` **仅可提交一次**（§2.2）。
-- **提交打包**：整包 `report/` + `evidence/`（保持相对结构），或直接 include 后导出 PDF；打包前 `python scripts/check_report_assets.py <报告>` 须 PASS（规则见 `docs/operations/osai-submission-compliance.md` §6），断图即 `BLOCKED`。
+- **提交打包**：整包 `report/`（按主机片段）+ `reports/`（整份考试报告与 `build/` PDF/.7z）+ `evidence/`（保持相对结构），或直接 include 后导出 PDF；打包前 `python scripts/check_report_assets.py <报告>` 须 PASS（规则见 `docs/operations/osai-submission-compliance.md` §6），断图即 `BLOCKED`。
 
 ---
 
@@ -134,7 +134,7 @@ Table of Contents                              (official，须含 "Offsec AI Red
 | 现有 evidence | 来源技能 | 报告落位 | 备注 |
 |---|---|---|---|
 | `evidence/attack-ai-agent-real/aia-01.md` | `attack-ai-agent` | **Standalone / AI-vector host → Initial Access/Exploitation**（agent I/O 通道、系统提示、护栏基线枚举）+ **Appendix D AI 会话历史** | 真实目标主机 `http://<TARGET>/api/labs/<LAB>/chat`（目标由运行期注入，`tools/target_profile.py`） |
-| `evidence/attack-ai-agent-real/aia-02..aia-12.md` | `attack-ai-agent` | 同上，按 step 顺序归入该主机小节的"漏洞描述与完整利用"段落（提示注入 / 记忆滥用 / 工具滥用） | 当前均**未提供 flag 双通道**（`| flag 双通道 | 否 | 未提供 |`），报告须如实记"未达成/推进中"，不虚构 |
+| `evidence/attack-ai-agent-real/aia-02..aia-04、aia-08..aia-10.md`（本行 6 片段实存，aia-01 见上行；aia-05/06/07/11/12 仅存于演练目录 `evidence/attack-ai-agent/`） | `attack-ai-agent` | 同上，按 step 顺序归入该主机小节的"漏洞描述与完整利用"段落（提示注入 / 记忆滥用 / 工具滥用） | 当前均**未提供 flag 双通道**（`| flag 双通道 | 否 | 未提供 |`），报告须如实记"未达成/推进中"，不虚构 |
 | `evidence/attack-ai-agent/aia-*.md` | `attack-ai-agent`（演练/仿真） | 同结构，小节级标注「非 OSAI 正式考试 / 演练」 | 与 `-real` 区分，避免混入正式提交 |
 
 **映射原则**（工程标准，适配自 failed-projects offsec-report 的 FRS→sections 思路，但改用本仓库管线）：
@@ -261,4 +261,4 @@ Table of Contents                              (official，须含 "Offsec AI Red
 
 > 治理登记：本技能为报告生成的**唯一实现**，已并入原 `offsec-report` 目录内容；GOVERNANCE §4.4 仅以 `report-exam` 登记（原 `offsec-report` 名称弃用）。
 
-主线：`docs/operations/skill-mainline-workflow.md`（C1/C8：11 阶段、to-spec 两遍、G0）。
+> 主线：`docs/operations/skill-mainline-workflow.md`（C1/C8：11 阶段、to-spec 两遍、G0）。

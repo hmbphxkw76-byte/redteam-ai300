@@ -1,7 +1,7 @@
 # OSAI 考试就绪状态清单（演练 · 非提交件）
 
 > **性质**：只读状态标注，不新增权威存储。唯一事实源仍为各被指文件。
-> **生成依据**：`python scripts/validate_skill_mainline.py --root .`（2026-11-25 实测）
+> **生成依据**：`python scripts/validate_skill_mainline.py --root .`（2026-11-25 首测；2026-11-28 复跑 20/20 PASS）
 > **纪律**：本文件不填写真实 flag、OSID、截图或考试环境事实。
 
 ## 1. 目标映射与证据
@@ -12,12 +12,7 @@
 
 ## 2. 技能主线缺口
 
-17 份既有 `SKILL.md` 已全部追加主线唯一可信源指针，校验器不再报「未引用主线」。剩余缺口为历史产物缺失：
-
-- `tooling-automate`、`verify-evidence`：规格 v1/v2 与阶段 2–11 门禁齐全，状态 PASS。
-- `capstone-rehearse`、`attack-supply-chain`：门禁链齐全，具体缺口以校验器输出为准。
-- `report-exam`、`threat-model`：缺 v1/v2 与门禁记录，属高优先级（报告关与规划层）。
-- 其余技能：`docs/operations/` 有设计/审查记录但未形成完整 11 阶段门禁链；本轮不伪造规格与门禁结论。
+20 份 `SKILL.md` 均已追加主线唯一可信源指针；`docs/specs/<skill>-spec-{v1,v2}.md` 与阶段 2–11 门禁记录齐全。2026-11-28 复跑 `python scripts/validate_skill_mainline.py --root . --strict` 实测 **20/20 PASS，退出 0**（含 `report-exam`、`threat-model`、`foothold-ad`、`osai-orchestrator`），无剩余主线缺口。
 
 复跑命令：`python scripts/validate_skill_mainline.py --root .`（默认退出 0，只报告；`--strict` 退出 1）。
 

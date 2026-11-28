@@ -12,8 +12,9 @@ from typing import Iterable, Mapping, Tuple
 from .handoff import all_checks
 from .models import GateResult, Verdict
 
+# 阶段顺序由 GOVERNANCE §4.5（MUST）裁定：威胁建模先于侦察枚举；见 ADR-0009。
 STAGES = (
-    "recon", "threat-model", "foothold", "ai-vector", "standalone",
+    "threat-model", "recon", "foothold", "ai-vector", "standalone",
     "loot", "dc", "verify", "report",
 )
 

@@ -123,6 +123,6 @@ output: 每步「命令 + 输出 + 截图」证据、域级攻击路径图、凭
 - **ADCS 无注册端点**：记 `ABSENT` 并说明探测范围，不将「未发现」写成「不存在」。
 - **跨域动作无 ACL 放行**：即时阻断并记录条目缺失，不绕行既有区际策略。
 - **疑似诱饵域控**：0 分或与资产清单不符时，记录依据后移交 `decoy-detect` 判定，≤30 分钟结束。
-- **语境冲突**：`osai-rehearsal` 下无 `proof.txt` 要求，按计分单元（AI向量机/传统向量机/独立机）产出，不把课程目标当考试要求。
+- **语境冲突**：`osai-rehearsal` 下域控 `proof.txt` 为**可选 5 分计分项**（§2.2）——取分时仍须双通道一致 + 单次提交（`verify-evidence` proof-single），未取分按「未达成」豁免记录；按计分单元（AI向量机/传统向量机/独立机/域控）产出，不把课程 Domain Admin 目标当考试硬性要求。
 
-> 主线：`docs/operations/skill-mainline-workflow.md`（C1/C8：11 阶段、to-spec 两遍、G0）。当前状态为**可执行增量**，阶段 1–11 待补，见设计文档 §9；`capstone-rehearse` 中只能记 `PARTIAL`。
+> 主线：`docs/operations/skill-mainline-workflow.md`（C1/C8：11 阶段、to-spec 两遍、G0）。阶段 1–11 门禁已齐全（`docs/operations/foothold-ad-gate-stage2..11.md`，`validate_skill_mainline.py` 实测 PASS）；`capstone-rehearse` 按实际覆盖记就绪。

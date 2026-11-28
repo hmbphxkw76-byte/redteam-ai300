@@ -266,6 +266,17 @@ def judge_model_service(results, ctx):
                          context={"chat": chat, "runs": runs,
                                   "endpoint": chat.url})
 
+    if (chat.ok and not is_spa_fallback(chat)
+            and "application/json" in (chat.content_type or "")
+            and ECHO_MARKER in (chat.body or "")):
+        return Judgement(Existence.PRESENT, product="聊天会话面（JSON 回显）",
+                         version="不可判定", signature="echo round-trip",
+                         note="聊天端点将无害回显 `%s` 原样返回（非 SSE/OpenAI 结构）"
+                              % ECHO_MARKER,
+                         basis="聊天端点 JSON 响应含回显标记，会话面可用",
+                         context={"chat": chat, "runs": runs,
+                                  "endpoint": chat.url})
+
     catalog, product, why = _model_catalog(results)
     if catalog is not None:
         return Judgement(Existence.PRESENT, product=product,
@@ -382,12 +393,26 @@ def _agent_inventory(results):
     return None, None
 
 
+_AGENT_CARD_NAMES = ("agent.json", "agent-card.json")
+
+
+def _agent_card_name(url):
+    """返回 URL 末段的 Agent Card 文件名（agent.json / agent-card.json），否则空串。"""
+    tail = url.split("?")[0].rstrip("/").rsplit("/", 1)[-1]
+    return tail if tail in _AGENT_CARD_NAMES and url.split("?")[0].rstrip(
+        "/").endswith("/.well-known/" + tail) else ""
+
+
 def _agent_card(results):
-    """从 recon-05 结果中识别合法 A2A Agent Card（纯函数，不推断）。"""
+    """从 recon-05 结果中识别合法 A2A Agent Card（纯函数，不推断）。
+
+    新旧规范路径同时接受：0.x 为 `/.well-known/agent.json`，
+    ≥0.2.5 迁移到 `/.well-known/agent-card.json`。
+    """
     for result in results or ():
         if result is None or result.error or not result.ok or is_spa_fallback(result):
             continue
-        if not result.url.split("?")[0].rstrip("/").endswith("/.well-known/agent.json"):
+        if not _agent_card_name(result.url):
             continue
         try:
             data = json.loads(result.body or "")
@@ -462,18 +487,25 @@ def judge_agent(results, ctx):
     if card is not None:
         skills = [str(s.get("id") or s.get("name") or "")
                   for s in card["skills"] if isinstance(s, dict)]
+        protocol_version = str(card.get("protocolVersion") or "")
+        if not protocol_version:
+            for itf in card.get("supportedInterfaces") or ():
+                if isinstance(itf, dict) and itf.get("protocolVersion"):
+                    protocol_version = str(itf["protocolVersion"])
+                    break
+        card_name = _agent_card_name(card_source.url)
         ctx["agent_card"] = {
             "name": card["name"],
-            "protocol_version": str(card.get("protocolVersion") or ""),
+            "protocol_version": protocol_version,
             "skills": [s for s in skills if s],
         }
         return Judgement(Existence.PRESENT,
                          product="A2A Agent Card（%s）" % card["name"],
-                         version=str(card.get("protocolVersion") or "不可判定"),
-                         signature="well-known/agent.json",
+                         version=protocol_version or "不可判定",
+                         signature="well-known/%s" % card_name,
                          note="`%s` 返回 Agent Card，skills=%s"
                               % (card_source.url, ",".join(ctx["agent_card"]["skills"]) or "空"),
-                         basis="`/.well-known/agent.json` 返回 name/description/skills",
+                         basis="`/.well-known/%s` 返回 name/description/skills" % card_name,
                          context={"agent_card": ctx["agent_card"],
                                   "endpoint": card_source.url})
 
@@ -726,6 +758,12 @@ def request_path(req, ctx):
 
 
 def _chat_body(ctx):
+    """回显请求体：画像 extra.chat_body 模板优先（{echo} 占位），其次族推断。"""
+    profile = ctx.get("target_profile") or target_profile.GENERIC
+    tpl = profile.extra.get("chat_body")
+    if isinstance(tpl, dict) and tpl:
+        return {str(k): (v.replace("{echo}", ECHO_MARKER) if isinstance(v, str) else v)
+                for k, v in tpl.items()}
     plan = ctx.get("plan")
     if plan is not None and getattr(plan, "family", "") == "dvaa":
         return {"model": "dvaa",
@@ -793,6 +831,8 @@ STEP_SPECS: Tuple[StepSpec, ...] = (
             RequestSpec("agentic 实验面", "GET", endpoint_key="summary", lab_role="agent", timeout=10),
             RequestSpec("运行遥测", "GET", endpoint_key="runs", timeout=10),
             RequestSpec("A2A Agent Card", "GET", endpoint_key="agent_card", timeout=10),
+            RequestSpec("A2A Agent Card (v2)", "GET", endpoint_key="agent_card_v2",
+                        timeout=10),
         ),
     ),
     StepSpec(

@@ -207,7 +207,7 @@ def main(argv=None):
         target_obj = (target_profile_mod.resolve(args.target_profile)
                       if getattr(args, "target_profile", None)
                       else target_profile_mod.current())
-        headers = _parse_headers(getattr(args, "header", []))
+        headers = target_obj.merged_headers(_parse_headers(getattr(args, "header", [])))
         report = runner.run_recon(
             target=args.target, profile=profile, lab=args.lab,
             out_dir=args.out_dir or None,

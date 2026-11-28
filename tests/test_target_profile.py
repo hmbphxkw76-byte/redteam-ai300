@@ -9,6 +9,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 from tests._paths import ROOT  # noqa: E402
 if ROOT not in sys.path:
@@ -105,6 +106,119 @@ class McpAdapterTests(unittest.TestCase):
     def test_step_symbol_remapped_per_target(self):
         self.assertEqual(self._session_lab(tp.from_mapping(PROFILE_A)), "MCP_A")
         self.assertEqual(self._session_lab(tp.from_mapping(PROFILE_B)), "TOOL_B")
+
+
+class ProfileHeadersTests(unittest.TestCase):
+    """画像级请求头：令 Host 绑定类目标仅经配置适配，不落在命令行或代码里。"""
+
+    def test_headers_roundtrip_and_default_empty(self):
+        p = tp.from_mapping({"name": "h1", "headers": {"Host": "alias.example:8100"}})
+        self.assertEqual(dict(p.headers), {"Host": "alias.example:8100"})
+        self.assertEqual(dict(p.to_dict()["headers"]), {"Host": "alias.example:8100"})
+        self.assertEqual(dict(tp.GENERIC.headers), {})
+
+    def test_headers_must_be_mapping(self):
+        with self.assertRaises(ValueError):
+            tp.from_mapping({"name": "bad", "headers": "Host:alias"})
+
+    def test_merged_headers_cli_overrides(self):
+        p = tp.from_mapping({"name": "h2",
+                             "headers": {"Host": "alias.example", "X-Prof": "1"}})
+        self.assertEqual(dict(p.merged_headers({"Host": "cli.example"})),
+                         {"Host": "cli.example", "X-Prof": "1"})
+        self.assertEqual(dict(p.merged_headers()), {"Host": "alias.example",
+                                                    "X-Prof": "1"})
+
+
+class ProfilePathResolveTests(unittest.TestCase):
+    """resolve 须兑现 CLI 帮助承诺：画像名或直接 JSON 文件/目录路径。"""
+
+    def test_resolve_by_json_path(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "profiles.json")
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump({"profiles": [PROFILE_A]}, fh)
+            self.assertEqual(tp.resolve(path).name, "alpha")
+
+    def test_resolve_path_unknown_name_still_errors(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "profiles.json")
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump({"profiles": [PROFILE_A]}, fh)
+            with self.assertRaises(ValueError):
+                tp.resolve(os.path.join(d, "missing.json"))
+
+
+class CliProfileHeaderTests(unittest.TestCase):
+    """两个 CLI：画像 headers 自动进入请求头，--header 同名覆盖。"""
+
+    def test_recon_cli_merges_profile_headers(self):
+        from tools.recon_ai import cli as recon_cli
+        captured = {}
+
+        def fake_run_recon(*a, **k):
+            captured.update(k)
+            raise ValueError("STOP")
+
+        with tempfile.TemporaryDirectory() as d:
+            reg = os.path.join(d, "profiles.json")
+            with open(reg, "w", encoding="utf-8") as fh:
+                json.dump({"profiles": [{"name": "hp", "host": "hp.example",
+                                         "headers": {"Host": "alias.example:8100",
+                                                     "X-Prof": "1"}}]}, fh)
+            with mock.patch.dict(os.environ, {tp.ENV_REGISTRY: reg}), \
+                    mock.patch.object(recon_cli.runner, "run_recon", fake_run_recon):
+                rc = recon_cli.main(["run", "--target", "http://hp.example:8100",
+                                     "--target-profile", "hp", "--no-shots"])
+            self.assertEqual(rc, 2)  # ValueError("STOP") → 用法错误出口
+            self.assertEqual(captured.get("extra_headers"),
+                             {"Host": "alias.example:8100", "X-Prof": "1"})
+
+    def test_recon_cli_header_flag_overrides_profile(self):
+        from tools.recon_ai import cli as recon_cli
+        captured = {}
+
+        def fake_run_recon(*a, **k):
+            captured.update(k)
+            raise ValueError("STOP")
+
+        with tempfile.TemporaryDirectory() as d:
+            reg = os.path.join(d, "profiles.json")
+            with open(reg, "w", encoding="utf-8") as fh:
+                json.dump({"profiles": [{"name": "hp", "host": "hp.example",
+                                         "headers": {"Host": "alias.example:8100"}}]}, fh)
+            with mock.patch.dict(os.environ, {tp.ENV_REGISTRY: reg}), \
+                    mock.patch.object(recon_cli.runner, "run_recon", fake_run_recon):
+                recon_cli.main(["run", "--target", "http://hp.example:8100",
+                                "--target-profile", "hp", "--no-shots",
+                                "--header", "Host: cli.example"])
+            self.assertEqual(captured.get("extra_headers"), {"Host": "cli.example"})
+
+    def test_mcp_cli_merges_profile_headers(self):
+        from tools.attack_mcp_tool import cli as mcp_cli
+        captured = {}
+
+        def fake_client(extra_headers=None):
+            captured["h"] = extra_headers
+            return object()
+
+        def fake_run_attack(request, runtime):
+            raise ValueError("STOP")
+
+        with tempfile.TemporaryDirectory() as d:
+            reg = os.path.join(d, "profiles.json")
+            with open(reg, "w", encoding="utf-8") as fh:
+                json.dump({"profiles": [{"name": "hp", "host": "hp.example",
+                                         "headers": {"Host": "alias.example:8100"}}]}, fh)
+            with mock.patch.dict(os.environ, {tp.ENV_REGISTRY: reg}), \
+                    mock.patch.object(mcp_cli, "UrllibHttpClient", fake_client), \
+                    mock.patch.object(mcp_cli, "run_attack", fake_run_attack):
+                rc = mcp_cli.main(["--target", "http://hp.example/mcp",
+                                   "--mode", "jsonrpc", "--step", "mcp-01",
+                                   "--no-emit", "--no-shot",
+                                   "--target-profile", "hp"])
+            self.assertEqual(rc, 2)
+            self.assertEqual(captured.get("h"), {"Host": "alias.example:8100"})
 
 
 if __name__ == "__main__":

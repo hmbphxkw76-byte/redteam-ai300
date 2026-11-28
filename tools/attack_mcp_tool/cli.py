@@ -67,13 +67,13 @@ def _parse_headers(values):
 def main(argv=None, runtime=None):
     """命令行主函数；`runtime` 可注入（测试用替身即离线，AC-18）。"""
     args = build_parser().parse_args(argv)
+    profile = (target_profile_mod.resolve(args.target_profile)
+               if args.target_profile else target_profile_mod.current())
     try:
-        headers = _parse_headers(args.header)
+        headers = profile.merged_headers(_parse_headers(args.header))
     except ValueError as exc:
         print("ERROR: %s" % exc, file=sys.stderr)
         return 2
-    profile = (target_profile_mod.resolve(args.target_profile)
-               if args.target_profile else target_profile_mod.current())
     request = AttackRequest(
         target=args.target, mode=args.mode,
         labs=tuple(args.lab) if args.lab else (),

@@ -42,6 +42,7 @@ GENERIC_ENDPOINTS: Dict[str, str] = {
     "summary": "/api/labs/{lab}/summary",
     "secret_validate": "/api/secrets/validate",
     "agent_card": "/.well-known/agent.json",
+    "agent_card_v2": "/.well-known/agent-card.json",
     "tools_list": "/tools/list",
 }
 
@@ -55,6 +56,7 @@ class TargetProfile:
     model: str = PLACEHOLDER_MODEL
     labs: Mapping[str, str] = field(default_factory=dict)
     endpoints: Mapping[str, str] = field(default_factory=lambda: dict(GENERIC_ENDPOINTS))
+    headers: Mapping[str, str] = field(default_factory=dict)
     extra: Mapping[str, object] = field(default_factory=dict)
     description: str = ""
 
@@ -83,10 +85,17 @@ class TargetProfile:
             template = template.replace("{%s}" % name, str(value))
         return template
 
+    def merged_headers(self, overrides: Optional[Mapping[str, str]] = None) -> dict:
+        """画像请求头与调用方显式头合并；同名时调用方覆盖（目标值不落代码）。"""
+        merged = {str(k): str(v) for k, v in self.headers.items()}
+        merged.update({str(k): str(v) for k, v in (overrides or {}).items()})
+        return merged
+
     def to_dict(self) -> dict:
         return {
             "name": self.name, "host": self.host, "model": self.model,
             "labs": dict(self.labs), "endpoints": dict(self.endpoints),
+            "headers": dict(self.headers),
             "extra": dict(self.extra), "description": self.description,
         }
 
@@ -103,12 +112,16 @@ def from_mapping(data: Mapping[str, object]) -> TargetProfile:
     if not isinstance(supplied, Mapping):
         raise ValueError("目标画像 endpoints 必须是映射")
     endpoints.update(supplied)
+    raw_headers = data.get("headers") or {}
+    if not isinstance(raw_headers, Mapping):
+        raise ValueError("目标画像 headers 必须是映射")
     return TargetProfile(
         name=str(data.get("name") or "custom"),
         host=str(data.get("host") or PLACEHOLDER_HOST),
         model=str(data.get("model") or PLACEHOLDER_MODEL),
         labs=dict(data.get("labs") or {}),
         endpoints=endpoints,
+        headers={str(k): str(v) for k, v in raw_headers.items()},
         extra=dict(data.get("extra") or {}),
         description=str(data.get("description") or ""),
     )
@@ -141,8 +154,17 @@ def registry(path: Optional[str] = None) -> Dict[str, TargetProfile]:
 
 
 def resolve(name: Optional[str] = None, path: Optional[str] = None) -> TargetProfile:
-    """按名称解析画像；未指定时读环境变量，仍缺则返回 generic。"""
+    """按名称解析画像，或直接给画像 JSON 文件/目录路径（路径内须恰一份画像）。
+
+    未指定时读环境变量，仍缺则返回 generic。
+    """
     chosen = name or os.environ.get(ENV_PROFILE, "") or "generic"
+    if os.path.isdir(chosen) or os.path.isfile(chosen):
+        loaded = {k: v for k, v in registry(chosen).items() if k != "generic"}
+        if len(loaded) == 1:
+            return next(iter(loaded.values()))
+        raise ValueError("路径画像须恰含 1 份（当前 %d 份），请改用画像名 + %s" % (
+            len(loaded), ENV_REGISTRY))
     profiles = registry(path)
     if chosen not in profiles:
         raise ValueError("未知目标画像 %r；可用：%s" % (

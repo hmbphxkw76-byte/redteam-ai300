@@ -46,6 +46,10 @@ RULES = (
     Rule("llm_status",
          r'"provider"\s*:\s*"[^"]+"[\s\S]{0,240}?"model"\s*:\s*"([^"]+)"',
          "模型运行时状态", Category.LLM_ENGINE, product_group=1),
+    # 通用模型声明键：运行时配置/健康端点直接暴露 model 族字段
+    Rule("model_key",
+         r'"(?:model|model_name|llm_model|default_model)"\s*:\s*"([^"]+)"',
+         "运行时配置模型声明", Category.LLM_ENGINE, product_group=1),
     # OpenAI 兼容聊天响应的 JSON（非 SSE）
     Rule("openai_chat_json", r'"object"\s*:\s*"chat\.completion"',
          "OpenAI 兼容聊天 API（JSON）", Category.MODEL_SERVICE),

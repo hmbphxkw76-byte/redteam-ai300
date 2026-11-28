@@ -114,7 +114,9 @@ COLD_GLOBS = (
     "docs/research/pyrit-native-api-attack-ai-agent.md",
     "docs/research/pyrit-v110-api-verification.md",
     "skills/report-exam/templates/*.md",
-    "skills/attack-rag/examples/*.md",
+    "skills/*/examples/*.md",
+    "docs/operations/*-gate-stage*.md",
+    "docs/operations/*-implementation.md",
     ".workbuddy/memory/2026-*.md",  # 本地日志（gitignore，由 --local 单独报告）
 )
 

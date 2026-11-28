@@ -57,9 +57,9 @@
 | 覆盖率 | `python scripts/measure_coverage.py --target osai-exam-readiness --min 80` | 369/426 = 86.6%，PASS |
 | 术语 | `python scripts/check_glossary.py` | PASS（66 废弃术语） |
 | 预算 | `python scripts/check_token_budget.py --check` | PASS |
-| 技能 | `python scripts/validate_skill.py` | 17/17 PASS |
+| 技能 | `python scripts/validate_skill.py` | 20/20 PASS |
 | 契约 | `check_contract_manifest.py --check` + `check_contract_consumers.py --check` | 双 PASS |
-| 证据链实况 | `python tools/evidence_pipeline.py --target-map docs/operations/osai-target-map.md --root .` | BLOCKED 8 项（如实） |
+| 证据链实况 | `python tools/evidence_pipeline.py --target-map docs/operations/osai-target-map.md --root .` | BLOCKED 9 项（如实，2026-11-28 复跑） |
 
 ## 6. 风险控制
 
@@ -77,8 +77,8 @@
 1. **P0（立即）**：考试窗口内按 `osai-target-map.md` 逐目标填真实证据；每步用 `--exam --scored-target --strict` 生成片段；任一 BLOCKED 不得进入报告。
 2. **P0**：用 `preflight.py` 扫描报告占位文本并在导出 PDF 前清零；提交件命名/MD5 按官方规则复核。
 3. **P1**：为 AI 向量 4 台（60 分）与独立机（15 分）优先跑通 recon→证据→report，确保 75 分最小组合；再补传统/DC 25 分冲击 ≥85。
-4. **P1**：补齐幽灵技能 `attack-jailbreak` / `attack-multimodal` 的 `SKILL.md` 与主线留痕；迁移 24 份影子规格。
-5. **P2**：为剩余 11 技能补齐规范路径规格与阶段门禁记录（本轮只补了指针，不伪造历史结论）；在真实环境中执行 CI S3/S4。
+4. **P1（已完成）**：幽灵技能 `attack-jailbreak` / `attack-multimodal` 的 `SKILL.md` 与主线留痕已补齐；24 份影子规格已归档 `docs/specs/legacy-root/`。
+5. **P2（已完成）**：20 技能规范路径规格与阶段门禁记录齐全，`validate_skill_mainline.py --strict` 退出 0；main CI 绿（2026-11-28 `gh run list`）。
 
 ## 8. 后续规划（进入/退出条件）
 

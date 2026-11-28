@@ -13,7 +13,7 @@
 | T5 | 15 | 独立机 | attack-infra | 待考试窗口填写 | 待取证 | §T5 | 未就绪 |
 | T6 | 10 | 传统向量 | foothold-traditional | 待考试窗口填写 | 待取证 | §T6 | 未就绪 |
 | T7 | 10 | 传统向量 | foothold-traditional | 待考试窗口填写 | 待取证 | §T7 | 未就绪 |
-| T8 | 5 | 域控 | foothold-traditional | 待考试窗口填写 | 待提交一次 | §T8 | 未就绪 |
+| T8 | 5 | 域控 | foothold-ad | 待考试窗口填写 | 待提交一次 | §T8 | 未就绪 |
 
 ## 只读校验
 

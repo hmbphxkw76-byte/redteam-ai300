@@ -12,6 +12,8 @@ output: 可调用的运行时能力模块 tools/osai_orchestrator/（19 项能�
 
 把迁移清单中的 A/B 类判据实现为纯逻辑能力层，**只增强既有技能，不修改、不替代任何既有 `skills/*/`**。工具执行经 `tooling-automate` 的 S-1 入口，版本兼容经 `tools/pyrit_compat/` 注册表，证据收口经 `tools/collect_evidence.py`。
 
+> 增量模块（`handoff` / `d11_gateway` / `exam_flow`）由 `docs/specs/osai-orchestrator-spec-v2.md`（AC-16..18）与 `docs/operations/osai-handoff-gateway-design.md`、`docs/operations/osai-exam-readiness-design.md` 承接；技能级全量定稿以 spec-v2 为准（C1 指针，不转抄）。
+
 ## 执行体
 
 按「运行时监督 → 计划与人在环 → 上下文与记忆治理 → 工具治理 → 报告治理」五域推进。

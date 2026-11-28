@@ -26,7 +26,7 @@ output: 演练报告（覆盖度矩阵 / 24h 节奏时间线 / 缺口与补强�
 ### 1. 流水线全谱系走查
 
 1. 逐阶段核对 §4.5 九个阶段，确认对应技能已就绪且证据链贯通：
-   - `threat-model`（D10）高价值排序 → `recon-ai` 资产枚举 → `foothold-traditional`（D1）入口/横向/提权 → `foothold-ad`（D1）域级升级与域控收敛（阶段 1–11 待补，当前只能记 `PARTIAL`）→ 链式 AI 利用（`attack-rag` D5 / `attack-embeddings` D6 / `attack-multi-agent` D4 / `attack-infra` D9 / `attack-supply-chain` D8 / `attack-mcp-tool` D7 / `attack-ai-agent` D3）→ 独立机 → `loot-manage` 战利品 → 域控 `proof.txt` 单次提交 → `verify-evidence` 全量校验 → `report-exam` 报告。
+   - `threat-model`（D10）高价值排序 → `recon-ai` 资产枚举 → `foothold-traditional`（D1）入口/横向/提权 → `foothold-ad`（D1）域级升级与域控收敛（门禁齐全，按实际覆盖记就绪）→ 链式 AI 利用（`attack-rag` D5 / `attack-embeddings` D6 / `attack-multi-agent` D4 / `attack-infra` D9 / `attack-supply-chain` D8 / `attack-mcp-tool` D7 / `attack-ai-agent` D3）→ 独立机 → `loot-manage` 战利品 → 域控 `proof.txt` 单次提交 → `verify-evidence` 全量校验 → `report-exam` 报告。
 2. 对每个阶段产出「就绪 / `PARTIAL`（因预算或时间盒截断，覆盖不全）/ 未就绪」三态标记；`PARTIAL` 与「未就绪」同入缺口清单，须附截断依据（步骤标识 + 预算/时间盒证据路径），不得计入「已通过」。
 3. 核对证据链：上游产物（如 recon 资产清单）能被下游（如 threat-model 排序、report-exam 引用）无损消费。
 

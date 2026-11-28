@@ -4,7 +4,8 @@
 
 解析 `skills/foothold-traditional/SKILL.md` Ch9 段中反引号引用的
 `tools/foothold_traditional/<module>.py#<symbol>` 与函数名，检查字面存在。
-零外部依赖；返回非 0 表示有失效引用。
+**范围限定**：仅覆盖 foothold-traditional Ch9 段，非全仓引用校验（全仓 SKILL
+引用另由 `validate_skill.py` 与审计抽查承载）。零外部依赖；返回非 0 表示有失效引用。
 """
 import os
 import re

@@ -10,10 +10,12 @@
 | 部分覆盖 | 13 | 26% |
 | 未覆盖 | 7 | 14% |
 
-**总体判定：主体覆盖，结构性缺口仅剩 AD 域渗透。**
+**总体判定：主体覆盖；原 AD 域渗透结构性缺口已由 `foothold-ad`（ad-01..08）补齐，主线门禁 PASS（2026-11-28 复核）。**
+
+> 注：覆盖计数（30/13/7）为 2026-11-15 基线；AD 行已于 2026-11-28 由 `foothold-ad` 补齐，未逐条重算其余 49 场景。
 
 1. **AI 攻面向覆盖度高**：Ch3–Ch10 的 agent / A2A / RAG / embedding / MCP / 供应链 / 基础设施 / 威胁建模场景，均有对应技能的稳定 step_id 与证据契约承载，未发现「文档有、技能无」的整类 AI 攻击面缺失。
-2. **传统侧存在结构性缺口**：Ch11 的 AD 域渗透（Kerberos、ADCS、DCSync、跨域信任）在 `skills/` 内**无任何承载技能**；`foothold-traditional` 止于入口/横向/本地提权，`capstone-rehearse` 仅做走查与缺口登记。该缺口直接对应 capstone 的 Domain Admin 目标与 `proof.txt` 计分。
+2. **传统侧 AD 缺口已补齐（2026-11-28 更新）**：Ch11 的 AD 域渗透（Kerberos、ADCS、DCSync、跨域信任）原无承载技能，现已由 `foothold-ad`（ad-01..08，承接 `foothold-traditional` trad-08 移交）承载，`tools/foothold_ad/cli` 提供离线工件解析与来源核验，无域环境按 `BLOCKED` 纪律；`capstone-rehearse` 按实际覆盖记就绪。该能力对应 capstone 的 Domain Admin 目标与 `proof.txt` 计分。
 3. **环境搭建类条目不计入覆盖判定**：Ch1 的 VM/Docker 基线、Ch2 的 13 容器编排、Ch9 的 LocalStack/k3s 搭建属靶场构建，不属攻击能力；本文仅在影响演练复现时标注（见 §5）。
 
 ## 2. 判定标准
@@ -101,14 +103,14 @@
 | ch10 | 三条风险链验证 | `threat-model` + `recon-ai` | 完整 |
 | ch11 | 三域森林、双向信任、双归属主机 | `foothold-traditional` trad-05/06（横向） | 部分：覆盖横向路径，不承载域信任滥用 |
 | ch11 | 课程 10 步攻击路径验收 | `capstone-rehearse` 全谱系走查 | 部分：走查与缺口登记，不执行 AD 利用 |
-| ch11 | AD 域提权与域控收敛（含 ADCS、Kerberos） | 无 | **未覆盖** |
-| ch11 | 域控 `proof.txt` 单次提交 | `verify-evidence`（proof-single 约束） | 完整（提交侧完整，依赖上一行攻击侧补齐） |
+| ch11 | AD 域提权与域控收敛（含 ADCS、Kerberos） | `foothold-ad` ad-01..08 | 完整（2026-11-28 补齐；离线工件夹具，无域环境 BLOCKED） |
+| ch11 | 域控 `proof.txt` 单次提交 | `verify-evidence`（proof-single 约束） | 完整（提交侧完整；攻击侧已由 `foothold-ad` 承载） |
 
 ## 4. 缺口清单（按得分相关性 × 实现成本排序）
 
 | 优先级 | 缺口 | 得分相关性 | 实现成本 | 建议落点 |
 |---|---|---|---|---|
-| P0 | AD 域渗透与域控收敛 | 高：capstone 目标为 Domain Admin，`proof.txt` 属高杠杆计分 | 高：需新增技能与证据契约 | 新增 `foothold-ad`（或不扩充 `foothold-traditional` 的 Ch11 章），以离线解析器 + 工件夹具为主，无域环境标 `BLOCKED` |
+| P0 | AD 域渗透与域控收敛 | 高：capstone 目标为 Domain Admin，`proof.txt` 属高杠杆计分 | 高：需新增技能与证据契约 | **已实施**：`foothold-ad`（ad-01..08）+ `tools/foothold_ad/cli` 离线解析器与工件夹具，无域环境标 `BLOCKED`（2026-11-28） |
 | P0 | 影子 API 端点发现 | 中：Ch2 明确侦察目标，直接影响资产清单完整性 | 低：`recon-ai` 增判据 | **已实施**（recon-05「关键输出」+ `shadow.py`，不新增 step_id） |
 | P1 | 追踪服务未授权（Phoenix/MLflow UI） | 中：数据面外泄入口，常与 RAG 链串联 | 低：`attack-rag` 增一步 | rag-11（或并入 rag-00 面定位） |
 | P1 | 元数据聚合枚举（GraphQL Aggregate） | 中：Ch6 目标 3 的独立攻击面 | 低：`attack-embeddings` 增 emb-c9 | 复用 recon-05 introspection 结果 |
@@ -142,6 +144,6 @@
 
 ## 7. 附：来源与口径
 
-- 文档源：`D:\下载\temp\lab\ch00.md`–`ch11.md`、`MegaCorpOne-三区靶场环境搭建手册.md`、`AI-300-lab-topology.html`（场景抽取依据各章 §0.1 目标与 §4.3 攻击面核对表）。
+- 文档源：`D:\下载\temp\lab\ch00.md`–`ch11.md`、`MegaCorpOne-三区靶场环境搭建手册.md`、`AI-300-lab-topology.html`（场景抽取依据各章 §0.1 目标与 §4.3 攻击面核对表）。**注（R17）**：上述源文档位于仓库外、未入库，属外部依赖；异机复核须先取得该源，否则仅能复核本文档结论。
 - 技能源：`skills/*/SKILL.md`（step_id 契约）、`tools/*/`（实现入口）。
 - 判定口径见 §2；未纳入判定的环境搭建条目见 §5。

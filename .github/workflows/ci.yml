@@ -81,8 +81,9 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           printf '%s' "$PR_BODY" > /tmp/osai_pr_body.md
-          git fetch --depth=1 origin "$BASE_SHA" || true
-          CHANGED="$(git diff --name-only "$BASE_SHA" HEAD 2>/dev/null || true)"
+          # fail-closed（ADR-0007 ③）：fetch/diff 失败即阻断，不得静默放行契约漂移。
+          git fetch --depth=1 origin "$BASE_SHA"
+          CHANGED="$(git diff --name-only "$BASE_SHA" HEAD)"
           python scripts/check_contract_manifest.py --pr-body /tmp/osai_pr_body.md --changed $CHANGED
       - name: 显式清单语法编译 (S1)
         # 编译范围唯一来源 scripts/tools_manifest.json；补齐原遗漏 5 包 + 10 脚本。

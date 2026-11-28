@@ -19,7 +19,9 @@ def blocked(name):
 
 class ExamFlowTests(unittest.TestCase):
     def test_stage_order_is_fixed(self):
-        self.assertEqual(STAGES[0], "recon")
+        # GOVERNANCE §4.5（MUST）：威胁建模 → 侦察枚举 → …；ADR-0009 对齐实现与宪法。
+        self.assertEqual(STAGES[0], "threat-model")
+        self.assertEqual(STAGES[1], "recon")
         self.assertEqual(STAGES[-1], "report")
         self.assertEqual(len(STAGES), 9)
 
@@ -47,7 +49,7 @@ class ExamFlowTests(unittest.TestCase):
             report_steps=["recon-01"], recon_steps=["recon-01"], hosts=["10.0.0.1"],
             submission=(True, True, True))
         self.assertFalse(ok)
-        self.assertEqual(stage, "recon")
+        self.assertEqual(stage, "threat-model")
 
     def test_run_with_handoffs_passes_when_all_gates_green(self):
         asset = {"asset_id": "A-1", "category": "ai", "product": "p", "version": "1",
@@ -65,7 +67,7 @@ class ExamFlowTests(unittest.TestCase):
         p = ExamPipeline()
         stage, ok = p.advance(gates("H1"))
         self.assertTrue(ok)
-        self.assertEqual(stage, "threat-model")
+        self.assertEqual(stage, "recon")
         stage, ok = p.advance(gates("H1"))
         self.assertTrue(ok)
         self.assertEqual(stage, "foothold")

@@ -45,6 +45,8 @@
 | 18 | attack-multimodal | P1 | PyRIT（多模态 target）+ 转换器 + 自定义 + 复用 attack-rag 原语 | AI 主分面（跨模态注入） |
 
 > 序号 17/18 为 P3 缺口补齐新增（jailbreak/multimodal），经一手源核实 PyRIT 1.1.0 在两场景占优，按 GOVERNANCE §8.3 显式声明纳入矩阵。详见 `docs/research/attack-jailbreak-multimodal-canonical.md` §4。
+>
+> **2026-11-28 补遗（R06/R12）**：技能注册以 GOVERNANCE §4.4 的 **20 技能**为准——本表 18 项之外另有 `foothold-ad`（P0 域控收敛，Kali/impacket 离线工件解析，无 AI 框架参与）与 `osai-orchestrator`（P2 纯逻辑编排，无攻击框架）。当前 PyRIT 锁定目标为 **1.2.1**（`requirements.txt` 与 CI `--target 1.2.1`）；本表 v1.1.0 API 事实为历史基线，1.2.x 适配以 `docs/research/pyrit-version-tracking-1.2.x.md` 与 `docs/operations/pyrit-compat-alignment-matrix.md` 为准（1.2.0 适配集覆盖 1.2.1）；框架归属追踪 issue #252。
 
 ---
 
@@ -175,5 +177,5 @@
 - 框架决策：`docs/research/osai-ai300-framework-decision.md`
 - 考试事实：S3 快照 `docs/governance/references/OSAI-Exam-Guide-snapshot.md`
 - PyRIT 规范：`docs/research/pyrit-canonical-references.md`、`pyrit-v110-api-verification.md`
-- 工具精选源文档：`D:\下载\osai-ai300-skill-coverage-decision.md`
+- 工具精选源文档：`D:\下载\osai-ai300-skill-coverage-decision.md`（仓库外外部依赖，未入库；异机复核须先取得该源）
 - 技能元数据：`skills/*/SKILL.md`（priority / domain 字段）

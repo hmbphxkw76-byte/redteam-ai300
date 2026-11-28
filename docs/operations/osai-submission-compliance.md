@@ -25,6 +25,7 @@
 - **依据**：§5.2 战利品必须可被报告生成阶段无损回溯；registry.md 是单一事实源。
 - **方案对比**：A 入库（可回溯、有先例）｜B 不入库（登记簿断裂，报告生成缺索引）。
 - **采用 A**：已 commit（`5871d2c`）。理由：登记簿只存 flag 的索引（值 + 路径），证据本体在 gitignore 目录；入库是实现「无损回溯」的前提。
+- **补注（R01，2026-11-28）**：入库 `registry.md` 仅限**演练靶场夹具**（DVAA/MCP lab 演示值，字面含 `dvaa-demo`/`do-not-use-in-production`/`test-key`；来源为 RFC1918 私有实验网段）。真实考试 flag/凭据登记簿**不得入公开 git**——按 §1 与 §6.1 落 gitignored `evidence/`+`loot/*`，本地供 verify-evidence 双通道机检，不提交。残余风险（公开仓含演示密钥样式与私有网段）定性为**低**：演示值非真实机密、RFC1918 不可公网路由；缓解：考试窗口严禁把真实值写入入库登记簿，靶场凭据若复用于真实 engagement 须先轮换。**不采脱敏**：脱敏值/IP 会破坏 `tools/loot_manage/registry.py:279` 主机可追溯门与 `parse_dual` 双通道机检，并触碰 loot-manage B5 冻结判据（C8 相邻），得不偿失。
 
 ### 决策 3：报告 `report/` 入库
 
@@ -72,7 +73,8 @@
 | 设计/验证/术语/审查/决策 | `docs/operations/` | ✅ |
 | 战利品登记簿 | `loot/registry.md` | ✅ |
 | 证据片段/侦察 | `loot/*`（除 registry.md）、`evidence/` | ❌（含目标 IP） |
-| 报告 | `report/` | ✅ |
+| 报告片段/评审 | `report/` | ✅ |
+| 整份考试报告 + PDF/.7z | `reports/`（含 `build/`） | ✅ |
 | 临时草稿 | 系统 Temp / repo 外临时目录 | ❌ |
 
 ## 6. 提交打包与断图防护（v1.1）
@@ -80,7 +82,7 @@
 | 规则 | 要求 | 理由 |
 |---|---|---|
 | R1 引用可解析 | 报告内 `![]()` / `<img src>` 以报告文件为基准必须存在，PNG 须含 `IEND` | 断图 = 证据不可核 |
-| R2 相对结构 | 整包提交 `report/` + `evidence/`（保持相对路径）；或按 `report-exam` §3.2 直接 include 片段后导出 PDF（图片位图化） | PDF / 解包后不依赖仓库布局 |
+| R2 相对结构 | 整包提交 `report/`（按主机片段）+ `reports/`（整份考试报告与 `build/` PDF/.7z）+ `evidence/`（保持相对路径）；或按 `report-exam` §3.2 直接 include 片段后导出 PDF（图片位图化） | PDF / 解包后不依赖仓库布局 |
 | R3 单一事实源 | 禁止 base64、禁止复制截图字节入报告；图片仅存 `evidence/`（不入报告） | C1 单一事实源 + C4 预算 |
 | R4 本地门禁 | 打包前 `python scripts/check_report_assets.py <报告>` 必须 PASS | 机读防断图 |
 | R5 命名与体积 | `OSAI-OS-XXXXX-Exam-Report.pdf` + `.7z`（无密码、≤100MB、MD5 校验） | 考试 §6 |

@@ -364,5 +364,73 @@ class CliTests(unittest.TestCase):
             self.assertEqual(cli.main(["run", "--target", "http://t"]), 1)
 
 
+class ModelKeyFingerprintTests(unittest.TestCase):
+    """通用模型声明键（model/model_name/llm_model/default_model）→ LLM 引擎命名。"""
+
+    @staticmethod
+    def _result(body):
+        return runner_mod.ProbeResult(step_id="recon-01", url="http://t/api/health",
+                                      status=200, body=body,
+                                      content_type="application/json")
+
+    def test_generic_model_key_names_engine(self):
+        m = fingerprint.primary(
+            self._result('{"status":"healthy","features":{"model":"qwen.x-32b-v1:0"}}'),
+            Category.LLM_ENGINE)
+        self.assertIsNotNone(m)
+        self.assertEqual(m.product, "qwen.x-32b-v1:0")
+
+    def test_model_default_rule_precedes_generic_key(self):
+        m = fingerprint.primary(
+            self._result('{"llm_model_default":"Alpha-1","model":"Beta-2"}'),
+            Category.LLM_ENGINE)
+        self.assertEqual(m.rule, "model_default")
+
+    def test_no_model_key_no_llm_engine_hit(self):
+        self.assertIsNone(fingerprint.primary(
+            self._result('{"status":"healthy","version":"1.0"}'),
+            Category.LLM_ENGINE))
+
+
+class ChatEchoJudgeTests(unittest.TestCase):
+    """非 SSE / 非 OpenAI 结构的聊天 JSON：回显标记原样往返即会话面存在。"""
+
+    def test_json_response_echo_counts_as_present(self):
+        chat = runner_mod.ProbeResult(
+            "recon-02", "http://t/api/chat", status=200,
+            body='{"response":"%s","session_id":"s1"}' % probes.ECHO_MARKER,
+            content_type="application/json")
+        runs = runner_mod.ProbeResult("recon-02", "http://t/api/me/runs",
+                                      status=404, body='{"detail":"Not Found"}',
+                                      content_type="application/json")
+        verdict = probes.judge_model_service([chat, runs], {})
+        self.assertEqual(verdict.existence, Existence.PRESENT)
+        self.assertIn(probes.ECHO_MARKER, verdict.note + verdict.basis)
+
+    def test_echo_absent_keeps_undetermined(self):
+        chat = runner_mod.ProbeResult("recon-02", "http://t/api/chat", status=200,
+                                      body='{"status":"ok"}',
+                                      content_type="application/json")
+        verdict = probes.judge_model_service([chat, None], {})
+        self.assertNotEqual(verdict.existence, Existence.PRESENT)
+
+
+class ProfileChatBodyTests(unittest.TestCase):
+    """画像 extra.chat_body 模板（{echo} 占位）适配任意聊天请求体形态。"""
+
+    def test_profile_chat_body_template_expands_echo(self):
+        from tools import target_profile as tp
+        p = tp.from_mapping({"name": "x", "extra": {
+            "chat_body": {"message": "Reply with exactly: {echo}", "stream": False}}})
+        body = probes._chat_body({"target_profile": p})
+        self.assertEqual(body, {"message": "Reply with exactly: " + probes.ECHO_MARKER,
+                                "stream": False})
+
+    def test_generic_profile_keeps_default_prompt(self):
+        from tools import target_profile as tp
+        body = probes._chat_body({"target_profile": tp.GENERIC})
+        self.assertEqual(body, {"prompt": "Reply with exactly: " + probes.ECHO_MARKER})
+
+
 if __name__ == "__main__":
     unittest.main()
